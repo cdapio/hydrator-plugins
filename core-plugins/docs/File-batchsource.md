@@ -35,7 +35,7 @@ JSON - is not supported, user has to manually provide the output schema.
 
 **Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
-**Skip Header:** Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
+**Use First Row as Header:** Whether to use the first line of each file as the column headers. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
 
 **Enable Quoted Values** Whether to treat content between quotes as a value. This value will only be used if the format
 is 'csv', 'tsv' or 'delimited'. For example, if this is set to true, a line that looks like `1, "a, b, c"` will output two fields.
