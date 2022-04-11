@@ -18,6 +18,7 @@ package io.cdap.plugin.batch.aggregator;
 
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.aggregation.GroupByAggregationDefinition;
+import io.cdap.cdap.etl.api.relational.Capability;
 import io.cdap.cdap.etl.api.relational.Engine;
 import io.cdap.cdap.etl.api.relational.Expression;
 import io.cdap.cdap.etl.api.relational.ExpressionFactory;
@@ -53,7 +54,8 @@ public class GroupByRelationalTest {
   @Before
   public void setUp() {
     Mockito.doReturn(engine).when(relationalTranformContext).getEngine();
-    Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any());
+    Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any(),
+                                                                                       (Capability) Mockito.any());
     Schema inputSchema = Schema.recordOf(
       Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("profession", Schema.of(Schema.Type.STRING)),

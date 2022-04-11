@@ -227,7 +227,7 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
                     dedupConfig.getUniqueFields());
 
     if (deduplicateAggregationDefinition == null) {
-      return new InvalidRelation("filterOperation needs to be either min or max");
+      return new InvalidRelation("Filter Operation is not supported. Only ANY, MIN and MAX are supported.");
     }
 
     return relation.deduplicate(deduplicateAggregationDefinition);
