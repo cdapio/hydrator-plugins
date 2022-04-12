@@ -61,6 +61,9 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
   private SelectionFunction selectionFunction;
   private static final EnumSet<Schema.Type> ALLOWED_SCHEMA_TYPES = EnumSet.of(Schema.Type.INT, Schema.Type.LONG,
           Schema.Type.FLOAT, Schema.Type.DOUBLE);
+  private static final EnumSet<Schema.LogicalType> ALLOWED_LOGICAL_SCHEMA_TYPES = EnumSet.of(Schema.LogicalType.DATE,
+          Schema.LogicalType.DATETIME, Schema.LogicalType.DECIMAL, Schema.LogicalType.TIME_MICROS,
+          Schema.LogicalType.TIME_MILLIS, Schema.LogicalType.TIMESTAMP_MILLIS, Schema.LogicalType.TIMESTAMP_MICROS);
 
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
@@ -201,11 +204,13 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
                         null)
                 .withConfigProperty("filterOperation");
       }
-      Schema.Type fieldType = field.getSchema().isNullable() ?
-              field.getSchema().getNonNullable().getType() : field.getSchema().getType();
+      Schema fieldSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
+      Schema.Type fieldType = fieldSchema.getType();
+      Schema.LogicalType logicalFieldType = fieldSchema.getLogicalType();
       if ((function.getFunction() == DedupConfig.Function.MAX || function.getFunction() == DedupConfig.Function.MIN)
-        && !ALLOWED_SCHEMA_TYPES.contains(fieldType)) {
-        collector.addFailure(String.format("Unsupported filter operation %s(%s): Field '%s' is non numeric ",
+        && (!ALLOWED_SCHEMA_TYPES.contains(fieldType) && !ALLOWED_LOGICAL_SCHEMA_TYPES.contains(logicalFieldType))) {
+        collector.addFailure(String.format("Unsupported filter operation %s(%s): Field has a type that is not " +
+                                        "supported for deduplication operations",
                                 function.getFunction(), function.getField(), function.getField()),
                         null)
                 .withConfigProperty("filterOperation");
