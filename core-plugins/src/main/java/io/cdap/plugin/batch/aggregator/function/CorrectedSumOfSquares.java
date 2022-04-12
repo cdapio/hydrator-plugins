@@ -76,6 +76,9 @@ public class CorrectedSumOfSquares implements AggregateFunction<Double, Correcte
 
   @Override
   public Double getAggregate() {
+    if (numEntries == 0) {
+        return sumOfSquares;
+    }
     if (correctSumOfSquares == null) {
       double sumSquared = sum * sum;
       correctSumOfSquares = sumOfSquares - (sumSquared / numEntries);
