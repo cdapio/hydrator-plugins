@@ -18,6 +18,12 @@ package io.cdap.plugin.batch.aggregator.function;
 
 import io.cdap.cdap.api.data.schema.Schema;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+
 /**
  * A {@link SelectionFunction} that can be used to select the record with the max value of a given field.
  */
@@ -45,5 +51,30 @@ public class MaxSelection extends NumberSelection {
   @Override
   protected int compareDouble(double val1, double val2) {
     return Double.compare(val1, val2);
+  }
+
+  @Override
+  protected int compareBigDecimal(BigDecimal val1, BigDecimal val2) {
+    return val1.compareTo(val2);
+  }
+
+  @Override
+  protected int compareLocalDateTime(LocalDateTime val1, LocalDateTime val2) {
+    return val1.compareTo(val2);
+  }
+
+  @Override
+  protected int compareLocalDate(LocalDate date1, LocalDate date2) {
+    return date1.compareTo(date2);
+  }
+
+  @Override
+  protected int compareZonedDateTime(ZonedDateTime timestamp1, ZonedDateTime timestamp2) {
+    return timestamp1.compareTo(timestamp2);
+  }
+
+  @Override
+  protected int compareLocalTime(LocalTime time1, LocalTime time2) {
+    return time1.compareTo(time2);
   }
 }
