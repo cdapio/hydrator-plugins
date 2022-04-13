@@ -124,6 +124,8 @@ implements LinearRelationalTransform {
     put(GroupByConfig.Function.CONCATDISTINCT, "STRING_AGG(DISTINCT CAST(%s AS STRING) , \", \")");
     put(GroupByConfig.Function.LOGICALAND, "COALESCE(LOGICAL_AND(%s), TRUE)");
     put(GroupByConfig.Function.LOGICALOR, "COALESCE(LOGICAL_OR(%s), FALSE)");
+    put(GroupByConfig.Function.SUMOFSQUARES, "SUM(POW(%s, 2))");
+    put(GroupByConfig.Function.CORRECTEDSUMOFSQUARES, "SUM(POW(%s, 2)) - SUM(%s)/COUNT(%s)");
   }};
 
   private List<String> groupByFields;
