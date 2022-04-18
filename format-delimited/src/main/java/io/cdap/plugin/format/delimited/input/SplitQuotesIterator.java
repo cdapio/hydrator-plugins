@@ -36,7 +36,7 @@ public class SplitQuotesIterator extends AbstractIterator<String> {
   private int index;
   private boolean endingWithDelimiter = false;
 
-  SplitQuotesIterator(String delimitedString, String delimiter) {
+  public SplitQuotesIterator(String delimitedString, String delimiter) {
     this.delimitedString = delimitedString;
     this.delimiter = delimiter;
     index = 0;

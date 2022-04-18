@@ -17,10 +17,12 @@
 package io.cdap.plugin.format.delimited.common;
 
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.format.delimited.input.SplitQuotesIterator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -96,13 +98,24 @@ public class DataTypeDetectorUtils {
    * @param rawLine A raw string line read from the dataset.
    * @return Array of column names.
    */
-  public static String[] setColumnNames(String rawLine, boolean skipHeader, String delimiter) {
+  public static String[] setColumnNames(String rawLine, boolean skipHeader,
+                                        boolean enableQuotedValues, String delimiter) {
     String[] columnNames;
     final String quotedDelimiter = Pattern.quote(delimiter);
     if (skipHeader) {
-      // String.split uses regex. Here we safely escape regex sequences by using Pattern.quote
-      // Pattern.quote returns a literal pattern string
-      columnNames = rawLine.split(quotedDelimiter);
+      // need to check enableQuotedValues to remove quotes on headers
+      if (enableQuotedValues) {
+        Iterator<String> splitsIterator = new SplitQuotesIterator(rawLine, delimiter);
+        List<String> tempHeaders = new ArrayList<String>();
+        while (splitsIterator.hasNext()) {
+          tempHeaders.add(splitsIterator.next());
+        }
+        columnNames = tempHeaders.toArray(new String[tempHeaders.size()]);
+      } else {
+        // String.split uses regex. Here we safely escape regex sequences by using Pattern.quote
+        // Pattern.quote returns a literal pattern string
+        columnNames = rawLine.split(quotedDelimiter);
+      }
     } else {
       columnNames = new String[rawLine.split(quotedDelimiter, -1).length];
       for (int j = 0; j < columnNames.length; j++) {
