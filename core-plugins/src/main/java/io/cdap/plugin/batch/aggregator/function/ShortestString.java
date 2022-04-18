@@ -26,11 +26,14 @@ import io.cdap.cdap.api.data.schema.Schema.Type;
 public class ShortestString implements AggregateFunction<String, ShortestString> {
 
   private final String fieldName;
+  private final Schema outputSchema;
   private String shortestString;
 
   public ShortestString(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
     Type inputType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    // The output will only be nullable if the input can be nullable.
+    this.outputSchema = fieldSchema.isNullable() ? Schema.nullableOf(Schema.of(Type.STRING)) : Schema.of(Type.STRING);
 
     if (!inputType.equals(Type.STRING)) {
       throw new IllegalArgumentException(
@@ -70,7 +73,7 @@ public class ShortestString implements AggregateFunction<String, ShortestString>
 
   @Override
   public Schema getOutputSchema() {
-    return Schema.of(Type.STRING);
+    return outputSchema;
   }
 
 }
