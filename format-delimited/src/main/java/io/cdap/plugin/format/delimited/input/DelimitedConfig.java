@@ -203,7 +203,7 @@ public class DelimitedConfig extends PathTrackingConfig {
       for (int rowIndex = 0; rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null; rowIndex++) {
         rowValue = line.split(delimiter, -1);
         if (rowIndex == 0) {
-          columnNames = DataTypeDetectorUtils.setColumnNames(line, getSkipHeader(), delimiter);
+          columnNames = DataTypeDetectorUtils.setColumnNames(line, getSkipHeader(), getEnableQuotedValues(), delimiter);
           if (getSkipHeader()) {
             continue;
           }
