@@ -38,4 +38,13 @@ public class LongestStringTest extends AggregateFunctionTest {
          new LongestString("x", fieldSchema));
   }
 
+  @Test
+  public void longestStringNullableInputTest() {
+    Schema fieldSchema = Schema.of(Schema.Type.STRING);
+    Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
+    test(new LongestString("x", fieldSchema), schema, "x", null,
+         Arrays.asList(null, null, null, null),
+         new LongestString("x", fieldSchema));
+  }
+
 }

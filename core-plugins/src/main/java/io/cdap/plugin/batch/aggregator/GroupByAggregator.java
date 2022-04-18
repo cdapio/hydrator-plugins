@@ -121,7 +121,7 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
       put(GroupByConfig.Function.COUNTNULLS, "SUM(CASE WHEN %s IS NULL THEN 1 ELSE 0 END)");
       put(GroupByConfig.Function.COUNTDISTINCT,
           "COUNT(DISTINCT %s) + COALESCE(MAX(CASE WHEN %<s IS NULL THEN 1 ELSE 0 END), 0)");
-      put(GroupByConfig.Function.SUMOFSQUARES, "CASE WHEN COUNT(%s) > 0 THEN SUM(POWER(%s, 2)) ELSE 0 END");
+      put(GroupByConfig.Function.SUMOFSQUARES, "CASE WHEN COUNT(%s) > 0 THEN SUM(POWER(%<s, 2)) ELSE 0 END");
       put(GroupByConfig.Function.CORRECTEDSUMOFSQUARES,
           "CASE WHEN COUNT(%s) > 1 THEN SUM(POWER(%<s, 2)) - (POWER(SUM(%<s), 2)/COUNT(%<s)) ELSE 0 END");
     }};
@@ -135,6 +135,10 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
       put(GroupByConfig.Function.CONCATDISTINCT, "STRING_AGG(DISTINCT CAST(%s AS STRING) , \", \")");
       put(GroupByConfig.Function.LOGICALAND, "COALESCE(LOGICAL_AND(%s), TRUE)");
       put(GroupByConfig.Function.LOGICALOR, "COALESCE(LOGICAL_OR(%s), FALSE)");
+      put(GroupByConfig.Function.SHORTESTSTRING,
+          "STRING_AGG(CAST(%s AS STRING) ORDER BY LENGTH(CAST(%<s AS STRING)) ASC LIMIT 1)");
+      put(GroupByConfig.Function.LONGESTSTRING,
+          "STRING_AGG(CAST(%s AS STRING) ORDER BY LENGTH(CAST(%<s AS STRING)) DESC LIMIT 1)");
     }};
 
   private List<String> groupByFields;

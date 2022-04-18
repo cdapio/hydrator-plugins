@@ -38,4 +38,13 @@ public class ShortestStringTest extends AggregateFunctionTest {
          new ShortestString("x", fieldSchema));
   }
 
+  @Test
+  public void shortestStringNullableInputTest() {
+    Schema fieldSchema = Schema.of(Schema.Type.STRING);
+    Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
+    test(new ShortestString("x", fieldSchema), schema, "x", null,
+         Arrays.asList(null, null, null, null),
+         new ShortestString("x", fieldSchema));
+  }
+
 }
