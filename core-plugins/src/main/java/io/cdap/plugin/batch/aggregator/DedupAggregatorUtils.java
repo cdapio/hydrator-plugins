@@ -16,8 +16,10 @@
 
 package io.cdap.plugin.batch.aggregator;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.aggregation.DeduplicateAggregationDefinition;
+import io.cdap.cdap.etl.api.engine.sql.StandardSQLCapabilities;
 import io.cdap.cdap.etl.api.relational.CoreExpressionCapabilities;
 import io.cdap.cdap.etl.api.relational.Expression;
 import io.cdap.cdap.etl.api.relational.ExpressionFactory;
@@ -40,6 +42,15 @@ public class DedupAggregatorUtils {
 
   private static final String CAST_TO_NUMERIC_FORMAT = "CAST(%s AS NUMERIC)";
 
+  /**
+   * Generates a {@link DeduplicateAggregationDefinition} based on an input relation and deduplication configuration.
+   * @param ctx transform context
+   * @param relation input relation
+   * @param filter filter function
+   * @param uniqueFields unique fields when deduplicating
+   * @return Definition for a deduplicate operation, or null if this deduplicate definition is not supported.
+   */
+  @Nullable
   public static DeduplicateAggregationDefinition generateAggregationDefinition(RelationalTranformContext ctx,
                                                                                Relation relation,
                                                                                DedupConfig.DedupFunctionInfo filter,
@@ -48,8 +59,13 @@ public class DedupAggregatorUtils {
     String inputRelationName = ctx.getInputRelationNames().stream().findFirst().orElse(null);
     Schema inputSchema = inputRelationName != null ? ctx.getInputSchema(inputRelationName) : null;
 
-    Optional<ExpressionFactory<String>> expressionFactory = ctx.getEngine().
-      getExpressionFactory(StringExpressionFactoryType.SQL);
+    Optional<ExpressionFactory<String>> expressionFactory = getExpressionFactory(ctx, inputSchema);
+
+    // If the expression factory is not present, this aggregation cannot be handled by the plugin.
+    if (!expressionFactory.isPresent()) {
+      return null;
+    }
+
     DeduplicateAggregationDefinition.FilterFunction aggFilterFunction;
     switch (filter.getFunction()) {
       case MAX:
@@ -107,23 +123,49 @@ public class DedupAggregatorUtils {
     // Check if the field is a Float or a Double, as we need to cast the expression to NUMERIC in order to dedup on
     // this field.
     if (columnNameExp instanceof ExtractableExpression && schema != null && schema.getField(name) != null) {
-      Schema fieldSchema = schema.getField(name).getSchema();
-
-      // Get the non-nullable schema for this field
-      if (fieldSchema != null) {
-        if (fieldSchema.isNullable()) {
-          fieldSchema = fieldSchema.getNonNullable();
-        }
-
-        // If the type is Float or Double, ensure we cast it to numeric.
-        if (fieldSchema.getLogicalType() == null
-          && (fieldSchema.getType() == Schema.Type.FLOAT || fieldSchema.getType() == Schema.Type.DOUBLE)) {
-          String castExp = String.format(CAST_TO_NUMERIC_FORMAT, ((ExtractableExpression<?>) columnNameExp).extract());
-          columnNameExp = stringExpressionFactory.compile(castExp);
-        }
+      if (isFloatOrDoubleField(schema.getField(name))) {
+        String castExp = String.format(CAST_TO_NUMERIC_FORMAT, ((ExtractableExpression<?>) columnNameExp).extract());
+        columnNameExp = stringExpressionFactory.compile(castExp);
       }
     }
 
+
     return columnNameExp;
+  }
+
+  @VisibleForTesting
+  protected static Optional<ExpressionFactory<String>> getExpressionFactory(RelationalTranformContext ctx,
+                                                                            @Nullable Schema inputSchema) {
+    // We need a valid input schema to decide which capabilities are required.
+    if (inputSchema == null || inputSchema.getFields() == null) {
+      return Optional.empty();
+    }
+
+    // The BigQuery capability is required for Float or Double fields.
+    boolean requiresBigQueryCapability =
+      inputSchema.getFields().stream().anyMatch(DedupAggregatorUtils::isFloatOrDoubleField);
+
+    // If the BigQuery capability is required, ensure the SQL engine supports this capability.
+    return requiresBigQueryCapability ?
+      ctx.getEngine().getExpressionFactory(StringExpressionFactoryType.SQL, StandardSQLCapabilities.BIGQUERY) :
+      ctx.getEngine().getExpressionFactory(StringExpressionFactoryType.SQL);
+  }
+
+  @VisibleForTesting
+  protected static boolean isFloatOrDoubleField(Schema.Field field) {
+    Schema fieldSchema = field.getSchema();
+
+    // Get the non-nullable schema for this field
+    if (fieldSchema.isNullable()) {
+      fieldSchema = fieldSchema.getNonNullable();
+    }
+
+    // If the type is Float or Double, ensure we cast it to numeric.
+    if (fieldSchema.getLogicalType() == null
+      && (fieldSchema.getType() == Schema.Type.FLOAT || fieldSchema.getType() == Schema.Type.DOUBLE)) {
+      return true;
+    }
+
+    return false;
   }
 }
