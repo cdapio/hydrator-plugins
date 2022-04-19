@@ -26,11 +26,14 @@ import io.cdap.cdap.api.data.schema.Schema.Type;
 public class LongestString implements AggregateFunction<String, LongestString> {
 
   private final String fieldName;
+  private final Schema outputSchema;
   private String longestString;
 
   public LongestString(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
     Type inputType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    // The output will only be nullable if the input can be nullable.
+    this.outputSchema = fieldSchema.isNullable() ? Schema.nullableOf(Schema.of(Type.STRING)) : Schema.of(Type.STRING);
 
     if (!inputType.equals(Type.STRING)) {
       throw new IllegalArgumentException(
@@ -40,14 +43,14 @@ public class LongestString implements AggregateFunction<String, LongestString> {
 
   @Override
   public void initialize() {
-    longestString = "";
+    longestString = null;
   }
 
   @Override
   public void mergeValue(StructuredRecord record) {
     String value = record.get(fieldName);
     if (value != null) {
-      if (value.length() > longestString.length()) {
+      if (longestString == null || value.length() > longestString.length()) {
         longestString = value;
       }
     }
@@ -58,7 +61,7 @@ public class LongestString implements AggregateFunction<String, LongestString> {
     if (otherAgg.getAggregate() == null) {
       return;
     }
-    if (otherAgg.getAggregate().length() > longestString.length()) {
+    if (longestString == null || otherAgg.getAggregate().length() > longestString.length()) {
       longestString = otherAgg.getAggregate();
     }
   }
@@ -70,7 +73,7 @@ public class LongestString implements AggregateFunction<String, LongestString> {
 
   @Override
   public Schema getOutputSchema() {
-    return Schema.of(Type.STRING);
+    return outputSchema;
   }
 
 }
