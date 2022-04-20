@@ -51,9 +51,39 @@
             "key-placeholder": "Field Name",
             "value-placeholder": "New Field Name"
           }
+        },
+        {
+          "plugin-function": {
+          "method": "POST",
+          "widget": "outputSchema",
+          "label": "Get Schema Value",
+          "required-fields": [],
+          "plugin-method": "getSchema"
+          }
         }
       ]
     }
   ],
-  "outputs": []
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "fileRecord",
+          "type": "record",
+          "fields": [
+            {
+              "name": "offset",
+              "type": "long"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
 }
