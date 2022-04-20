@@ -1,4 +1,4 @@
-# Snapshot Avro Batch Sink
+# Snapshot Avro Batch Sink (Deprecated)
 
 
 Description

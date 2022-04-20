@@ -2,7 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "CDAP Table Dataset",
+  "display-name": "CDAP Table Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Basic",

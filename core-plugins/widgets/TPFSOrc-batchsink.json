@@ -3,7 +3,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "ORC Time Partitioned Dataset",
+  "display-name": "ORC Time Partitioned Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Time Partitioned Fileset - ORC",

@@ -2,7 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "Parquet Time Partitioned Dataset",
+  "display-name": "Parquet Time Partitioned Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Basic",

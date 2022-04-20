@@ -1,4 +1,4 @@
-# TimePartitionedFileSet Parquet Batch Sink
+# TimePartitionedFileSet Parquet Batch Sink (Deprecated)
 
 
 Description
