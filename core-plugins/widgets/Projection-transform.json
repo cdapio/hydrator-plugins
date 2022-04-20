@@ -64,26 +64,5 @@
       ]
     }
   ],
-  "outputs": [
-    {
-      "name": "schema",
-      "widget-type": "schema",
-      "widget-attributes": {
-        "default-schema": {
-          "name": "fileRecord",
-          "type": "record",
-          "fields": [
-            {
-              "name": "offset",
-              "type": "long"
-            },
-            {
-              "name": "body",
-              "type": "string"
-            }
-          ]
-        }
-      }
-    }
-  ]
+  "outputs": []
 }
