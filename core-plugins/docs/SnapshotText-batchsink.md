@@ -1,4 +1,4 @@
-# Snapshot Text Batch Sink
+# Snapshot Text Batch Sink (Deprecated)
 
 
 Description

@@ -1,4 +1,4 @@
-# Snapshot Parquet Batch Source
+# Snapshot Parquet Batch Source (Deprecated)
 
 
 Description

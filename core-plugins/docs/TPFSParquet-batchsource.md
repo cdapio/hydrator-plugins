@@ -1,4 +1,4 @@
-# TimePartitionedFileSet Parquet Batch Source
+# TimePartitionedFileSet Parquet Batch Source (Deprecated)
 
 
 Description

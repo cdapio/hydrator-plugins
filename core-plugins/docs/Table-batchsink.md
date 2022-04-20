@@ -1,4 +1,4 @@
-# Table Batch Sink
+# Table Batch Sink (Deprecated)
 
 
 Description

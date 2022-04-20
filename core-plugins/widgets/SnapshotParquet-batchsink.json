@@ -3,7 +3,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "Parquet Snapshot Dataset",
+  "display-name": "Parquet Snapshot Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Snapshot Fileset - Parquet",
