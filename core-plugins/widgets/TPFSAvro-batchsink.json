@@ -3,7 +3,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "Avro Time Partitioned Dataset",
+  "display-name": "Avro Time Partitioned Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Time Partitioned Fileset - AVRO",

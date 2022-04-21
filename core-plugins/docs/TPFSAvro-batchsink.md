@@ -1,4 +1,4 @@
-# TimePartitionedFileSet Avro Batch Sink
+# TimePartitionedFileSet Avro Batch Sink (Deprecated)
 
 
 Description

@@ -1,4 +1,4 @@
-# KeyValueTable Batch Sink
+# KeyValueTable Batch Sink (Deprecated)
 
 
 Description
