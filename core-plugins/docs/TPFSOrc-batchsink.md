@@ -1,4 +1,4 @@
-# TimePartitionedFileSet ORC Batch Sink
+# TimePartitionedFileSet ORC Batch Sink (Deprecated)
 
 
 Description

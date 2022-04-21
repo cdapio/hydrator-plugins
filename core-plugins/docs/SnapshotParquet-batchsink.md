@@ -1,4 +1,4 @@
-# Snapshot Parquet Batch Sink
+# Snapshot Parquet Batch Sink (Deprecated)
 
 
 Description

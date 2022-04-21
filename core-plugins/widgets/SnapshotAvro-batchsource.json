@@ -2,7 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "Avro Snapshot Dataset",
+  "display-name": "Avro Snapshot Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Basic",

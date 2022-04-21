@@ -1,4 +1,4 @@
-# TimePartitionedFileSet Avro Batch Source
+# TimePartitionedFileSet Avro Batch Source (Deprecated)
 
 
 Description
