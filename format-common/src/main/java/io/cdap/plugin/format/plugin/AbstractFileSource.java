@@ -182,7 +182,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       conf.set(entry.getKey(), entry.getValue());
     }
 
-    Path path = new Path(config.getPath());
+    Path path = new Path(config.getPath(context));
     FileSystem pathFileSystem = FileSystem.get(path.toUri(), conf);
 
     FileStatus[] fileStatus = pathFileSystem.globStatus(path);

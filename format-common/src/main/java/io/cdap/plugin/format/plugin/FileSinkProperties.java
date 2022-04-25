@@ -18,6 +18,7 @@ package io.cdap.plugin.format.plugin;
 
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.StageContext;
 import io.cdap.plugin.format.FileFormat;
 
 import java.util.Map;
@@ -69,8 +70,19 @@ public interface FileSinkProperties {
 
   /**
    * Get the path to write to.
+   *
+   * @deprecated use {@link #getPath(StageContext)} instead
    */
+  @Deprecated
   String getPath();
+
+  /**
+   * Get the path to write to, with provided stage context, this can be used when the path is determined by some
+   * runtime arguments.
+   */
+  default String getPath(StageContext context) {
+    return getPath();
+  }
 
   /**
    * Get the name of the format plugin to use to write the data.

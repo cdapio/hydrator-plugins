@@ -124,7 +124,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
 
     Map<String, String> outputProperties = new HashMap<>(validatingOutputFormat.getOutputFormatConfiguration());
     outputProperties.putAll(getFileSystemProperties(context));
-    outputProperties.put(FileOutputFormat.OUTDIR, getOutputDir(context.getLogicalStartTime()));
+    outputProperties.put(FileOutputFormat.OUTDIR, getOutputDir(context));
     context.addOutput(Output.of(config.getReferenceName(),
                                 new SinkOutputFormatProvider(validatingOutputFormat.getOutputFormatClassName(),
                                                              outputProperties)));
@@ -169,10 +169,11 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
                                 outputFields);
   }
 
-  protected String getOutputDir(long logicalStartTime) {
+  protected String getOutputDir(BatchSinkContext context) {
     String suffix = config.getSuffix();
-    String timeSuffix = suffix == null || suffix.isEmpty() ? "" : new SimpleDateFormat(suffix).format(logicalStartTime);
-    String configPath = config.getPath();
+    String timeSuffix = suffix == null || suffix.isEmpty() ? "" :
+                          new SimpleDateFormat(suffix).format(context.getLogicalStartTime());
+    String configPath = config.getPath(context);
     //Avoid the extra '/' since '/' is appended before timeSuffix in the next line
     String finalPath = configPath.endsWith("/") ? configPath.substring(0, configPath.length() - 1) : configPath;
     return String.format("%s/%s", finalPath, timeSuffix);
