@@ -105,7 +105,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Macro
   @Nullable
-  @Description("Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', " +
+  @Description("Whether to use first row as header. Supported formats are 'text', 'csv', 'tsv', " +
     "'delimited'. Default value is false.")
   private Boolean skipHeader;
 
