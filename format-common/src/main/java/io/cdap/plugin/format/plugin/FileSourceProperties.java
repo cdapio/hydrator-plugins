@@ -18,6 +18,7 @@ package io.cdap.plugin.format.plugin;
 
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.StageContext;
 import io.cdap.plugin.format.FileFormat;
 
 import java.util.regex.Pattern;
@@ -60,8 +61,19 @@ public interface FileSourceProperties {
 
   /**
    * Get the path to read from.
+   *
+   * @deprecated use {@link #getPath(StageContext)} instead
    */
+  @Deprecated
   String getPath();
+
+  /**
+   * Get the path to read from, with provided stage context, this can be used when the path is determined by some
+   * runtime arguments.
+   */
+  default String getPath(StageContext context) {
+    return getPath();
+  }
 
   /**
    * Get the name of the format plugin used to read data.
