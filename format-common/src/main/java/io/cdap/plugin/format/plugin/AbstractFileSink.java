@@ -58,7 +58,6 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFileSink.class);
   private static final String NAME_FORMAT = "format";
   private final T config;
-  private String outputPath;
 
   protected AbstractFileSink(T config) {
     this.config = config;
@@ -109,7 +108,6 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     validateOutputFormatProvider(formatContext, format, validatingOutputFormat);
     collector.getOrThrowException();
 
-
     // record field level lineage information
     // needs to happen before context.addOutput(), otherwise an external dataset without schema will be created.
     Schema schema = config.getSchema();
@@ -125,8 +123,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
 
     Map<String, String> outputProperties = new HashMap<>(validatingOutputFormat.getOutputFormatConfiguration());
     outputProperties.putAll(getFileSystemProperties(context));
-    this.outputPath = config.getPath(context);
-    outputProperties.put(FileOutputFormat.OUTDIR, getOutputDir(context.getLogicalStartTime()));
+    outputProperties.put(FileOutputFormat.OUTDIR, getOutputDir(context));
     context.addOutput(Output.of(config.getReferenceName(),
                                 new SinkOutputFormatProvider(validatingOutputFormat.getOutputFormatClassName(),
                                                              outputProperties)));
@@ -171,10 +168,11 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
                                 outputFields);
   }
 
-  protected String getOutputDir(long logicalStartTime) {
+  protected String getOutputDir(BatchSinkContext context) {
     String suffix = config.getSuffix();
-    String timeSuffix = suffix == null || suffix.isEmpty() ? "" : new SimpleDateFormat(suffix).format(logicalStartTime);
-    String configPath = outputPath == null ? config.getPath() : outputPath;
+    String timeSuffix = suffix == null || suffix.isEmpty() ? "" :
+                          new SimpleDateFormat(suffix).format(context.getLogicalStartTime());
+    String configPath = config.getPath(context);
     //Avoid the extra '/' since '/' is appended before timeSuffix in the next line
     String finalPath = configPath.endsWith("/") ? configPath.substring(0, configPath.length() - 1) : configPath;
     return String.format("%s/%s", finalPath, timeSuffix);
