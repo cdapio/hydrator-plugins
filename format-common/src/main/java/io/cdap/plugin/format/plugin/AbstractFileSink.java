@@ -169,6 +169,21 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
                                 outputFields);
   }
 
+  /**
+   * @deprecated use {@link #getOutputDir(BatchSinkContext)} instead
+   */
+  @Deprecated
+  protected String getOutputDir(long logicalStartTime) {
+    String suffix = config.getSuffix();
+    String timeSuffix = suffix == null || suffix.isEmpty() ? "" :
+                          new SimpleDateFormat(suffix).format(logicalStartTime);
+    String configPath = config.getPath();
+    //Avoid the extra '/' since '/' is appended before timeSuffix in the next line
+    String finalPath = configPath.endsWith("/") ? configPath.substring(0, configPath.length() - 1) : configPath;
+    return String.format("%s/%s", finalPath, timeSuffix);
+  }
+
+
   protected String getOutputDir(BatchSinkContext context) {
     String suffix = config.getSuffix();
     String timeSuffix = suffix == null || suffix.isEmpty() ? "" :
