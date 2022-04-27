@@ -1,9 +1,15 @@
-# File Connector
+# File Connection
 
 
 Description
 -----------
-File connector can be used to browse and sample the local file system
+Use this connection to browse and sample the local file system.
+
+Properties
+----------
+**Name:** Name of the connection. Connection names must be unique in a namespace.
+
+**Description:** Description of the connection. 
 
 Path of the connection
 ----------------------
