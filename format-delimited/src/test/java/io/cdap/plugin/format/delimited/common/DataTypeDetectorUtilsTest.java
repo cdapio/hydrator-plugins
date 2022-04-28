@@ -84,6 +84,17 @@ public class DataTypeDetectorUtilsTest {
   }
 
   @Test
+  public void testNonAvroStandardFieldNameShouldBeReplaced() {
+    String fieldNames = "\"column-1\", \"1column\", \"1234\", \" column#a\", \"\", \",\", \" \", \"_\", " +
+      "\"column_1\", \"column_1\", \"column_1_2\", \" s p a c e s \", \"1!)@#*$%&!@\"";
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(
+      fieldNames, true, true, ",");
+    String[] expectedColumnNames = new String[]{"column_1", "col_1column", "col_1234", "column_a", "BLANK",
+      "_", "BLANK_2", "__2", "column_1_2", "column_1_3", "column_1_2_2", "s_p_a_c_e_s", "col_1_"};
+    assertArrayEquals(expectedColumnNames, actualColumnNames);
+  }
+
+  @Test
   public void testNonStandardFieldNamesShouldValidateSuccessfully() {
     String[] fieldNames = new String[]{"column", "column_1", "_column", "Column", "_COLUMN_1_2_"};
     DataTypeDetectorUtils.validateSchemaFieldNames(fieldNames);
