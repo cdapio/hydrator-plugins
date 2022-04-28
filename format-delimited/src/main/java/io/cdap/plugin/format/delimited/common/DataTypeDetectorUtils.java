@@ -33,13 +33,16 @@ import java.util.regex.Pattern;
  */
 public class DataTypeDetectorUtils {
 
+  private static final Pattern NOT_VALID_PATTERN = Pattern.compile("[^A-Za-z0-9_]+");
+  private static final Pattern AVRO_NAMING_STANDARD = Pattern.compile("[A-Za-z_]+[A-Za-z0-9_]*");
+
   /**
    * Detects the data type of each value from a given dataset row;
    *
-   * @param override Columns with manually specified data types from the user.
+   * @param override                     Columns with manually specified data types from the user.
    * @param dataTypeDetectorStatusKeeper Object that keeps the state of automated data type detection process.
-   * @param columnNames Column names.
-   * @param rowValues Row values.
+   * @param columnNames                  Column names.
+   * @param rowValues                    Row values.
    */
   public static void detectDataTypeOfRowValues(Map<String, Schema> override,
                                                DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper,
@@ -52,7 +55,7 @@ public class DataTypeDetectorUtils {
     }
     for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
       String name = columnNames[columnIndex];
-      String value =  rowValuesList.get(columnIndex);
+      String value = rowValuesList.get(columnIndex);
       if (!override.containsKey(name)) {
         dataTypeDetectorStatusKeeper.addDataType(name, DataTypeDetectorStatusKeeper.detectValueDataType(value));
       }
@@ -63,12 +66,12 @@ public class DataTypeDetectorUtils {
    * Infers column data type for every column in the dataset. If for a column the data type is manually specified,
    * that manually specified data type is taken.
    *
-   * @param override Columns with manually specified data types from the user.
+   * @param override                     Columns with manually specified data types from the user.
    * @param dataTypeDetectorStatusKeeper Object that keeps the state of automated data type detection process.
    * @return A list of detected schema fields per each column of the dataset.
    */
-  public static List<Schema.Field> detectDataTypeOfEachDatasetColumn(Map<String, Schema> override, String[] columnNames,
-    DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper) {
+  public static List<Schema.Field> detectDataTypeOfEachDatasetColumn(
+    Map<String, Schema> override, String[] columnNames, DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper) {
     List<Schema.Field> fields = new ArrayList<>();
     for (HashMap.Entry<String, Schema> entry : override.entrySet()) {
       if (!Arrays.asList(columnNames).contains(entry.getKey())) {
@@ -122,30 +125,81 @@ public class DataTypeDetectorUtils {
         columnNames[j] = String.format("%s_%s", "body", j);
       }
     }
+    columnNames = cleanSchemaFieldNames(columnNames);
     validateSchemaFieldNames(columnNames);
     return columnNames;
   }
 
   /**
    * Validates whether the given column name complies with avro field naming standard. Field names can start with
-   * [A-Za-z] and subsequently contain only [A-Za-z0-9].
+   * [A-Za-z_] and subsequently contain only [A-Za-z0-9_].
    *
-   * @param fieldNames an ar field names to be validated
+   * @param fieldNames an array of field names to be validated
    */
   public static void validateSchemaFieldNames(String[] fieldNames) {
-    String avroNamingStandard = "[A-Za-z_]+[A-Za-z0-9_]*";
-    Pattern pattern = Pattern.compile(avroNamingStandard);
     for (String fieldName : fieldNames) {
-      Matcher matcher = pattern.matcher(fieldName);
+      Matcher matcher = AVRO_NAMING_STANDARD.matcher(fieldName);
       if (!matcher.matches()) {
         throw new IllegalArgumentException(
           String.format(
             "Invalid column name detected: \"%s\"! " +
-            "Column names can only start with capital letters, small letters, and " + "\"_\". " +
-            "Subsequently they may contain only capital letters, small letters, numbers  and \"_\".", fieldName
+              "Column names can only start with capital letters, small letters, and " + "\"_\". " +
+              "Subsequently they may contain only capital letters, small letters, numbers  and \"_\".", fieldName
           )
         );
       }
     }
+  }
+
+  /**
+   * Cleans an array of field names to make sure they comply with avro field naming standard.
+   * It also makes sure each name is unique in the list.
+   * Field names can start with [A-Za-z_] and subsequently contain only [A-Za-z0-9_].
+   *
+   * Steps:
+   * 1) Trim surrounding spaces
+   * 2) If its empty replace it with BLANK
+   * 3) If it starts with a number, prepend "col_"
+   * 4) Replace invalid characters with "_" (multiple invalid characters gets replaced with one symbol)
+   * 5) Check if the name has been found before (without considering case)
+   *    if so add _# where # is the number of times seen before + 1
+   * @param fieldNames an array of field names to be cleaned
+   */
+  private static String[] cleanSchemaFieldNames(String[] fieldNames) {
+    final String replacementChar = "_";
+    final List<String> cleanFieldNames = new ArrayList<>();
+    final Map<String, Integer> seenFieldNames = new HashMap<>();
+    for (String fieldName : fieldNames) {
+      StringBuilder cleanFieldNameBuilder = new StringBuilder();
+
+      // Remove any spaces at the end of the strings
+      fieldName = fieldName.trim();
+
+      // If it's an empty string replace it with BLANK
+      if (fieldName.length() == 0) {
+        cleanFieldNameBuilder.append("BLANK");
+      } else if ((fieldName.charAt(0) >= '0') && (fieldName.charAt(0) <= '9')) {
+        // Prepend a col_ if the first character is a number
+        cleanFieldNameBuilder.append("col_");
+      }
+
+      // Replace all invalid characters with the replacement char
+      cleanFieldNameBuilder.append(NOT_VALID_PATTERN.matcher(fieldName).replaceAll(replacementChar));
+
+      // Check if the field exist if so append and index at the end
+      // We use lowercase to match columns "A" and "a" to avoid issues with wrangler.
+      String cleanFieldName = cleanFieldNameBuilder.toString();
+      String lowerCaseCleanFieldName = cleanFieldName.toLowerCase();
+      while (seenFieldNames.containsKey(lowerCaseCleanFieldName)) {
+        cleanFieldNameBuilder.append(replacementChar).append(seenFieldNames.get(lowerCaseCleanFieldName));
+        seenFieldNames.put(lowerCaseCleanFieldName, seenFieldNames.get(lowerCaseCleanFieldName) + 1);
+        cleanFieldName = cleanFieldNameBuilder.toString();
+        lowerCaseCleanFieldName = cleanFieldName.toLowerCase();
+      }
+      seenFieldNames.put(lowerCaseCleanFieldName, 2);
+
+      cleanFieldNames.add(cleanFieldName);
+    }
+    return cleanFieldNames.toArray(new String[0]);
   }
 }
