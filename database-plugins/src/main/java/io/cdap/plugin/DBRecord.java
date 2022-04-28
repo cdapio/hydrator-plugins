@@ -190,10 +190,19 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
       bytesRead += decimal.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
       recordBuilder.setDecimal(field.getName(), decimal);
     } else if (o instanceof BigInteger) {
+      Schema schema = field.getSchema();
       BigInteger bigint = ((BigInteger) o);
-      BigDecimal int2dec = new BigDecimal(bigint, 0);
-      bytesRead += int2dec.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
-      recordBuilder.setDecimal(field.getName(), int2dec);
+
+      if (schema.getType() == Schema.Type.LONG) {
+        Long int2long = bigint.longValueExact();
+        bytesRead += Long.BYTES;
+        recordBuilder.set(field.getName(), int2long);
+      } else {
+        BigDecimal int2dec = new BigDecimal(bigint, 0);
+        bytesRead += int2dec.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
+        recordBuilder.setDecimal(field.getName(), int2dec);
+      }
+
     } else {
       if (o != null) {
         Schema schema = field.getSchema();
