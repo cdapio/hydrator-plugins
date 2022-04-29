@@ -16,20 +16,33 @@ a TimePartitionedFileSet.
 
 Properties
 ----------
-**Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc.
 
 **Use Connection** Whether to use a connection. If a connection is used, you do not need to provide the credentials.
 
 **Connection** Name of the connection to use. Project and service account information will be provided by the connection.
 You also can use the macro function ${conn(connection-name)}.
 
-**Plugin Name:** Name of the JDBC plugin to use. This is the value of the 'name' key
-defined in the JSON file for the JDBC plugin. (Macro-enabled)
-
-**Plugin Type:** Type of the JDBC plugin to use. This is the value of the 'type' key
-defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
+**JDBC Driver name:** Select the JDBC driver to use.
 
 **Connection String:** JDBC connection string including database name. (Macro-enabled)
+
+**Username:** User identity for connecting to the specified database. Required for databases that need
+authentication. Optional for databases that do not require authentication. (Macro-enabled)
+
+**Password:** Password to use to connect to the specified database. Required for databases
+that need authentication. Optional for databases that do not require authentication. (Macro-enabled)
+
+**Connection Arguments:** A list of arbitrary string tag/value pairs as connection arguments. These arguments
+will be passed to the JDBC driver, as connection arguments, for JDBC drivers that may need additional configurations.
+This is a semicolon-separated list of key-value pairs, where each pair is separated by a equals '=' and specifies
+the key and value for the argument. For example, 'key1=value1;key2=value' specifies that the connection will be
+given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'value2'. (Macro-enabled)
+
+**Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc.
+
+**Schema:** The schema of records output by the source. This will be used in place of whatever schema comes
+back from the query. However, it must match the schema that comes back from the query,
+except it can mark fields as nullable and can contain a subset of the fields.
 
 **Import Query:** The SELECT query to use to import data from the specified table.
 You can specify an arbitrary number of columns to import, or import all columns using \*. The Query should
@@ -44,17 +57,8 @@ For example, 'SELECT MIN(id),MAX(id) FROM table'. Not required if numSplits is s
 
 **Number of Splits to Generate:** Number of splits to generate. (Macro-enabled)
 
-**Username:** User identity for connecting to the specified database. Required for databases that need
-authentication. Optional for databases that do not require authentication. (Macro-enabled)
-
-**Password:** Password to use to connect to the specified database. Required for databases
-that need authentication. Optional for databases that do not require authentication. (Macro-enabled)
-
-**Connection Arguments:** A list of arbitrary string tag/value pairs as connection arguments. These arguments
-will be passed to the JDBC driver, as connection arguments, for JDBC drivers that may need additional configurations.
-This is a semicolon-separated list of key-value pairs, where each pair is separated by a equals '=' and specifies
-the key and value for the argument. For example, 'key1=value1;key2=value' specifies that the connection will be
-given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'value2'. (Macro-enabled)
+**Fetch Size:** The number of rows to fetch at a time per split. Larger fetch size can result in faster import,
+with the tradeoff of higher memory usage.
 
 **Enable Auto-Commit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
 Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
@@ -77,10 +81,6 @@ Replace With config. If Replace With is not set, the pattern will be removed in 
 
 **Replace With:** The string that will be replaced in the field name in the table, it must be used with the
 Pattern To Replace config.
-
-**Schema:** The schema of records output by the source. This will be used in place of whatever schema comes
-back from the query. However, it must match the schema that comes back from the query,
-except it can mark fields as nullable and can contain a subset of the fields.
 
 
 Example
