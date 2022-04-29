@@ -27,10 +27,16 @@ import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Reads the entire contents of a File into a single record
@@ -39,6 +45,8 @@ import java.util.List;
 @Name(BlobInputFormatProvider.NAME)
 @Description(BlobInputFormatProvider.DESC)
 public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<BlobInputFormatProvider.BlobConfig> {
+  private static final Logger LOG = LoggerFactory.getLogger(PathTrackingInputFormatProvider.class);
+
   static final String NAME = "blob";
   static final String DESC = "Plugin for reading files in blob format.";
   public static final PluginClass PLUGIN_CLASS =
@@ -61,33 +69,50 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
     }
 
     Schema schema = conf.getSchema();
-    String pathField = conf.getPathField();
-    Schema.Field bodyField = schema.getField("body");
+
+    List<String> fieldsToCheck = new ArrayList<>();
+    fieldsToCheck.add(BlobConfig.NAME_BODY);
+    fieldsToCheck.add(conf.getPathField());
+    try {
+      fieldsToCheck.add(conf.getLengthField());
+      fieldsToCheck.add(conf.getModificationTimeField());
+    } catch (NoSuchMethodError e) {
+      LOG.warn("'Length' and 'Modification Time' properties are not supported by plugin.");
+    }
+    Schema.Field bodyField = schema.getField(BlobConfig.NAME_BODY);
     if (bodyField == null) {
-      throw new IllegalArgumentException("The schema for the 'blob' format must have a field named 'body'");
+      throw new IllegalArgumentException(
+        String.format("The schema for the 'blob' format must have a field named '%s'", BlobConfig.NAME_BODY));
     }
     Schema bodySchema = bodyField.getSchema();
     Schema.Type bodyType = bodySchema.isNullable() ? bodySchema.getNonNullable().getType() : bodySchema.getType();
     if (bodyType != Schema.Type.BYTES) {
-      throw new IllegalArgumentException(String.format("The 'body' field must be of type 'bytes', but found '%s'",
-                                                       bodyType.name().toLowerCase()));
+      throw new IllegalArgumentException(String.format("The '%s' field must be of type 'bytes', but found '%s'",
+        BlobConfig.NAME_BODY, bodyType.name().toLowerCase()));
     }
 
     // blob must contain 'body' as type 'bytes'.
     // it can optionally contain a path field of type 'string'
-    int numExpectedFields = pathField == null ? 1 : 2;
+    // it can optionally contain a length field of type 'long'
+    // it can optionally contain a modificationTime field of type 'long'
+
+    List<String> expectedFieldsList = fieldsToCheck
+      .stream()
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+
+    int numExpectedFields = expectedFieldsList.size();
     int numFields = schema.getFields().size();
     if (numFields > numExpectedFields) {
-      int numExtra = numFields - numExpectedFields;
-      if (pathField == null) {
-        throw new IllegalArgumentException(
-          String.format("The schema for the 'blob' format must only contain the 'body' field, "
-                          + "but found %d other field%s.", numFields - 1, numExtra > 1 ? "s" : ""));
-      } else {
-        throw new IllegalArgumentException(
-          String.format("The schema for the 'blob' format must only contain the 'body' field and the '%s' field, "
-                          + "but found %d other field%s.", pathField, numFields - 2, numExtra > 1 ? "s" : ""));
-      }
+      String expectedFields = expectedFieldsList.stream().map(Object::toString)
+              .collect(Collectors.joining("', '", "'", "'"));
+
+      int numExtraFields = numFields - numExpectedFields;
+      throw new IllegalArgumentException(
+              String.format("The schema for the 'blob' format must only contain the %s field%s, " +
+                              "but found %d other field%s",
+                      expectedFields, numExpectedFields > 1 ? "s" : "", numExtraFields,
+                      numExtraFields > 1 ? "s" : ""));
     }
   }
 
@@ -107,41 +132,54 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
       throw collector.getOrThrowException();
     }
 
-    String pathField = conf.getPathField();
+    List<String> fieldsToCheck = new ArrayList<>();
+    fieldsToCheck.add(BlobConfig.NAME_BODY);
+    fieldsToCheck.add(conf.getPathField());
+    try {
+      fieldsToCheck.add(conf.getLengthField());
+      fieldsToCheck.add(conf.getModificationTimeField());
+    } catch (NoSuchMethodError e) {
+      LOG.warn("'Length' and 'Modification Time' properties are not supported by plugin.");
+    }
     Schema.Field bodyField = schema.getField(BlobConfig.NAME_BODY);
     if (bodyField == null) {
-      collector.addFailure("The schema for the 'blob' format must have a field named 'body' of type 'bytes'.", null)
+      collector.addFailure(
+        String.format("The schema for the 'blob' format must have a field named '%s' of type 'bytes'.",
+          BlobConfig.NAME_BODY), null)
         .withOutputSchemaField(BlobConfig.NAME_SCHEMA);
     } else {
       Schema bodySchema = bodyField.getSchema();
       Schema nonNullableSchema = bodySchema.isNullable() ? bodySchema.getNonNullable() : bodySchema;
       if (nonNullableSchema.getType() != Schema.Type.BYTES) {
-        collector.addFailure(
-          String.format("Field 'body' is of unexpected type '%s'.", nonNullableSchema.getDisplayName()),
+        collector.addFailure(String.format("Field '%s' is of unexpected type '%s'.",
+            BlobConfig.NAME_BODY, nonNullableSchema.getDisplayName()),
           "Change type to 'bytes'.").withOutputSchemaField(BlobConfig.NAME_BODY);
       }
     }
 
     // blob must contain 'body' as type 'bytes'.
     // it can optionally contain a path field of type 'string'
-    int numExpectedFields = pathField == null ? 1 : 2;
+    // it can optionally contain a length field of type 'long'
+    List<String> expectedFieldsList = fieldsToCheck
+      .stream()
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+
+    int numExpectedFields = expectedFieldsList.size();
     int numFields = schema.getFields().size();
     if (numFields > numExpectedFields) {
       for (Schema.Field field : schema.getFields()) {
-        if (pathField == null) {
-          if (!field.getName().equals(BlobConfig.NAME_BODY)) {
-            collector.addFailure("The schema for the 'blob' format must only contain the 'body' field.",
-                                 String.format("Remove additional field '%s'.", field.getName()))
-              .withOutputSchemaField(field.getName());
-          }
-        } else {
-          if (!field.getName().equals(BlobConfig.NAME_BODY) && !field.getName().equals(pathField)) {
-            collector.addFailure(
-              String.format("The schema for the 'blob' format must only contain the 'body' field and '%s' field.",
-                            pathField), String.format("Remove additional field '%s'.", field.getName()))
-              .withOutputSchemaField(field.getName());
-          }
+        String expectedFields = expectedFieldsList.stream().map(Object::toString)
+                .collect(Collectors.joining(", ", "'", "'"));
+
+        if (expectedFieldsList.contains(field.getName())) {
+          continue;
         }
+
+        collector.addFailure(
+                String.format("The schema for the 'blob' format must only contain the '%s' field%s.",
+                        expectedFields, expectedFields.length() > 1 ? "s" : ""),
+                String.format("Remove additional field '%s'.", field.getName())).withOutputSchemaField(field.getName());
       }
     }
   }
@@ -163,7 +201,17 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
         return null;
       }
       if (Strings.isNullOrEmpty(schema)) {
-        return getDefaultSchema();
+        String lengthFieldResolved = null;
+        String modificationTimeFieldResolved = null;
+
+        // this is required for back compatibility with File-based sources (File, FTP...)
+        try {
+          lengthFieldResolved = lengthField;
+          modificationTimeFieldResolved = modificationTimeField;
+        } catch (NoSuchFieldError e) {
+          LOG.warn("'Length' and 'Modification Time' properties are not supported by plugin.");
+        }
+        return getDefaultSchema(pathField, lengthFieldResolved, modificationTimeFieldResolved);
       }
       try {
         return Schema.parseJson(schema);
@@ -172,11 +220,18 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
       }
     }
 
-    private Schema getDefaultSchema() {
+    private Schema getDefaultSchema(@Nullable String pathField, @Nullable String lengthField,
+                                    @Nullable String modificationTimeField) {
       List<Schema.Field> fields = new ArrayList<>();
       fields.add(Schema.Field.of(NAME_BODY, Schema.of(Schema.Type.BYTES)));
       if (pathField != null && !pathField.isEmpty()) {
         fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+      }
+      if (lengthField != null && !lengthField.isEmpty()) {
+        fields.add(Schema.Field.of(lengthField, Schema.of(Schema.Type.LONG)));
+      }
+      if (modificationTimeField != null && !modificationTimeField.isEmpty()) {
+        fields.add(Schema.Field.of(modificationTimeField, Schema.of(Schema.Type.LONG)));
       }
       return Schema.recordOf("blob", fields);
     }

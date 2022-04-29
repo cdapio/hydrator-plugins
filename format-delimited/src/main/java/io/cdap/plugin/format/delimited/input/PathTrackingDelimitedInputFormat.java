@@ -22,6 +22,7 @@ import com.google.common.collect.AbstractIterator;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.common.SchemaValidator;
+import io.cdap.plugin.format.MetadataField;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -32,6 +33,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -50,38 +52,66 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
     @Nullable String pathField,
     @Nullable Schema schema) {
 
+    return createRecordReader(split, context, pathField, null, schema);
+  }
+
+  @Override
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+    TaskAttemptContext context,
+    @Nullable String pathField,
+    Map<String, MetadataField> metadataFields,
+    @Nullable Schema schema) {
+
     RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
     boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
     boolean enableQuotesValue = context.getConfiguration().getBoolean(ENABLE_QUOTES_VALUE, false);
 
-    return new RecordReader<NullWritable, StructuredRecord.Builder>() {
+    return new DelimitedRecordReader(delegate, schema, delimiter, skipHeader, enableQuotesValue);
+  }
 
-      @Override
-      public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-        delegate.initialize(split, context);
-      }
+  private class DelimitedRecordReader extends RecordReader<NullWritable, StructuredRecord.Builder> {
+    private final RecordReader<LongWritable, Text> delegate;
+    private final Schema schema;
+    private final String delimiter;
+    private final boolean skipHeader;
+    private final boolean enableQuotesValue;
 
-      @Override
-      public boolean nextKeyValue() throws IOException, InterruptedException {
-        if (delegate.nextKeyValue()) {
-          // skip to next if the current record is header
-          if (skipHeader && delegate.getCurrentKey().get() == 0L) {
-            return delegate.nextKeyValue();
-          }
-          return true;
+    private DelimitedRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema, String delimiter,
+                                  boolean skipHeader, boolean enableQuotesValue) {
+      this.delegate = delegate;
+      this.schema = schema;
+      this.delimiter = delimiter;
+      this.skipHeader = skipHeader;
+      this.enableQuotesValue = enableQuotesValue;
+    }
+
+
+    @Override
+    public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      delegate.initialize(split, context);
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      if (delegate.nextKeyValue()) {
+        // skip to next if the current record is header
+        if (skipHeader && delegate.getCurrentKey().get() == 0L) {
+          return delegate.nextKeyValue();
         }
-        return false;
+        return true;
       }
+      return false;
+    }
 
-      @Override
-      public NullWritable getCurrentKey() {
-        return NullWritable.get();
-      }
+    @Override
+    public NullWritable getCurrentKey() {
+      return NullWritable.get();
+    }
 
-      @Override
-      public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
-        String delimitedString = delegate.getCurrentValue().toString();
+    @Override
+    public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
+      String delimitedString = delegate.getCurrentValue().toString();
 
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         Iterator<Schema.Field> fields = schema.getFields().iterator();
@@ -144,10 +174,9 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
         return delegate.getProgress();
       }
 
-      @Override
-      public void close() throws IOException {
-        delegate.close();
-      }
-    };
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
   }
 }

@@ -51,6 +51,14 @@ public class PathTrackingConfig extends PluginConfig {
     "Output field to place the path of the file that the record was read from. "
       + "If not specified, the file path will not be included in output records. "
       + "If specified, the field must exist in the schema and be of type string.";
+  private static final String LENGTH_FIELD_DESC =
+    "Output field to place the length of the file that the record was read from. "
+      + "If not specified, the file length will not be included in output records. "
+      + "If specified, the field must exist in the schema and be of type long.";
+  private static final String MODIFICATION_TIME_FIELD_DESC =
+    "Output field to place the modification time of the file that the record was read from. "
+      + "If not specified, the file modification time will not be included in output records. "
+      + "If specified, the field must exist in the schema and be of type long.";
   private static final String FILENAME_ONLY_DESC =
     "Whether to only use the filename instead of the URI of the file path when a path field is given. "
       + "The default value is false.";
@@ -64,6 +72,10 @@ public class PathTrackingConfig extends PluginConfig {
     fields.put("schema", new PluginPropertyField("schema", SCHEMA_DESC, "string", false, true));
     fields.put("pathField",
                new PluginPropertyField("pathField", PATH_FIELD_DESC, "string", false, true));
+    fields.put("lengthField",
+               new PluginPropertyField("lengthField", LENGTH_FIELD_DESC, "string", false, true));
+    fields.put("modificationTimeField",
+               new PluginPropertyField("modificationTimeField", MODIFICATION_TIME_FIELD_DESC, "string", false, true));
     fields.put("filenameOnly",
                new PluginPropertyField("filenameOnly", FILENAME_ONLY_DESC, "boolean", false, true));
     FIELDS = Collections.unmodifiableMap(fields);
@@ -81,12 +93,32 @@ public class PathTrackingConfig extends PluginConfig {
 
   @Macro
   @Nullable
+  @Description(LENGTH_FIELD_DESC)
+  protected String lengthField;
+
+  @Macro
+  @Nullable
+  @Description(MODIFICATION_TIME_FIELD_DESC)
+  protected String modificationTimeField;
+
+  @Macro
+  @Nullable
   @Description(FILENAME_ONLY_DESC)
   protected Boolean filenameOnly;
 
   @Nullable
   public String getPathField() {
     return pathField;
+  }
+
+  @Nullable
+  public String getLengthField() {
+    return lengthField;
+  }
+
+  @Nullable
+  public String getModificationTimeField() {
+    return modificationTimeField;
   }
 
   public boolean useFilenameOnly() {

@@ -84,66 +84,61 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
     @Description(NAME_SCHEMA)
     public String schema;
 
-  }
+    @Nullable
+    @Override
+    public Schema getSchema() {
+      if (containsMacro("schema")) {
+        return super.getSchema();
+      }
+      if (!Strings.isNullOrEmpty(schema)) {
+        return super.getSchema();
+      }
+      String filePath = getProperties().getProperties().getOrDefault("path", null);
+      if (filePath == null) {
+        return super.getSchema();
+      }
+      try {
+        return getDefaultSchema();
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
+      }
+    }
 
-  @Nullable
-  @Override
-  public Schema getSchema(FormatContext context) {
-    if (conf.containsMacro("schema")) {
-      return super.getSchema(context);
-    }
-    if (!Strings.isNullOrEmpty(conf.schema)) {
-      return super.getSchema(context);
-    }
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    if (filePath == null) {
-      return super.getSchema(context);
-    }
-    try {
-      return getDefaultSchema(context);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Extract schema from file
-   *
-   * @param context {@link FormatContext}
-   * @return {@link Schema}
-   * @throws IOException raised when error occurs during schema extraction
-   */
-  public Schema getDefaultSchema(@Nullable FormatContext context) throws IOException {
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    SeekableInput seekableInput = null;
-    FileReader<GenericRecord> dataFileReader = null;
-    try {
-      Job job = JobUtils.createInstance();
-      Configuration hconf = job.getConfiguration();
-      // set entries here, before FileSystem is used
-      for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
-        hconf.set(entry.getKey(), entry.getValue());
-      }
-      Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.avro", hconf, job);
-      DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
-      seekableInput = new FsInput(file, hconf);
-      dataFileReader = DataFileReader.openReader(seekableInput, dataReader);
-      GenericRecord firstRecord;
-      if (!dataFileReader.hasNext()) {
-        return null;
-      }
-      firstRecord = dataFileReader.next();
-      return new AvroToStructuredTransformer().convertSchema(firstRecord.getSchema());
-    } catch (IOException e) {
-      context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
-    } finally {
-      if (dataFileReader != null) {
-        dataFileReader.close();
-      }
-      if (seekableInput != null) {
-        seekableInput.close();
+    /**
+     * Extract schema from file
+     *
+     * @return {@link Schema}
+     * @throws IOException raised when error occurs during schema extraction
+     */
+    public Schema getDefaultSchema() throws IOException {
+      String filePath = getProperties().getProperties().getOrDefault("path", null);
+      SeekableInput seekableInput = null;
+      FileReader<GenericRecord> dataFileReader = null;
+      try {
+        Job job = JobUtils.createInstance();
+        Configuration hconf = job.getConfiguration();
+        // set entries here, before FileSystem is used
+        for (Map.Entry<String, String> entry : getFileSystemProperties().entrySet()) {
+          hconf.set(entry.getKey(), entry.getValue());
+        }
+        Path file = getFilePathForSchemaGeneration(filePath, ".+\\.avro", hconf, job);
+        DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
+        seekableInput = new FsInput(file, hconf);
+        dataFileReader = DataFileReader.openReader(seekableInput, dataReader);
+        GenericRecord firstRecord;
+        if (!dataFileReader.hasNext()) {
+          return null;
+        }
+        firstRecord = dataFileReader.next();
+        return new AvroToStructuredTransformer().convertSchema(firstRecord.getSchema());
+      } finally {
+        if (dataFileReader != null) {
+          dataFileReader.close();
+        }
+        if (seekableInput != null) {
+          seekableInput.close();
+        }
       }
     }
-    return null;
   }
 }

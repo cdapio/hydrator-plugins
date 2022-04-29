@@ -130,6 +130,8 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     }
 
     validatePathField(collector, schema);
+    validateLengthField(collector, schema);
+    validateModificationTimeField(collector, schema);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
 
@@ -156,6 +158,8 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
     validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
     validatePathField(collector, validatingInputFormat.getSchema(formatContext));
+    validateLengthField(collector, validatingInputFormat.getSchema(formatContext));
+    validateModificationTimeField(collector, validatingInputFormat.getSchema(formatContext));
     collector.getOrThrowException();
 
     Job job = JobUtils.createInstance();
@@ -265,6 +269,53 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
                              "It must be of type 'string'.")
           .withConfigProperty(AbstractFileSourceConfig.PATH_FIELD)
           .withOutputSchemaField(schemaPathField.getName());
+      }
+    }
+  }
+
+  private void validateLengthField(FailureCollector collector, Schema schema) {
+    String lengthField = config.getLengthField();
+    if (lengthField != null && schema != null) {
+      Schema.Field schemaLengthField = schema.getField(lengthField);
+      if (schemaLengthField == null) {
+        collector.addFailure(String.format("Length field '%s' must exist in input schema.", lengthField), null)
+          .withConfigProperty(AbstractFileSourceConfig.LENGTH_FIELD);
+        throw collector.getOrThrowException();
+      }
+      Schema lengthFieldSchema = schemaLengthField.getSchema();
+      Schema nonNullableSchema = lengthFieldSchema.isNullable() ? lengthFieldSchema.getNonNullable() :
+              lengthFieldSchema;
+
+      if (nonNullableSchema.getType() != Schema.Type.LONG) {
+        collector.addFailure(String.format("Length field '%s' is of unsupported type '%s'.", lengthField,
+                                           nonNullableSchema.getDisplayName()),
+                             "It must be of type 'long'.")
+          .withConfigProperty(AbstractFileSourceConfig.LENGTH_FIELD)
+          .withOutputSchemaField(schemaLengthField.getName());
+      }
+    }
+  }
+
+  private void validateModificationTimeField(FailureCollector collector, Schema schema) {
+    String modificationTimeField = config.getModificationTimeField();
+    if (modificationTimeField != null && schema != null) {
+      Schema.Field schemaModificationTimeField = schema.getField(modificationTimeField);
+      if (schemaModificationTimeField == null) {
+        collector.addFailure(String.format("Modification time field '%s' must exist in input schema.",
+                        modificationTimeField), null)
+          .withConfigProperty(AbstractFileSourceConfig.MODIFICATION_TIME_FIELD);
+        throw collector.getOrThrowException();
+      }
+      Schema modificationTimeFieldSchema = schemaModificationTimeField.getSchema();
+      Schema nonNullableSchema = modificationTimeFieldSchema.isNullable() ?
+              modificationTimeFieldSchema.getNonNullable() : modificationTimeFieldSchema;
+
+      if (nonNullableSchema.getType() != Schema.Type.LONG) {
+        collector.addFailure(String.format("Modification time field '%s' is of unsupported type '%s'.",
+                                modificationTimeField, nonNullableSchema.getDisplayName()),
+                             "It must be of type 'long'.")
+          .withConfigProperty(AbstractFileSourceConfig.MODIFICATION_TIME_FIELD)
+          .withOutputSchemaField(schemaModificationTimeField.getName());
       }
     }
   }

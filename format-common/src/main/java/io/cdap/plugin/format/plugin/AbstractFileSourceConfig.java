@@ -84,6 +84,22 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
     + "If specified, the field must exist in the output schema as a string.")
   private String pathField;
 
+  @Name(LENGTH_FIELD)
+  @Macro
+  @Nullable
+  @Description("Output field to place the length of the file that the record was read from. "
+    + "If not specified, the file length will not be included in output records. "
+    + "If specified, the field must exist in the output schema as a long.")
+  private String lengthField;
+
+  @Name(MODIFICATION_TIME_FIELD)
+  @Macro
+  @Nullable
+  @Description("Output field to place the modification time of the file that the record was read from. "
+    + "If not specified, the file modification time will not be included in output records. "
+    + "If specified, the field must exist in the output schema as a long.")
+  private String modificationTimeField;
+
   @Macro
   @Nullable
   @Description("Whether to only use the filename instead of the URI of the file path when a path field is given. "
@@ -212,6 +228,18 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Override
   public String getPathField() {
     return pathField;
+  }
+
+  @Nullable
+  @Override
+  public String getLengthField() {
+    return lengthField;
+  }
+
+  @Override
+  @Nullable
+  public String getModificationTimeField() {
+    return modificationTimeField;
   }
 
   @Override

@@ -18,6 +18,8 @@ package io.cdap.plugin.format.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.format.MetadataField;
+import io.cdap.plugin.format.MetadataRecordReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -30,6 +32,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -64,14 +68,15 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
     FileSplit fileSplit = (FileSplit) split;
     Configuration hConf = context.getConfiguration();
     String pathField = hConf.get(PATH_FIELD);
+    Map<String, MetadataField> metadataFields = extractMetadataFields(hConf);
     boolean userFilenameOnly = hConf.getBoolean(FILENAME_ONLY, false);
     String path = userFilenameOnly ? fileSplit.getPath().getName() : fileSplit.getPath().toUri().toString();
     String schema = hConf.get(SCHEMA);
     Schema parsedSchema = schema == null ? null : Schema.parseJson(schema);
 
-    RecordReader<NullWritable, StructuredRecord.Builder> delegate = createRecordReader(fileSplit, context,
-                                                                                       pathField, parsedSchema);
-    return new TrackingRecordReader(delegate, pathField, path);
+    RecordReader<NullWritable, StructuredRecord.Builder> delegate = createRecordReader(fileSplit, context, pathField,
+            metadataFields, parsedSchema);
+    return new TrackingRecordReader(delegate, pathField, metadataFields, path);
   }
 
   public RecordReader<LongWritable, Text> getDefaultRecordReaderDelegate(InputSplit split,
@@ -88,27 +93,50 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
     return delegate;
   }
 
+  /**
+   * Returns mapping "Field name" - "MetadataField enum"
+   * @param hConf
+   * @return
+   */
+  private Map<String, MetadataField> extractMetadataFields(Configuration hConf) {
+    Map<String, MetadataField> metadataFields = new HashMap<>();
+    for (MetadataField metadataField : MetadataField.values()) {
+      String configValue = hConf.get(metadataField.getConfName());
+      if (configValue != null) {
+        metadataFields.put(configValue, MetadataField.getMetadataField(metadataField.name()));
+      }
+    }
+    return metadataFields;
+  }
+
   protected abstract RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
-    FileSplit split, TaskAttemptContext context,
-    @Nullable String pathField, @Nullable Schema schema) throws IOException, InterruptedException;
+          FileSplit split, TaskAttemptContext context, @Nullable String pathField, @Nullable Schema schema)
+          throws IOException, InterruptedException;
+
+  protected abstract RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
+    FileSplit split, TaskAttemptContext context, @Nullable String pathField, Map<String, MetadataField> metadataFields,
+    @Nullable Schema schema) throws IOException, InterruptedException;
 
   /**
    * Supports adding a field to each record that contains the path of the file the record was read from.
    */
-  static class TrackingRecordReader extends RecordReader<NullWritable, StructuredRecord> {
+  static class TrackingRecordReader extends MetadataRecordReader<NullWritable, StructuredRecord> {
     private final RecordReader<NullWritable, StructuredRecord.Builder> delegate;
+    private final Map<String, MetadataField> metadataFields;
     private final String pathField;
     private final String path;
 
     TrackingRecordReader(RecordReader<NullWritable, StructuredRecord.Builder> delegate,
-                         @Nullable String pathField, String path) {
+                         @Nullable String pathField, Map<String, MetadataField> metadataFields, String path) {
       this.delegate = delegate;
       this.pathField = pathField;
+      this.metadataFields = metadataFields;
       this.path = path;
     }
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      super.initialize(split, context);
       delegate.initialize(split, context);
     }
 
@@ -122,6 +150,9 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
       StructuredRecord.Builder recordBuilder = delegate.getCurrentValue();
       if (pathField != null) {
         recordBuilder.set(pathField, path);
+      }
+      for (String fieldName : metadataFields.keySet()) {
+        populateMetadata(fieldName, metadataFields.get(fieldName), recordBuilder);
       }
       return recordBuilder.build();
     }

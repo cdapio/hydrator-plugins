@@ -29,13 +29,18 @@ import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -45,6 +50,8 @@ import javax.annotation.Nullable;
 @Name(TextInputFormatProvider.NAME)
 @Description(TextInputFormatProvider.DESC)
 public class TextInputFormatProvider extends PathTrackingInputFormatProvider<TextInputFormatProvider.TextConfig> {
+  private static final Logger LOG = LoggerFactory.getLogger(PathTrackingInputFormatProvider.class);
+
   static final String NAME = "text";
   static final String DESC = "Plugin for reading files in text format.";
   public static final PluginClass PLUGIN_CLASS =
@@ -69,13 +76,24 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
       return;
     }
 
-    String pathField = conf.getPathField();
+    List<String> fieldsToCheck = new ArrayList<>();
+    fieldsToCheck.add(TextConfig.NAME_BODY);
+    fieldsToCheck.add(TextConfig.NAME_OFFSET);
+    fieldsToCheck.add(conf.getPathField());
+    try {
+      fieldsToCheck.add(conf.getLengthField());
+      fieldsToCheck.add(conf.getModificationTimeField());
+    } catch (NoSuchMethodError e) {
+      LOG.warn("'Length' and 'Modification Time' properties are not supported by plugin.");
+    }
     Schema schema = conf.getSchema();
 
     // text must contain 'body' as type 'string'.
     // it can optionally contain a 'offset' field of type 'long'
     // it can optionally contain a path field of type 'string'
-    Schema.Field offsetField = schema.getField("offset");
+    // it can optionally contain a length field of type 'long'
+    // it can optionally contain a modificationTime field of type 'long'
+    Schema.Field offsetField = schema.getField(TextConfig.NAME_OFFSET);
     if (offsetField != null) {
       Schema offsetSchema = offsetField.getSchema();
       Schema.Type offsetType = offsetSchema.isNullable() ? offsetSchema.getNonNullable().getType() :
@@ -86,45 +104,35 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
       }
     }
 
-    Schema.Field bodyField = schema.getField("body");
+    Schema.Field bodyField = schema.getField(TextConfig.NAME_BODY);
     if (bodyField == null) {
-      throw new IllegalArgumentException("The schema for the 'text' format must have a field named 'body'");
+      throw new IllegalArgumentException(
+        String.format("The schema for the 'text' format must have a field named '%s'", TextConfig.NAME_BODY));
     }
     Schema bodySchema = bodyField.getSchema();
     Schema.Type bodyType = bodySchema.isNullable() ? bodySchema.getNonNullable().getType() : bodySchema.getType();
     if (bodyType != Schema.Type.STRING) {
-      throw new IllegalArgumentException(String.format("The 'body' field must be of type 'string', but found '%s'",
-                                                       bodyType.name().toLowerCase()));
+      throw new IllegalArgumentException(String.format("The '%s' field must be of type 'string', but found '%s'",
+        TextConfig.NAME_BODY, bodyType.name().toLowerCase()));
     }
 
-    // fields should be body (required), offset (optional), [pathfield] (optional)
-    boolean expectOffset = schema.getField("offset") != null;
-    boolean expectPath = pathField != null;
-    int numExpectedFields = 1;
-    if (expectOffset) {
-      numExpectedFields++;
-    }
-    if (expectPath) {
-      numExpectedFields++;
-    }
-    int maxExpectedFields = pathField == null ? 2 : 3;
+    // fields should be body (required), offset (optional), [pathfield, length, modificationTime] (optional)
+    List<String> expectedFieldsList = fieldsToCheck
+      .stream()
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+
+    int numExpectedFields = expectedFieldsList.size();
     int numFields = schema.getFields().size();
     if (numFields > numExpectedFields) {
-      String expectedFields;
-      if (expectOffset && expectPath) {
-        expectedFields = String.format("'offset', 'body', and '%s' fields", pathField);
-      } else if (expectOffset) {
-        expectedFields = "'offset' and 'body' fields";
-      } else if (expectPath) {
-        expectedFields = String.format("'body' and '%s' fields", pathField);
-      } else {
-        expectedFields = "'body' field";
-      }
+      String expectedFields = expectedFieldsList.stream().map(Object::toString)
+              .collect(Collectors.joining("', '", "'", "'"));
 
-      int numExtraFields = numFields - maxExpectedFields;
+      int numExtraFields = numFields - numExpectedFields;
       throw new IllegalArgumentException(
-        String.format("The schema for the 'text' format must only contain the %s, but found %d other field%s",
-                      expectedFields, numExtraFields, numExtraFields > 1 ? "s" : ""));
+        String.format("The schema for the 'text' format must only contain the %s field%s, but found %d other field%s",
+                expectedFields, numExpectedFields > 1 ? "s" : "", numExtraFields,
+                numExtraFields > 1 ? "s" : ""));
     }
   }
 
@@ -144,10 +152,21 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
       throw collector.getOrThrowException();
     }
 
-    String pathField = conf.getPathField();
+    List<String> fieldsToCheck = new ArrayList<>();
+    fieldsToCheck.add(TextConfig.NAME_BODY);
+    fieldsToCheck.add(TextConfig.NAME_OFFSET);
+    fieldsToCheck.add(conf.getPathField());
+    try {
+      fieldsToCheck.add(conf.getLengthField());
+      fieldsToCheck.add(conf.getModificationTimeField());
+    } catch (NoSuchMethodError e) {
+      LOG.warn("'Length' and 'Modification Time' properties are not supported by plugin.");
+    }
     // text must contain 'body' as type 'string'.
     // it can optionally contain a 'offset' field of type 'long'
     // it can optionally contain a path field of type 'string'
+    // it can optionally contain a length field of type 'long'
+    // it can optionally contain a modificationTime field of type 'long'
     Schema.Field offsetField = schema.getField(TextConfig.NAME_OFFSET);
     if (offsetField != null) {
       Schema offsetSchema = offsetField.getSchema();
@@ -162,62 +181,58 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
 
     Schema.Field bodyField = schema.getField(TextConfig.NAME_BODY);
     if (bodyField == null) {
-      collector.addFailure("The schema for the 'text' format must have a field named 'body'.", null)
+      collector.addFailure(
+        String.format("The schema for the 'text' format must have a field named '%s'.", TextConfig.NAME_BODY), null)
         .withConfigProperty(TextConfig.NAME_SCHEMA);
     } else {
       Schema bodySchema = bodyField.getSchema();
       bodySchema = bodySchema.isNullable() ? bodySchema.getNonNullable() : bodySchema;
       Schema.Type bodyType = bodySchema.getType();
       if (bodyType != Schema.Type.STRING) {
-        collector.addFailure(
-          String.format("The 'body' field is of unexpected type '%s'.'", bodySchema.getDisplayName()),
+        collector.addFailure(String.format("The '%s' field is of unexpected type '%s'.'",
+            TextConfig.NAME_BODY, bodySchema.getDisplayName()),
           "Change type to 'string'.").withOutputSchemaField(TextConfig.NAME_BODY);
       }
     }
 
     // fields should be body (required), offset (optional), [pathfield] (optional)
-    boolean expectOffset = schema.getField(TextConfig.NAME_OFFSET) != null;
-    boolean expectPath = pathField != null;
-    int numExpectedFields = 1;
-    if (expectOffset) {
-      numExpectedFields++;
-    }
-    if (expectPath) {
-      numExpectedFields++;
-    }
+    List<String> expectedFieldsList = fieldsToCheck
+      .stream()
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
 
+    int numExpectedFields = expectedFieldsList.size();
     int numFields = schema.getFields().size();
     if (numFields > numExpectedFields) {
       for (Schema.Field field : schema.getFields()) {
-        String expectedFields;
-        if (expectOffset && expectPath) {
-          expectedFields = String.format("'offset', 'body', and '%s' fields", pathField);
-        } else if (expectOffset) {
-          expectedFields = "'offset' and 'body' fields";
-        } else if (expectPath) {
-          expectedFields = String.format("'body' and '%s' fields", pathField);
-        } else {
-          expectedFields = "'body' field";
-        }
+        String expectedFields = expectedFieldsList.stream().map(Object::toString)
+                .collect(Collectors.joining(", ", "'", "'"));
 
-        if (field.getName().equals(TextConfig.NAME_BODY) || (expectPath && field.getName().equals(pathField))
-          || field.getName().equals(TextConfig.NAME_OFFSET)) {
+        if (expectedFieldsList.contains(field.getName())) {
           continue;
         }
 
         collector.addFailure(
-          String.format("The schema for the 'text' format must only contain the '%s'.", expectedFields),
+          String.format("The schema for the 'text' format must only contain the '%s' field%s.",
+                  expectedFields, expectedFields.length() > 1 ? "s" : ""),
           String.format("Remove additional field '%s'.", field.getName())).withOutputSchemaField(field.getName());
       }
     }
   }
 
-  public static Schema getDefaultSchema(@Nullable String pathField) {
+  public static Schema getDefaultSchema(@Nullable String pathField, @Nullable String lengthField,
+                                        @Nullable String modificationTimeField) {
     List<Schema.Field> fields = new ArrayList<>();
-    fields.add(Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
-    fields.add(Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
+    fields.add(Schema.Field.of(TextConfig.NAME_OFFSET, Schema.of(Schema.Type.LONG)));
+    fields.add(Schema.Field.of(TextConfig.NAME_BODY, Schema.of(Schema.Type.STRING)));
     if (pathField != null && !pathField.isEmpty()) {
       fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+    }
+    if (lengthField != null && !lengthField.isEmpty()) {
+      fields.add(Schema.Field.of(lengthField, Schema.of(Schema.Type.LONG)));
+    }
+    if (modificationTimeField != null && !modificationTimeField.isEmpty()) {
+      fields.add(Schema.Field.of(modificationTimeField, Schema.of(Schema.Type.LONG)));
     }
     return Schema.recordOf("textfile", fields);
   }
@@ -266,7 +281,17 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
         return null;
       }
       if (Strings.isNullOrEmpty(schema)) {
-        return getDefaultSchema(pathField);
+        String lengthFieldResolved = null;
+        String modificationTimeFieldResolved = null;
+
+        // this is required for back compatibility with File-based sources (File, FTP...)
+        try {
+          lengthFieldResolved = lengthField;
+          modificationTimeFieldResolved = modificationTimeField;
+        } catch (NoSuchFieldError e) {
+          LOG.warn("'Length' and 'Modification Time' properties are not supported by plugin.");
+        }
+        return getDefaultSchema(pathField, lengthFieldResolved, modificationTimeFieldResolved);
       }
       try {
         return Schema.parseJson(schema);

@@ -18,6 +18,8 @@ package io.cdap.plugin.format.parquet.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.format.MetadataField;
+import io.cdap.plugin.format.MetadataRecordReader;
 import io.cdap.plugin.format.avro.AvroToStructuredTransformer;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.avro.generic.GenericRecord;
@@ -30,7 +32,9 @@ import org.apache.parquet.avro.AvroParquetInputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -46,28 +50,46 @@ public class PathTrackingParquetInputFormat extends PathTrackingInputFormat {
     throws IOException, InterruptedException {
     RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
       .createRecordReader(split, context);
-    return new ParquetRecordReader(delegate, schema, pathField);
+    return new ParquetRecordReader(delegate, schema, pathField, null);
+  }
+
+
+
+  @Override
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    Map<String, MetadataField>
+                                                                                            metadataFields,
+                                                                                    @Nullable Schema schema)
+          throws IOException, InterruptedException {
+    RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
+            .createRecordReader(split, context);
+    return new ParquetRecordReader(delegate, schema, pathField, metadataFields);
   }
 
   /**
    * Transforms GenericRecords into StructuredRecord.
    */
-  static class ParquetRecordReader extends RecordReader<NullWritable, StructuredRecord.Builder> {
+  static class ParquetRecordReader extends MetadataRecordReader<NullWritable, StructuredRecord.Builder> {
     private final RecordReader<Void, GenericRecord> delegate;
     private final AvroToStructuredTransformer recordTransformer;
     private final String pathField;
+    private final Map<String, MetadataField> metadataFields;
     private Schema schema;
 
     ParquetRecordReader(RecordReader<Void, GenericRecord> delegate, @Nullable Schema schema,
-                        @Nullable String pathField) {
+                        @Nullable String pathField, @Nullable Map<String, MetadataField> metadataFields) {
       this.delegate = delegate;
       this.schema = schema;
       this.pathField = pathField;
+      this.metadataFields = metadataFields == null ? Collections.EMPTY_MAP : metadataFields;
       this.recordTransformer = new AvroToStructuredTransformer();
     }
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      super.initialize(split, context);
       delegate.initialize(split, context);
     }
 
@@ -87,18 +109,27 @@ public class PathTrackingParquetInputFormat extends PathTrackingInputFormat {
       // if schema is null, but we're still able to read, that means the file contains the schema information
       // set the schema based on the schema of the record
       if (schema == null) {
-        if (pathField == null) {
+        if (pathField == null && metadataFields.isEmpty()) {
           schema = Schema.parseJson(genericRecord.getSchema().toString());
         } else {
           // if there is a path field, add the path as a field in the schema
           Schema schemaWithoutPath = Schema.parseJson(genericRecord.getSchema().toString());
           List<Schema.Field> fields = new ArrayList<>(schemaWithoutPath.getFields().size() + 1);
           fields.addAll(schemaWithoutPath.getFields());
-          fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+          if (pathField != null) {
+            fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+          }
+          if (!metadataFields.isEmpty()) {
+            for (String fieldName : metadataFields.keySet()) {
+              fields.add(Schema.Field.of(fieldName, Schema.of(metadataFields.get(fieldName).getSchemaType())));
+            }
+          }
           schema = Schema.recordOf(schemaWithoutPath.getRecordName(), fields);
         }
       }
-      return recordTransformer.transform(genericRecord, schema, pathField);
+      List<String> fieldsToExclude = new ArrayList<>(metadataFields.keySet());
+      fieldsToExclude.add(pathField);
+      return recordTransformer.transform(genericRecord, schema, fieldsToExclude);
     }
 
     @Override

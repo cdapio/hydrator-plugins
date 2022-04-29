@@ -60,10 +60,13 @@ public enum FileFormat {
    * not require a specific schema. Should only be called for formats that can read.
    *
    * @param pathField the field of the file path, if it exists.
+   * @param lengthField the field of the file length, if it exists.
+   * @param modificationTimeField the field of the file length, if it exists.
    * @return the schema required by the format, if it exists
    */
   @Nullable
-  public Schema getSchema(@Nullable String pathField) {
+  public Schema getSchema(@Nullable String pathField, @Nullable String lengthField,
+                          @Nullable String modificationTimeField) {
     // TODO: move into the plugin formats once it is possible to instantiate them in the get schema methods.
     List<Schema.Field> fields = new ArrayList<>(3);
     switch (this) {
@@ -73,11 +76,23 @@ public enum FileFormat {
         if (pathField != null) {
           fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
         }
+        if (lengthField != null) {
+          fields.add(Schema.Field.of(lengthField, Schema.of(Schema.Type.LONG)));
+        }
+        if (modificationTimeField != null) {
+          fields.add(Schema.Field.of(modificationTimeField, Schema.of(Schema.Type.LONG)));
+        }
         return Schema.recordOf("text", fields);
       case BLOB:
         fields.add(Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
         if (pathField != null) {
           fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+        }
+        if (lengthField != null) {
+          fields.add(Schema.Field.of(lengthField, Schema.of(Schema.Type.LONG)));
+        }
+        if (modificationTimeField != null) {
+          fields.add(Schema.Field.of(modificationTimeField, Schema.of(Schema.Type.LONG)));
         }
         return Schema.recordOf("text", fields);
       default:
