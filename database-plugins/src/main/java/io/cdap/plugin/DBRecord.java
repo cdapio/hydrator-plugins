@@ -192,7 +192,9 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
     } else if (o instanceof BigInteger) {
       Schema schema = field.getSchema();
       BigInteger bigint = ((BigInteger) o);
-
+      if (schema.isNullable()) {
+        schema = schema.getNonNullable();
+      }
       if (schema.getType() == Schema.Type.LONG) {
         Long int2long = bigint.longValueExact();
         bytesRead += Long.BYTES;
