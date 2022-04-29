@@ -20,7 +20,7 @@
           "name": "delimiter",
           "widget-attributes": {
             "placeholder": "Delimiter if the format is 'delimited'"
-          },
+          }
         },
         {
           "widget-type": "toggle",
