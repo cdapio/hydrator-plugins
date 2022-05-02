@@ -27,8 +27,11 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
+import io.cdap.plugin.common.ConfigUtil;
 import io.cdap.plugin.common.batch.action.ConditionConfig;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 import javax.annotation.Nullable;
 import javax.mail.Authenticator;
@@ -79,6 +82,9 @@ public class EmailAction extends PostAction {
 
     Properties javaMailProperties = new Properties();
     String protocolForTransport = config.protocol;
+    Map<String, String> userJavaMailProperties = Strings.isNullOrEmpty(config.configurableJavaMailProperties) ?
+            Collections.emptyMap() : ConfigUtil.parseKeyValueConfig(config.configurableJavaMailProperties,
+            ",", "=");
     javaMailProperties.put("mail.smtp.host", config.host);
     javaMailProperties.put("mail.smtp.port", config.port);
     if (!(Strings.isNullOrEmpty(config.username))) {
@@ -92,13 +98,26 @@ public class EmailAction extends PostAction {
     }
     if ("SMTPS".equalsIgnoreCase(config.protocol)) {
       javaMailProperties.put("mail.smtp.ssl.enable", true);
+      if (!userJavaMailProperties.containsKey("mail.smtps.ssl.protocols")) {
+        javaMailProperties.put("mail.smtps.ssl.protocols", "TLSv1.2 TLSv1.3");
+      }
     }
     if ("TLS".equalsIgnoreCase(config.protocol)) {
-      javaMailProperties.put("mail.smtp.starttls.enable", "true");
-      javaMailProperties.put("mail.smtp.ssl.trust", config.host);
+      javaMailProperties.put("mail.smtp.starttls.enable", true);
+      if (!userJavaMailProperties.containsKey("mail.smtp.starttls.enable")) {
+        javaMailProperties.put("mail.smtp.starttls.enable", "true");
+      }
+      if (!userJavaMailProperties.containsKey("mail.smtp.ssl.trust")) {
+        javaMailProperties.put("mail.smtp.ssl.trust", config.host);
+      }
+      if (!userJavaMailProperties.containsKey("mail.smtp.ssl.protocols")) {
+        javaMailProperties.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
+      }
       protocolForTransport = "smtp"; // protocol is smtp not tls.
     }
-
+     if (!userJavaMailProperties.isEmpty()) {
+         javaMailProperties.putAll(userJavaMailProperties);
+     }
     Session session = Session.getInstance(javaMailProperties, authenticator);
     session.setDebug(true);
 
@@ -192,6 +211,12 @@ public class EmailAction extends PostAction {
     @Description("Whether to include the contents of the workflow token in the email message. Defaults to false.")
     @Macro
     private Boolean includeWorkflowToken;
+    
+    @Nullable
+    @Description("Optional property that can be used to pass specific set of javamail properties. The syntax " +
+            "is '<property_name>:<value>'. If this property is not set, default values are chosen.")
+    @Macro
+    private String configurableJavaMailProperties;
 
     public Config() {
       host = "localhost";
