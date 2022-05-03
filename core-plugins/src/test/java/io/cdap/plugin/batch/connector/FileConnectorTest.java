@@ -64,10 +64,11 @@ public class FileConnectorTest {
   private static final String SAMPLE_SKIP_HEADER_KEY = "skipHeader";
   private static final String SAMPLE_ENABLE_QUOTED_VALUES_KEY = "enableQuotedValues";
   private static final String PLUGIN_NAME_PROPERTY_KEY = "_pluginName";
+  private static final String SAMPLE_NAME_SCHEMA = "schema";
 
   static final List<String> SAMPLE_FIELD_NAMES = Arrays.asList(SAMPLE_FORMAT_KEY, SAMPLE_DELIMITER_KEY,
                                                                SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY,
-                                                               SAMPLE_ENABLE_QUOTED_VALUES_KEY);
+                                                               SAMPLE_ENABLE_QUOTED_VALUES_KEY, SAMPLE_NAME_SCHEMA);
 
 
   private static final Set<BrowseEntityTypeInfo> SAMPLE_PROPERTIES = new HashSet<>();
