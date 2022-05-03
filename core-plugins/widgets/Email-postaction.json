@@ -79,6 +79,16 @@
             ],
             "default": "false"
           }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Configurable Java Mail Properties",
+          "name": "configurableJavaMailProperties",
+          "widget-attributes" : {
+            "placeholder": "Java Mail Properties.",
+            "delimiter": ",",
+            "kv-delimiter": "="
+          }
         }
       ]
     }
