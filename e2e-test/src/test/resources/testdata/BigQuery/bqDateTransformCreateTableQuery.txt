@@ -1,0 +1,2 @@
+create table `DATASET.TABLE_NAME` ( transaction_uid STRING,
+transaction_date INT64, date_of_admission STRING, date_of_joining STRING)

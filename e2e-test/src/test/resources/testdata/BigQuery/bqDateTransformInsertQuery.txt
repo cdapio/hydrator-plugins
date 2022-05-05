@@ -1,0 +1,2 @@
+insert into `DATASET.TABLE_NAME` (transaction_uid, transaction_date, date_of_admission, date_of_joining  ) values
+('10',10111981,'2019-07-07','2021-09-06'), ('11',10111981,'2019-08-07','2020-09-06'), ('12',10111981,'2001-07-07','2021-09-06'),('13',10111981,'2010-07-07','2004-09-06');
