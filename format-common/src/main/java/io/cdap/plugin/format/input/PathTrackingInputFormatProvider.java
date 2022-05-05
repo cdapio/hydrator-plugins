@@ -20,8 +20,14 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
+import io.cdap.plugin.format.MetadataField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -31,6 +37,7 @@ import javax.annotation.Nullable;
  * @param <T> type of plugin config
  */
 public abstract class PathTrackingInputFormatProvider<T extends PathTrackingConfig> implements ValidatingInputFormat {
+  private static final Logger LOG = LoggerFactory.getLogger(PathTrackingInputFormatProvider.class);
   private static final String NAME_SCHEMA = "schema";
   protected T conf;
 
@@ -44,6 +51,12 @@ public abstract class PathTrackingInputFormatProvider<T extends PathTrackingConf
     if (conf.getPathField() != null) {
       properties.put(PathTrackingInputFormat.PATH_FIELD, conf.getPathField());
       properties.put(PathTrackingInputFormat.FILENAME_ONLY, String.valueOf(conf.useFilenameOnly()));
+    }
+    if (conf.getLengthField() != null) {
+      properties.put(MetadataField.FILE_LENGTH.getConfName(), conf.getLengthField());
+    }
+    if (conf.getModificationTimeField() != null) {
+      properties.put(MetadataField.FILE_MODIFICATION_TIME.getConfName(), conf.getModificationTimeField());
     }
     if (conf.getSchema() != null) {
       properties.put(NAME_SCHEMA, conf.getSchema().toString());
@@ -72,11 +85,54 @@ public abstract class PathTrackingInputFormatProvider<T extends PathTrackingConf
   public Schema getSchema(FormatContext context) {
     FailureCollector collector = context.getFailureCollector();
     try {
-      return conf.getSchema();
+      Schema formatSchema = conf.getSchema();
+      if (formatSchema == null) {
+        return null;
+      }
+      String lengthFieldResolved = null;
+      String modificationTimeFieldResolved = null;
+
+      // this is required for back compatibility with File-based sources (File, FTP...)
+      try {
+        lengthFieldResolved = conf.lengthField;
+        modificationTimeFieldResolved = conf.modificationTimeField;
+      } catch (NoSuchFieldError e) {
+        LOG.warn("A modern PathTrackingConfig is used with old plugin.");
+      }
+
+      List<Schema.Field> fields = new ArrayList<>(formatSchema.getFields());
+
+      extendSchemaWithMetadataField(fields, conf.pathField, Schema.Type.STRING);
+      extendSchemaWithMetadataField(fields, lengthFieldResolved, Schema.Type.LONG);
+      extendSchemaWithMetadataField(fields, modificationTimeFieldResolved, Schema.Type.LONG);
+
+      return Schema.recordOf("record", fields);
     } catch (Exception e) {
       collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA).withStacktrace(e.getStackTrace());
     }
     throw collector.getOrThrowException();
+  }
+
+  private void extendSchemaWithMetadataField(List<Schema.Field> fields, String fieldName, Schema.Type type) {
+    if (fieldName != null && !fieldName.isEmpty()) {
+      boolean addField = true;
+
+      Iterator<Schema.Field> i = fields.iterator();
+      while (i.hasNext()) {
+        Schema.Field field = i.next();
+        if (field.getName().equals(fieldName)) {
+          if (field.getSchema().equals(Schema.of(type))) {
+            addField = false;
+          } else {
+            i.remove();
+          }
+        }
+      }
+
+      if (addField) {
+        fields.add(Schema.Field.of(fieldName, Schema.of(type)));
+      }
+    }
   }
 
   /**

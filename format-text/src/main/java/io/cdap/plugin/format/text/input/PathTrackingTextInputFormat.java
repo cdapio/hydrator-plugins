@@ -18,6 +18,8 @@ package io.cdap.plugin.format.text.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.format.MetadataField;
+import io.cdap.plugin.format.MetadataRecordReader;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -26,9 +28,9 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -57,10 +59,23 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
     return new TextRecordReader(delegate, schema, emittedHeader, header, skipHeader);
   }
 
+  @Override
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    Map<String, MetadataField>
+                                                                                      metadataFields,
+                                                                                    Schema schema) {
+    RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+    String header = context.getConfiguration().get(CombineTextInputFormat.HEADER);
+    boolean skipHeader = context.getConfiguration().getBoolean(CombineTextInputFormat.SKIP_HEADER, false);
+    return new TextRecordReader(delegate, schema, emittedHeader, header, skipHeader);
+  }
+
   /**
    * Text record reader
    */
-  static class TextRecordReader extends RecordReader<NullWritable, StructuredRecord.Builder> {
+  static class TextRecordReader extends MetadataRecordReader<NullWritable, StructuredRecord.Builder> {
     private final RecordReader<LongWritable, Text> delegate;
     private final Schema schema;
     private final String header;
@@ -80,6 +95,7 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      super.initialize(split, context);
       delegate.initialize(split, context);
     }
 

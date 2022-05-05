@@ -20,6 +20,7 @@ import com.google.common.io.ByteStreams;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.common.batch.JobUtils;
+import io.cdap.plugin.format.MetadataField;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -33,6 +34,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -60,56 +62,82 @@ public class PathTrackingBlobInputFormat extends PathTrackingInputFormat {
     if (split.getLength() > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("Blob format cannot be used with files larger than 2GB");
     }
-    return new RecordReader<NullWritable, StructuredRecord.Builder>() {
-      boolean hasNext;
-      byte[] val;
+    return new BlobRecordReaded(split, context, schema);
 
-      @Override
-      public void initialize(InputSplit split, TaskAttemptContext context) {
-        hasNext = true;
-        val = null;
+  }
+
+  @Override
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    Map<String, MetadataField>
+                                                                                              metadataFields,
+                                                                                    @Nullable Schema schema) {
+    if (split.getLength() > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Blob format cannot be used with files larger than 2GB");
+    }
+    return new BlobRecordReaded(split, context, schema);
+
+  }
+
+  private class BlobRecordReaded extends RecordReader<NullWritable, StructuredRecord.Builder> {
+    private final FileSplit split;
+    private final TaskAttemptContext context;
+    private final Schema schema;
+
+    boolean hasNext;
+    byte[] val;
+
+    private BlobRecordReaded(FileSplit split, TaskAttemptContext context, Schema schema) {
+      this.split = split;
+      this.context = context;
+      this.schema = schema;
+    }
+
+    @Override
+    public void initialize(InputSplit split, TaskAttemptContext context) {
+      hasNext = true;
+      val = null;
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException {
+      if (!hasNext) {
+        return false;
+      }
+      hasNext = false;
+      if (split.getLength() == 0) {
+        return false;
       }
 
-      @Override
-      public boolean nextKeyValue() throws IOException {
-        if (!hasNext) {
-          return false;
-        }
-        hasNext = false;
-        if (split.getLength() == 0) {
-          return false;
-        }
-
-        Path path = split.getPath();
-        FileSystem fs = path.getFileSystem(context.getConfiguration());
-        try (FSDataInputStream input = fs.open(path)) {
-          val = new byte[(int) split.getLength()];
-          ByteStreams.readFully(input, val);
-        }
-        return true;
+      Path path = split.getPath();
+      FileSystem fs = path.getFileSystem(context.getConfiguration());
+      try (FSDataInputStream input = fs.open(path)) {
+        val = new byte[(int) split.getLength()];
+        ByteStreams.readFully(input, val);
       }
+      return true;
+    }
 
-      @Override
-      public NullWritable getCurrentKey() {
-        return NullWritable.get();
-      }
+    @Override
+    public NullWritable getCurrentKey() {
+      return NullWritable.get();
+    }
 
-      @Override
-      public StructuredRecord.Builder getCurrentValue() {
-        String fieldName = schema.getFields().iterator().next().getName();
-        return StructuredRecord.builder(schema).set(fieldName, val);
-      }
+    @Override
+    public StructuredRecord.Builder getCurrentValue() {
+      String fieldName = schema.getFields().iterator().next().getName();
+      return StructuredRecord.builder(schema).set(fieldName, val);
+    }
 
-      @Override
-      public float getProgress() {
-        return 0.0f;
-      }
+    @Override
+    public float getProgress() {
+      return 0.0f;
+    }
 
-      @Override
-      public void close() {
-        // no-op
-      }
-    };
-
+    @Override
+    public void close() {
+      // no-op
+    }
   }
 }

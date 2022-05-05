@@ -209,6 +209,18 @@ public class FTPBatchSource extends AbstractFileSource {
       return null;
     }
 
+    @Nullable
+    @Override
+    public String getLengthField() {
+      return null;
+    }
+
+    @Nullable
+    @Override
+    public String getModificationTimeField() {
+      return null;
+    }
+
     @Override
     public boolean useFilenameAsPath() {
       return false;

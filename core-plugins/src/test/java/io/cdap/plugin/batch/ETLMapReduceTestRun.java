@@ -52,7 +52,7 @@ import java.util.List;
  * Tests for ETLBatch.
  */
 public class ETLMapReduceTestRun extends ETLBatchTestBase {
-  private static final Schema TEXT_SCHEMA = TextInputFormatProvider.getDefaultSchema(null);
+  private static final Schema TEXT_SCHEMA = TextInputFormatProvider.getDefaultSchema(null, null, null);
 
   @Test
   public void testInvalidTransformConfigFailsToDeploy() {

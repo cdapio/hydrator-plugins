@@ -26,6 +26,7 @@ import org.apache.avro.generic.GenericRecord;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -51,11 +52,11 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
   }
 
   public StructuredRecord.Builder transform(GenericRecord genericRecord, Schema structuredSchema,
-                                            @Nullable String skipField) throws IOException {
+                                            @Nullable List<String> skipFields) throws IOException {
     StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
     for (Schema.Field field : structuredSchema.getFields()) {
       String fieldName = field.getName();
-      if (!fieldName.equals(skipField)) {
+      if (!skipFields.contains(fieldName)) {
         builder.set(fieldName, convertField(genericRecord.get(fieldName), field));
       }
     }

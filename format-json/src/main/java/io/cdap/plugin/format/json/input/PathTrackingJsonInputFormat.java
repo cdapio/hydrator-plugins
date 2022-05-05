@@ -20,6 +20,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
 import io.cdap.plugin.common.SchemaValidator;
+import io.cdap.plugin.format.MetadataField;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -31,7 +32,9 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -40,17 +43,17 @@ import javax.annotation.Nullable;
 public class PathTrackingJsonInputFormat extends PathTrackingInputFormat {
 
 
-  private Schema getModifiedSchema(Schema schema, @Nullable String pathField) {
-    // if the path field is set, it might not be nullable
-    // if it's not nullable, decoding a string into a StructuredRecord will fail because a non-nullable
+  private Schema getModifiedSchema(Schema schema, List<String> metadataFields) {
+    // if the metadata fields (path, length, and modification time fields) are set, they might not be nullable
+    // if they are not nullable, decoding a value into a StructuredRecord will fail because a non-nullable
     // field will have a null value.
-    // so in these cases, a modified schema is used where the path field is nullable
-    if (pathField == null) {
+    // so in these cases, a modified schema is used where the metadata fields are nullable
+    if (metadataFields.isEmpty()) {
       return schema;
     }
     List<Schema.Field> fieldCopies = new ArrayList<>(schema.getFields().size());
     for (Schema.Field field : schema.getFields()) {
-      if (field.getName().equals(pathField) && !field.getSchema().isNullable()) {
+      if (metadataFields.contains(field.getName()) && !field.getSchema().isNullable()) {
         fieldCopies.add(Schema.Field.of(field.getName(), Schema.nullableOf(field.getSchema())));
       } else {
         fieldCopies.add(field);
@@ -66,47 +69,73 @@ public class PathTrackingJsonInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable String pathField,
                                                                                     @Nullable Schema schema) {
     RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
-    Schema modifiedSchema = getModifiedSchema(schema, pathField);
+    Schema modifiedSchema = getModifiedSchema(schema, Arrays.asList(pathField));
 
-    return new RecordReader<NullWritable, StructuredRecord.Builder>() {
+    return new JsonRecordReader(delegate, modifiedSchema);
+  }
 
-      @Override
-      public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-        delegate.initialize(split, context);
+
+  @Override
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    Map<String, MetadataField>
+                                                                                              metadataFields,
+                                                                                    @Nullable Schema schema) {
+    RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+
+    List<String> toNullableFields = new ArrayList<>(metadataFields.keySet());
+    toNullableFields.add(pathField);
+    Schema modifiedSchema = getModifiedSchema(schema, toNullableFields);
+
+    return new JsonRecordReader(delegate, modifiedSchema);
+  }
+
+  private class JsonRecordReader extends RecordReader<NullWritable, StructuredRecord.Builder> {
+    private final RecordReader<LongWritable, Text> delegate;
+    private final Schema modifiedSchema;
+
+    private JsonRecordReader(RecordReader<LongWritable, Text> delegate, Schema modifiedSchema) {
+      this.delegate = delegate;
+      this.modifiedSchema = modifiedSchema;
+    }
+
+    @Override
+    public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      delegate.initialize(split, context);
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      return delegate.nextKeyValue();
+    }
+
+    @Override
+    public NullWritable getCurrentKey() {
+      return NullWritable.get();
+    }
+
+    @Override
+    public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
+      String json = delegate.getCurrentValue().toString();
+      StructuredRecord record = StructuredRecordStringConverter.fromJsonString(json, modifiedSchema);
+      StructuredRecord.Builder builder = StructuredRecord.builder(modifiedSchema);
+      for (Schema.Field field : modifiedSchema.getFields()) {
+        Object value = record.get(field.getName());
+        SchemaValidator.validateDateTimeField(field.getSchema(), field.getName(), value);
+        builder.set(field.getName(), value);
       }
+      return builder;
+    }
 
-      @Override
-      public boolean nextKeyValue() throws IOException, InterruptedException {
-        return delegate.nextKeyValue();
-      }
+    @Override
+    public float getProgress() throws IOException, InterruptedException {
+      return delegate.getProgress();
+    }
 
-      @Override
-      public NullWritable getCurrentKey() {
-        return NullWritable.get();
-      }
-
-      @Override
-      public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
-        String json = delegate.getCurrentValue().toString();
-        StructuredRecord record = StructuredRecordStringConverter.fromJsonString(json, modifiedSchema);
-        StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-        for (Schema.Field field : schema.getFields()) {
-          Object value = record.get(field.getName());
-          SchemaValidator.validateDateTimeField(field.getSchema(), field.getName(), value);
-          builder.set(field.getName(), value);
-        }
-        return builder;
-      }
-
-      @Override
-      public float getProgress() throws IOException, InterruptedException {
-        return delegate.getProgress();
-      }
-
-      @Override
-      public void close() throws IOException {
-        delegate.close();
-      }
-    };
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
   }
 }
