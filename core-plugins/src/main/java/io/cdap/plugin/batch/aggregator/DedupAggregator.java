@@ -36,6 +36,7 @@ import io.cdap.cdap.etl.api.relational.LinearRelationalTransform;
 import io.cdap.cdap.etl.api.relational.Relation;
 import io.cdap.cdap.etl.api.relational.RelationalTranformContext;
 import io.cdap.cdap.etl.api.relational.StringExpressionFactoryType;
+import io.cdap.cdap.features.Feature;
 import io.cdap.plugin.batch.aggregator.function.SelectionFunction;
 import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
@@ -227,6 +228,12 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
 
   @Override
   public Relation transform(RelationalTranformContext relationalTranformContext, Relation relation) {
+    // Check if this feature is enabled.
+    if (!Feature.PUSHDOWN_TRANSFORMATION_DEDUPLICATE.isEnabled(relationalTranformContext)) {
+      return new InvalidRelation(String.format("Feature %s is not enabled.",
+                                               Feature.PUSHDOWN_TRANSFORMATION_DEDUPLICATE.getFeatureFlagString()));
+    }
+
     DeduplicateAggregationDefinition deduplicateAggregationDefinition = DedupAggregatorUtils
             .generateAggregationDefinition(relationalTranformContext, relation, dedupConfig.getFilter(),
                     dedupConfig.getUniqueFields());

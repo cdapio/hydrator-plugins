@@ -54,6 +54,7 @@ public class GroupByRelationalTest {
   @Before
   public void setUp() {
     Mockito.doReturn(engine).when(relationalTranformContext).getEngine();
+    Mockito.doReturn(true).when(relationalTranformContext).isFeatureEnabled(Mockito.anyString());
     Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any(),
                                                                                        (Capability) Mockito.any());
     Schema inputSchema = Schema.recordOf(

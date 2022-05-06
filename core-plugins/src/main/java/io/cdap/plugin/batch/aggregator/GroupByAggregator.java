@@ -41,6 +41,7 @@ import io.cdap.cdap.etl.api.relational.LinearRelationalTransform;
 import io.cdap.cdap.etl.api.relational.Relation;
 import io.cdap.cdap.etl.api.relational.RelationalTranformContext;
 import io.cdap.cdap.etl.api.relational.StringExpressionFactoryType;
+import io.cdap.cdap.features.Feature;
 import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
 import io.cdap.plugin.batch.aggregator.function.JexlCondition;
 import io.cdap.plugin.common.SchemaValidator;
@@ -448,6 +449,12 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
 
   @Override
   public Relation transform(RelationalTranformContext relationalTranformContext, Relation relation) {
+    // Check if this feature is enabled.
+    if (!Feature.PUSHDOWN_TRANSFORMATION_GROUPBY.isEnabled(relationalTranformContext)) {
+      return new InvalidRelation(String.format("Feature %s is not enabled.",
+                                               Feature.PUSHDOWN_TRANSFORMATION_GROUPBY.getFeatureFlagString()));
+    }
+
     // Check if this aggregation definition is supported in SQL
     if (!areAllAggregatesSupportedInRelationalTransform()) {
       return new InvalidRelation("Unsupported aggregation definition");

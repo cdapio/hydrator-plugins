@@ -53,6 +53,10 @@
       <artifactId>cdap-formats</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.cdap.cdap</groupId>
+      <artifactId>cdap-features</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.cdap.plugin</groupId>
       <artifactId>format-common</artifactId>
       <version>${project.version}</version>
