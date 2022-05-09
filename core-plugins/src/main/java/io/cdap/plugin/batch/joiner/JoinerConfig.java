@@ -54,7 +54,6 @@ public class JoinerConfig extends PluginConfig {
   public static final String DISTRIBUTION_ENABLED = "distributionEnabled";
   public static final String DISTRIBUTION_FACTOR = "distributionFactor";
   public static final String DISTRIBUTION_STAGE = "distributionStageName";
-  public static final String MOST_SKEWED_INPUT = "mostSkewedInput";
   public static final String INPUT_ALIASES = "inputAliases";
   public static final String JOIN_KEYS = "joinKeys";
   public static final String JOIN_NULL_KEYS = "joinNullKeys";
@@ -136,8 +135,8 @@ public class JoinerConfig extends PluginConfig {
   @Nullable
   @Name(DISTRIBUTION_STAGE)
   @Description("Name of the skewed input stage. The skewed input stage is the one that contains many rows that join "
-    + "to the same row in the non-skewed stage. Ex. If stage A has 10 rows that join on the same row in stage B, then"
-    + " stage A is the skewed input stage")
+    + "to the same row in the non-skewed stage. Ex. If stage A has 1,000,000 rows that join on the same row in "
+    + "stage B, then stage A is the skewed input stage")
   private String distributionStageName;
 
   @Macro
@@ -166,14 +165,6 @@ public class JoinerConfig extends PluginConfig {
     "Use this to give more readable names to input data when using advanced join conditions.")
   private String inputAliases;
 
-  @Macro
-  @Nullable
-  @Name(MOST_SKEWED_INPUT)
-  @Description("Defines the most skewed stage for a join operation. You can select the most " +
-    "skewed input stage when executing join operations BigQuery ELT Transformation Pushdown, " +
-    "this may prevent a RESOURCE EXCEEDED error when executing join operations with skewed datasets")
-  private String mostSkewedInput;
-
   public JoinerConfig() {
     this.joinKeys = "";
     this.selectedFields = "";
@@ -188,11 +179,11 @@ public class JoinerConfig extends PluginConfig {
   }
 
   @VisibleForTesting
-  JoinerConfig(String joinKeys, String selectedFields, String requiredInputs, String mostSkewedInput) {
+  JoinerConfig(String joinKeys, String selectedFields, String requiredInputs, String distributionStageName) {
     this.joinKeys = joinKeys;
     this.selectedFields = selectedFields;
     this.requiredInputs = requiredInputs;
-    this.mostSkewedInput = mostSkewedInput;
+    this.distributionStageName = distributionStageName;
   }
 
   @VisibleForTesting
@@ -387,11 +378,6 @@ public class JoinerConfig extends PluginConfig {
     return distributionStageName;
   }
 
-  @Nullable
-  public String getMostSkewedInput() {
-    return mostSkewedInput;
-  }
-
   public boolean isDistributionValid(FailureCollector collector) {
     int startFailures = collector.getValidationFailures().size();
 
@@ -423,7 +409,7 @@ public class JoinerConfig extends PluginConfig {
       containsMacro(DISTRIBUTION_STAGE);
   }
 
-  public boolean mostSkewedInputContainsMacro() {
-    return containsMacro(MOST_SKEWED_INPUT);
+  public boolean distributionStageNameConstainsMacro() {
+    return containsMacro(DISTRIBUTION_STAGE);
   }
 }
