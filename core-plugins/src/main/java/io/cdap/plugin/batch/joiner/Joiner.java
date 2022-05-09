@@ -126,21 +126,24 @@ public class Joiner extends BatchAutoJoiner {
     }
 
     // Validate Join Left Side property
-    if (!conf.mostSkewedInputContainsMacro() && !Strings.isNullOrEmpty(conf.getMostSkewedInput())
-      && inputs.stream().map(JoinStage::getStageName).noneMatch(sn -> Objects.equals(sn, conf.getMostSkewedInput()))) {
+    if (!conf.distributionStageNameConstainsMacro()
+      && !Strings.isNullOrEmpty(conf.getDistributionStageName())
+      && inputs.stream()
+      .map(JoinStage::getStageName)
+      .noneMatch(sn -> Objects.equals(sn, conf.getDistributionStageName()))) {
       collector.addFailure("Only one stage can be specified as the stage with the larger skew.",
                            "Please select only one stage.")
-        .withConfigProperty(JoinerConfig.MOST_SKEWED_INPUT);
+        .withConfigProperty(JoinerConfig.DISTRIBUTION_STAGE);
     }
 
 
     try {
       JoinDefinition.Builder joinBuilder = JoinDefinition.builder();
 
-      // If the user has specified one of the sides as the left side, reorder inputs so the specified left side is
-      // always first.
-      if (!conf.mostSkewedInputContainsMacro() && !Strings.isNullOrEmpty(conf.getMostSkewedInput())) {
-        reorderJoinStages(inputs, conf.getMostSkewedInput());
+      // If the user has specified one side as the most skewed, move this to the left side of the join.
+      // This is useful for BigQuery Pushdown Joins
+      if (!conf.distributionStageNameConstainsMacro() && !Strings.isNullOrEmpty(conf.getDistributionStageName())) {
+        reorderJoinStages(inputs, conf.getDistributionStageName());
       }
 
       joinBuilder

@@ -99,6 +99,14 @@
           "name": "numPartitions"
         },
         {
+          "widget-type": "multiple-input-stage-selector",
+          "label": "Skewed Input Stage",
+          "name": "distributionStageName",
+          "widget-attributes": {
+            "singleSelectOnly": "true"
+          }
+        },
+        {
           "widget-type": "toggle",
           "label": "Distribution Enabled",
           "name": "distributionEnabled",
@@ -121,27 +129,6 @@
           "widget-attributes": {
             "min": "0"
           }
-        },
-        {
-          "widget-type": "multiple-input-stage-selector",
-          "label": "Distribution Skewed Input Stage",
-          "name": "distributionStageName",
-          "widget-attributes": {
-            "singleSelectOnly": "true"
-          }
-        }
-      ]
-    },
-    {
-      "label": "ELT Transformation Pushdown",
-      "properties": [
-        {
-          "widget-type": "multiple-input-stage-selector",
-          "label": "Input with Larger Data Skew",
-          "name": "mostSkewedInput",
-          "widget-attributes": {
-            "singleSelectOnly": "true"
-          }
         }
       ]
     }
@@ -157,9 +144,6 @@
       "show": [
         {
           "name": "distributionFactor"
-        },
-        {
-          "name": "distributionStageName"
         }
       ]
     },
