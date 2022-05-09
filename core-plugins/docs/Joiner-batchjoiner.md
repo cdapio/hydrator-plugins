@@ -90,6 +90,12 @@ to the number of partitions used for the input that is not loaded into memory.
 If no value is given, or if an inner advanced join is being performed, the number of partitions will be determined
 by the value of 'spark.sql.shuffle.partitions' in the engine config, which defaults to 200. 
 
+**Skewed Input Stage:**  Name of the skewed input stage. The skewed input stage is the one that contains many rows that join
+to the same row in the non-skewed stage. E.g. If stage A has 1,000,000 rows that join on the same row in stage B, then
+stage A is the skewed input stage.
+
+For more information about Data Skew, please see the **Skew** section of this documentation.
+
 **Distribution:** Enabling distribution will increase the level of parallelism when joining skewed data. 
 A skewed join happens when a significant percentage of input records have the same key. Distribution is
  possible when the following conditions are met:
@@ -97,24 +103,13 @@ A skewed join happens when a significant percentage of input records have the sa
 1. Broadcast is not enabled for either stage.
 1. The skewed input is marked as `required`.
 
-
 Distribution requires two parameters:
 1. **Distribution Size:** This controls the size of the salt that will be generated for distribution. The **Number of Partitions** 
 property should be greater than or equal to this number for optimal results. A larger value will lead to more 
 parallelism but it will also grow the size of the non-skewed dataset by this factor.
-1. **Skewed Input Stage:**  Name of the skewed input stage. The skewed input stage is the one that contains many rows that join 
-to the same row in the non-skewed stage. Ex. If stage A has 10 rows that join on the same row in stage B, then
-stage A is the skewed input stage.
+1. **Skewed Input Stage:**  Listed above.
 
 For more information about Distribution and data skew, please see the **Skew** section of this documentation.
-
-**Input with Larger Data Skew** Skewed joins can cause a lot of shuffling and disk operation in BigQuery, which impacts query performance.
-BigQuery has some general recommendations when executing join operations on Skewed data, which can be found here
-[Data skew](https://cloud.google.com/bigquery/docs/best-practices-performance-patterns#data_skew).
-
-If one of the sides of a join operation is known to be heavily skewed, then this feature can be used so the BigQuery SQL
-engine sorts stages appropriately when building the SQL Join statements. This reduces the possibility of join operations
-running into a resource exceeded error during the join operation execution.
 
 Skew
 ----------
@@ -186,6 +181,17 @@ The unskewed data is exploded, where each row is becomes 2 rows, one for each va
  
  The salt column is added to the join key and the join can be performed as normal. 
 However, now the skewed key can be processed across two workers which increases the performance.
+
+### Solution 3: Reorder inputs (BigQuery Transformation Pushdown only)
+Skewed joins can cause a lot of shuffling and disk operation in BigQuery, which impacts query performance.
+BigQuery has some general recommendations when executing join operations on Skewed data, which can be found here
+[Data skew](https://cloud.google.com/bigquery/docs/best-practices-performance-patterns#data_skew).
+
+If one of the sides of a join operation is known to be heavily skewed, then this feature can be used so the BigQuery SQL
+engine sorts stages appropriately when building the SQL Join statements. This reduces the possibility of join operations
+running into a resource exceeded error during the join operation execution.
+
+In order to set the most skewed input for a join operation, use the **Skewed Input Stage** setting.
 
 Example
 -------
