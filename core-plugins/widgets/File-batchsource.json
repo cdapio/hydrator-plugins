@@ -501,6 +501,17 @@
           "name": "enableQuotedValues"
         }
       ]
+    },
+    {
+      "name": "skipHeader",
+      "condition": {
+        "expression": "format == 'delimited' || format == 'csv' || format == 'tsv'"
+      },
+      "show": [
+        {
+          "name": "skipHeader"
+        }
+      ]
     }
   ],
   "outputs": [
