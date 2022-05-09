@@ -66,6 +66,9 @@ public class PathTrackingJsonInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable String pathField,
                                                                                     @Nullable Schema schema) {
     RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+    if (schema == null) {
+      throw new IllegalStateException("The file you have selected requires a schema to be parsed.");
+    }
     Schema modifiedSchema = getModifiedSchema(schema, pathField);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
