@@ -31,6 +31,10 @@
           }
         },
         {
+          "widget-type": "get-schema",
+          "widget-category": "plugin"
+        },
+        {
           "widget-type": "number",
           "label": "Sample Size",
           "name": "sampleSize",
@@ -64,16 +68,6 @@
           "name": "delimiter",
           "widget-attributes": {
             "placeholder": "Delimiter if the format is 'delimited'"
-          },
-          "plugin-function": {
-            "method": "POST",
-            "widget": "outputSchema",
-            "label": "Get Schema Value",
-            "required-fields": [
-              "path"
-            ],
-            "missing-required-fields-message": "Please provide path field",
-            "plugin-method": "getSchema"
           }
         },
         {
