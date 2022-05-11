@@ -154,6 +154,9 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     String fullPath = getFullPath(sampleRequest.getPath());
     Map<String, String> sampleRequestProperties = sampleRequest.getProperties();
     ValidatingInputFormat inputFormat = getValidatingInputFormat(context, fullPath, sampleRequestProperties);
+    FormatContext formatContext = new FormatContext(context.getFailureCollector(), null);
+    inputFormat.validate(formatContext);
+    context.getFailureCollector().getOrThrowException();
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
