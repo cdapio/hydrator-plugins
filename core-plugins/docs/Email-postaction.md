@@ -40,6 +40,10 @@ If set to 'failure', the action will only be executed if the pipeline run failed
 
 **includeWorkflowToken:** Whether to include the contents of the workflow token in the email message. Defaults to false.
 
+**configurableJavaMailProperties:** Optional property that can be used to pass specific set of javamail properties.
+The syntax is '<property_name>:<value>'. If this property is not set, default values are chosen.
+
+
 Example
 -------
 This example sends an email from 'team-ops@example.com' to 'team-alerts@example.com' whenever a run fails:
