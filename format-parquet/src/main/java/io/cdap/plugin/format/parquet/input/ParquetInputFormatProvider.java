@@ -101,7 +101,7 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
 
     List<Path> paths = conf.getFilePathsForSchemaGeneration(filePath, ".+\\.parquet$", hconf, job);
     for (Path file : paths) {
-      try (ParquetReader reader = AvroParquetReader.builder(file).build()) {
+      try (ParquetReader reader = AvroParquetReader.builder(file).withConf(hconf).build()) {
         GenericData.Record record = (GenericData.Record) reader.read();
         if (record == null) {
           continue;
