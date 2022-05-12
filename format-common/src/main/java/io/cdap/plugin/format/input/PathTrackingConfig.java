@@ -33,8 +33,10 @@ import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -112,21 +114,25 @@ public class PathTrackingConfig extends PluginConfig {
    * @param path path from config
    * @param regexPathFilter the regex used to filter the files
    * @param job job to retrieve the file system
-   * @return {@link Path}
+   * @return {@link List<Path>}
    */
-  public Path getFilePathForSchemaGeneration(String path, String regexPathFilter, Configuration configuration, Job job)
-    throws IOException {
+  public List<Path> getFilePathsForSchemaGeneration(String path,
+                                                    String regexPathFilter,
+                                                    Configuration configuration,
+                                                    Job job)
+    throws IOException { 
     Path fsPath = new Path(path);
     // need this to load the extra class loader to avoid ClassNotFoundException for the file system
     FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
                                                        f -> FileSystem.get(fsPath.toUri(), configuration));
-
+    List<Path> paths = new ArrayList<Path>();
     if (!fs.exists(fsPath)) {
       throw new IOException("Input path not found");
     }
 
     if (fs.isFile(fsPath)) {
-      return fsPath;
+      paths.add(fsPath);
+      return paths;
     }
 
     final FileStatus[] files = fs.listStatus(fsPath);
@@ -138,17 +144,23 @@ public class PathTrackingConfig extends PluginConfig {
     if (files.length == 0) {
       throw new IllegalArgumentException("Provided directory is empty");
     }
-
+    
+    Pattern pattern = null;
+    if (!Strings.isNullOrEmpty(regexPathFilter)) {
+      pattern = Pattern.compile(regexPathFilter);
+    }
     for (FileStatus file : files) {
-      if (Strings.isNullOrEmpty(regexPathFilter)) {
-        return file.getPath();
+      if (pattern == null) {
+        paths.add(file.getPath());
       } else {
-        Pattern pattern = Pattern.compile(regexPathFilter);
         Matcher matcher = pattern.matcher(file.getPath().toString());
         if (matcher.find()) {
-          return file.getPath();
+          paths.add(file.getPath());
         }
       }
+    }
+    if (!paths.isEmpty()) {
+      return paths;
     }
     throw new IllegalArgumentException(String.format("No file inside \"%s\" matched regex \"%s\"!", path,
                                                      regexPathFilter));
