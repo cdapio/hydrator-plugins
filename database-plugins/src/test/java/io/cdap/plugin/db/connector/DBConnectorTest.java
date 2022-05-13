@@ -19,6 +19,7 @@ package io.cdap.plugin.db.connector;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginProperties;
+import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.connector.BrowseDetail;
 import io.cdap.cdap.etl.api.connector.BrowseEntity;
@@ -32,6 +33,7 @@ import io.cdap.cdap.etl.api.connector.SampleRequest;
 import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.mock.common.MockConnectorConfigurer;
 import io.cdap.cdap.etl.mock.common.MockConnectorContext;
+import io.cdap.plugin.db.batch.sink.DBSink;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import org.junit.Assert;
@@ -41,6 +43,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -146,7 +149,7 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
-        Assert.assertEquals("SCHEMA", entity.getType());
+        Assert.assertEquals("schema", entity.getType());
         Assert.assertTrue(entity.canBrowse());
         Assert.assertFalse(entity.canSample());
       }
@@ -218,8 +221,13 @@ public class DBConnectorTest {
       Assert.assertNotNull(field.getSchema());
     }
     Set<PluginSpec> relatedPlugins = connectorSpec.getRelatedPlugins();
-    Assert.assertEquals(1, relatedPlugins.size());
-    PluginSpec pluginSpec = relatedPlugins.iterator().next();
+    Assert.assertEquals(2, relatedPlugins.size());
+    Iterator<PluginSpec> iterator = relatedPlugins.iterator();
+    PluginSpec pluginSpec = iterator.next();
+    Assert.assertEquals(DBSink.NAME, pluginSpec.getName());
+    Assert.assertEquals(BatchSink.PLUGIN_TYPE, pluginSpec.getType());
+
+    pluginSpec = iterator.next();
     Assert.assertEquals(DBSource.NAME, pluginSpec.getName());
     Assert.assertEquals(BatchSource.PLUGIN_TYPE, pluginSpec.getType());
 
