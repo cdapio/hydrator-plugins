@@ -9,12 +9,11 @@
       "label": "General",
       "properties": [
         {
-          "widget-type": "csv",
+          "widget-type": "input-field-selector",
           "label": "Group by fields",
           "name": "groupByFields",
           "widget-attributes": {
-            "delimiter": ",",
-            "value-placeholder": "Field Name"
+            "multiselect": "true"
           },
           "plugin-function": {
             "method": "POST",
@@ -195,7 +194,7 @@
           }
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "number",
           "label": "Number of Partitions",
           "name": "numPartitions"
         }
