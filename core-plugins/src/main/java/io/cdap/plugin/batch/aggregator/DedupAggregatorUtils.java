@@ -44,17 +44,19 @@ public class DedupAggregatorUtils {
 
   /**
    * Generates a {@link DeduplicateAggregationDefinition} based on an input relation and deduplication configuration.
-   * @param ctx transform context
-   * @param relation input relation
-   * @param filter filter function
+   *
+   * @param ctx          transform context
+   * @param relation     input relation
    * @param uniqueFields unique fields when deduplicating
+   * @param filter       filter function
    * @return Definition for a deduplicate operation, or null if this deduplicate definition is not supported.
    */
   @Nullable
-  public static DeduplicateAggregationDefinition generateAggregationDefinition(RelationalTranformContext ctx,
-                                                                               Relation relation,
-                                                                               DedupConfig.DedupFunctionInfo filter,
-                                                                               List<String> uniqueFields) {
+  public static DeduplicateAggregationDefinition generateAggregationDefinition(
+    RelationalTranformContext ctx,
+    Relation relation,
+    List<String> uniqueFields,
+    @Nullable DedupConfig.DedupFunctionInfo filter) {
     // Deduplication contain only one input schema.
     String inputRelationName = ctx.getInputRelationNames().stream().findFirst().orElse(null);
     Schema inputSchema = inputRelationName != null ? ctx.getInputSchema(inputRelationName) : null;
@@ -66,41 +68,56 @@ public class DedupAggregatorUtils {
       return null;
     }
 
-    DeduplicateAggregationDefinition.FilterFunction aggFilterFunction;
-    switch (filter.getFunction()) {
-      case MAX:
-        aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MAX;
-        break;
-      case MIN:
-        aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MIN;
-        break;
-      case ANY:
-        aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.ANY_NULLS_LAST;
-        break;
-      default:
-        return null;
-    }
-
-    Map<String, Expression> selectExpressions = new HashMap<>();
-    List<Expression> dedupExpressions = new ArrayList<>();
+    // Get String Expression Factory
     ExpressionFactory<String> stringExpressionFactory = expressionFactory.get();
 
-    Expression filterExpression = getColumnName(relation, filter.getField(), stringExpressionFactory);
+    // Filter function will be null if not specified in the plugin settings
+    Expression filterExpression = null;
+    DeduplicateAggregationDefinition.FilterFunction aggFilterFunction = null;
+    if (filter != null) {
+      // Determine which filtering function to use
+      switch (filter.getFunction()) {
+        case MAX:
+          aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MAX;
+          break;
+        case MIN:
+          aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MIN;
+          break;
+        case ANY:
+          aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.ANY_NULLS_LAST;
+          break;
+        default:
+          // Aggregation is not supported in BigQuery
+          return null;
+      }
 
+      // Build filter expression
+      filterExpression = getColumnName(relation, filter.getField(), stringExpressionFactory);
+    }
+
+    DeduplicateAggregationDefinition.Builder builder = DeduplicateAggregationDefinition.builder();
+
+    // Build select fields
+    Map<String, Expression> selectExpressions = new HashMap<>();
     for (Schema.Field field : ctx.getOutputSchema().getFields()) {
       selectExpressions.put(field.getName(), getColumnName(relation, field.getName(), stringExpressionFactory));
     }
+    builder.select(selectExpressions);
 
-
+    // Specify filters to deduplicate on
+    List<Expression> dedupExpressions = new ArrayList<>();
     for (String uniqueField : uniqueFields) {
       dedupExpressions.add(getDedupColumnName(relation, uniqueField, stringExpressionFactory, inputSchema));
     }
+    builder.dedupOn(dedupExpressions);
 
-    return DeduplicateAggregationDefinition.builder()
-      .select(selectExpressions)
-      .dedupOn(dedupExpressions)
-      .filterDuplicatesBy(filterExpression, aggFilterFunction)
-      .build();
+    // Add aggregation filter function if specified
+    if (aggFilterFunction != null) {
+      builder.filterDuplicatesBy(filterExpression, aggFilterFunction);
+    }
+
+    // return dedup definition
+    return builder.build();
   }
 
   static Expression getColumnName(Relation relation,
