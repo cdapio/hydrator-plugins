@@ -228,8 +228,11 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
   @Override
   public Relation transform(RelationalTranformContext relationalTranformContext, Relation relation) {
     DeduplicateAggregationDefinition deduplicateAggregationDefinition = DedupAggregatorUtils
-            .generateAggregationDefinition(relationalTranformContext, relation, dedupConfig.getFilter(),
-                    dedupConfig.getUniqueFields());
+            .generateAggregationDefinition(relationalTranformContext,
+                                           relation,
+                                           dedupConfig.getUniqueFields(),
+                                           dedupConfig.getFilter()
+            );
 
     if (deduplicateAggregationDefinition == null) {
       return new InvalidRelation("Filter Operation is not supported. Only ANY, MIN and MAX are supported.");
