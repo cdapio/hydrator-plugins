@@ -38,24 +38,24 @@ public class TestSetupHooks {
   @Before(order = 1, value = "@FILE_SOURCE_TEST")
   public static void setFileSourceAbsolutePath() {
     if (firstFileSourceTestFlag) {
-      PluginPropertyUtils.addPluginProp("csvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("csvFile")).getPath()).toString());
+//      PluginPropertyUtils.addPluginProp("csvFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("csvFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("csvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("csvAllDataTypeFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("tsvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("tsvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("blobFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("blobFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("delimitedFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("delimitedFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("textFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("textFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputFieldTestFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputFieldTestFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("readRecursivePath", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("readRecursivePath")).getPath()) + "/");
-      PluginPropertyUtils.addPluginProp("sendEmailCsvInvalidFormatFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("sendEmailCsvInvalidFormatFile")).getPath()) + "/");
+//      PluginPropertyUtils.addPluginProp("tsvFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("tsvFile")).getPath()).toString());
+//      PluginPropertyUtils.addPluginProp("blobFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("blobFile")).getPath()).toString());
+//      PluginPropertyUtils.addPluginProp("delimitedFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("delimitedFile")).getPath()).toString());
+//      PluginPropertyUtils.addPluginProp("textFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("textFile")).getPath()).toString());
+//      PluginPropertyUtils.addPluginProp("outputFieldTestFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("outputFieldTestFile")).getPath()).toString());
+//      PluginPropertyUtils.addPluginProp("readRecursivePath", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("readRecursivePath")).getPath()) + "/");
+//      PluginPropertyUtils.addPluginProp("sendEmailCsvInvalidFormatFile", Paths.get(TestSetupHooks.class.getResource
+//        ("/" + PluginPropertyUtils.pluginProp("sendEmailCsvInvalidFormatFile")).getPath()) + "/");
       firstFileSourceTestFlag = false;
     }
   }
@@ -128,7 +128,8 @@ public class TestSetupHooks {
   }
 
   @Before(order = 1, value = "@SEND_EMAIL")
-  public static void setGCSConnectionName() {
-    PluginPropertyUtils.addPluginProp("sendEmailSubject", "send-email-" + UUID.randomUUID());
+  public static void setSendEmailPrerequisite() {
+    PluginPropertyUtils.addPluginProp("emailSubject", "send-email-" + UUID.randomUUID());
+    PluginPropertyUtils.addPluginProp("sendEmailPassword", System.getenv("SEND_EMAIL_PASSWORD"));
   }
 }
