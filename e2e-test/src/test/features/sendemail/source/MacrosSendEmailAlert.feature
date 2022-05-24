@@ -50,7 +50,6 @@ Feature: Send Email Alert - Verify macro scenarios
     And Run the Pipeline in Runtime
     And Enter runtime argument value "sendEmailSender" for key "sender"
     And Enter runtime argument value "sendEmailRecipients" for key "recipients"
-    #And Enter runtime argument value "sendEmailSubject" for key "subject"
     And Enter runtime argument value "emailSubject" for key "subject"
     And Enter runtime argument value "sendEmailMessage" for key "message"
     And Enter runtime argument value "sendEmailUsername" for key "username"

@@ -58,7 +58,7 @@ Feature: Send Email Alert - Run time scenarios
       | sendEmailCompletion | sendEmailCsvInvalidFormatFile | Failed    |
 
   @SEND_EMAIL @BQ_SINK_TEST @FILE_SOURCE_TEST
-  Scenario: Verify email sent failure text in logs when the pipeline is successful
+  Scenario: Verify email sent failure text message in logs when the pipeline is successful
     Given Open Datafusion Project to configure pipeline
     And Select plugin: "File" from the plugins list as: "Source"
     And Expand Plugin group in the LHS plugins list: "Sink"
