@@ -23,11 +23,14 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.InputFiles;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
+import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Reads delimited text into StructuredRecords.
@@ -64,7 +67,7 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   public void validate(FormatContext context) {
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
-    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null && context.getInputSchema() == null) {
       collector.addFailure("CSV format cannot be used without specifying a schema.", "Schema must be specified.")
         .withConfigProperty("schema");
     }
@@ -75,5 +78,11 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, ",");
     properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
     properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
+  }
+
+  @Nullable
+  @Override
+  public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
+    return DelimitedInputFormatProvider.detectSchema(conf, ",", inputFiles);
   }
 }

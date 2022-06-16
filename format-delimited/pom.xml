@@ -42,6 +42,16 @@
     <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-formats</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.cdap.cdap</groupId>
+      <artifactId>hydrator-test</artifactId>
     </dependency>
     <dependency>
       <groupId>io.cdap.plugin</groupId>
@@ -77,8 +87,6 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>3.3.0</version>
-        <extensions>true</extensions>
         <configuration>
           <instructions>
             <_exportcontents>
@@ -89,22 +97,14 @@
             <Embed-Directory>lib</Embed-Directory>
           </instructions>
         </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>io.cdap</groupId>
         <artifactId>cdap-maven-plugin</artifactId>
         <configuration combine.self="override">
           <cdapArtifacts>
-            <parent>system:cdap-data-pipeline[6.1.0-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
-            <parent>system:cdap-data-streams[6.1.0-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
+            <parent>system:cdap-data-pipeline[6.7.1-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
+            <parent>system:cdap-data-streams[6.7.1-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
           </cdapArtifacts>
         </configuration>
       </plugin>
