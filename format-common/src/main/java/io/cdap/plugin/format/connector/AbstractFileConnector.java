@@ -40,6 +40,7 @@ import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.common.batch.ThrowableFunction;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.SchemaDetector;
 import io.cdap.plugin.format.plugin.FileSourceProperties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -95,7 +96,6 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     this.config = config;
     this.sampleProperties = new HashSet<>();
   }
-
 
   /**
    * Adds available sample fields for each different entityType.
@@ -153,7 +153,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
                                                     SampleRequest sampleRequest) throws IOException {
     String fullPath = getFullPath(sampleRequest.getPath());
     Map<String, String> sampleRequestProperties = sampleRequest.getProperties();
-    ValidatingInputFormat inputFormat = getValidatingInputFormat(context, fullPath, sampleRequestProperties);
+    ValidatingInputFormat inputFormat =
+      getValidatingInputFormat(context, fullPath, sampleRequestProperties);
     FormatContext formatContext = new FormatContext(context.getFailureCollector(), null);
     inputFormat.validate(formatContext);
     context.getFailureCollector().getOrThrowException();
@@ -215,10 +216,13 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     ConnectorSpec.Builder builder = ConnectorSpec.builder();
 
     String path = getFullPath(connectorSpecRequest.getPath());
-    ValidatingInputFormat inputFormat = getValidatingInputFormat(context, path, connectorSpecRequest.getProperties());
-    // TODO: CDAP-18060 in 6.5 this will only have text and blob that will not access the file system,
-    //  to support other formats, we need to ensure get schema works
-    Schema schema = inputFormat.getSchema(new FormatContext(context.getFailureCollector(), null));
+    ValidatingInputFormat format = getValidatingInputFormat(context, path, connectorSpecRequest.getProperties());
+    FormatContext formatContext = new FormatContext(context.getFailureCollector(), null);
+    Schema schema = format.getSchema(formatContext);
+    if (schema == null) {
+      SchemaDetector schemaDetector = new SchemaDetector(format);
+      schema = schemaDetector.detectSchema(path, formatContext, getFileSystemProperties(path));
+    }
     builder.setSchema(schema);
     setConnectorSpec(connectorSpecRequest, builder);
     return builder.build();
@@ -293,7 +297,7 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
   }
 
   private ValidatingInputFormat getValidatingInputFormat(ConnectorContext context, String path,
-                                                         Map<String, String> sampleProperties) throws IOException {
+                                                 Map<String, String> sampleProperties) throws IOException {
     PluginProperties.Builder builder = PluginProperties.builder();
     builder.addAll(sampleProperties);
 
@@ -303,15 +307,15 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     }
 
     builder.add("path", path);
-    FileFormat format;
+    String format;
     if (sampleProperties.containsKey("format")) {
-      format = FileFormat.valueOf(sampleProperties.get("format").toUpperCase());
+      format = sampleProperties.get("format");
     } else {
-      format = FileTypeDetector.detectFileFormat(fileType);
-      builder.add("format", format.name());
+      format = FileTypeDetector.detectFileFormat(fileType).name().toLowerCase();
+      builder.add("format", format);
     }
 
-    if (format.equals(FileFormat.TEXT)) {
+    if (FileFormat.TEXT.name().equalsIgnoreCase(format)) {
       builder.add("schema", DEFAULT_TEXT_SCHEMA);
     }
     builder.addAll(config.getProperties().getProperties());
@@ -320,7 +324,7 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     // Adding FileSystem properties under its own entry as its used as a config parameter in the plugin.
     builder.add("fileSystemProperties", GSON.toJson(getFileSystemProperties(path)));
     ValidatingInputFormat inputFormat = context.getPluginConfigurer().usePlugin(
-      ValidatingInputFormat.PLUGIN_TYPE, format.name().toLowerCase(), UUID.randomUUID().toString(), builder.build());
+      ValidatingInputFormat.PLUGIN_TYPE, format, UUID.randomUUID().toString(), builder.build());
 
     if (inputFormat == null) {
       throw new IOException(
@@ -328,4 +332,5 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     }
     return inputFormat;
   }
+
 }

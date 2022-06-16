@@ -97,7 +97,6 @@ public class StructuredtoAvroTest {
     GenericRecord result = avroTransformer.transform(record);
     Assert.assertEquals(123L, result.get("id"));
     Assert.assertEquals("ABC", result.get("name"));
-    Assert.assertNull(result.get("age"));
   }
 
   @Test

@@ -101,8 +101,6 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>3.3.0</version>
-        <extensions>true</extensions>
         <configuration>
           <instructions>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
@@ -112,14 +110,6 @@
             <_exportcontents>io.cdap.plugin.*</_exportcontents>
           </instructions>
         </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>io.cdap</groupId>
