@@ -1,4 +1,4 @@
-# Hasher Transform
+# Hasher Transform (Deprecated)
 
 
 Description
