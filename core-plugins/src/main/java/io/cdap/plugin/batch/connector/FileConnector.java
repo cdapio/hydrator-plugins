@@ -138,7 +138,7 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
     builder.addRelatedPlugin(new PluginSpec(FileBatchSource.NAME, BatchSource.PLUGIN_TYPE, properties));
   }
 
-  private BrowseEntity generateBrowseEntity(FileStatus file) throws IOException {
+  private BrowseEntity generateBrowseEntity(FileStatus file) {
     Path path = file.getPath();
     boolean isDirectory = file.isDirectory();
     String filePath = path.toUri().getPath();

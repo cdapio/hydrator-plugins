@@ -22,24 +22,11 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
-import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.plugin.common.KeyValueListParser;
-import io.cdap.plugin.common.batch.JobUtils;
-import io.cdap.plugin.format.delimited.common.DataTypeDetectorStatusKeeper;
-import io.cdap.plugin.format.delimited.common.DataTypeDetectorUtils;
 import io.cdap.plugin.format.input.PathTrackingConfig;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.Job;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -49,13 +36,9 @@ import javax.annotation.Nullable;
 public class DelimitedConfig extends PathTrackingConfig {
 
   // properties
-  public static final String NAME_DELIMITER = "delimiter";
   public static final String NAME_ENABLE_QUOTES_VALUES = "enableQuotedValues";
-  public static final String NAME_FORMAT = "format";
   public static final String NAME_OVERRIDE = "override";
   public static final String NAME_SAMPLE_SIZE = "sampleSize";
-  public static final String NAME_PATH = "path";
-  public static final String NAME_REGEX_PATH_FILTER = "fileRegex";
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
 
   // description
@@ -83,50 +66,15 @@ public class DelimitedConfig extends PathTrackingConfig {
   protected Boolean enableQuotedValues;
 
   public boolean getSkipHeader() {
-    return skipHeader == null ? false : skipHeader;
+    return skipHeader != null && skipHeader;
   }
 
   public boolean getEnableQuotedValues() {
-    return enableQuotedValues == null ? false : enableQuotedValues;
+    return enableQuotedValues != null && enableQuotedValues;
   }
 
-  public Long getSampleSize() {
+  public long getSampleSize() {
     return Long.parseLong(getProperties().getProperties().getOrDefault(NAME_SAMPLE_SIZE, "1000"));
-  }
-
-  @Nullable
-  @Override
-  public Schema getSchema() {
-    if (containsMacro(NAME_SCHEMA)) {
-      return null;
-    }
-    if (Strings.isNullOrEmpty(schema)) {
-      try {
-        return getDefaultSchema(null);
-      } catch (IOException e) {
-        throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
-      }
-    }
-    return super.getSchema();
-  }
-
-  /**
-   * Reads delimiter from config. If not available returns default delimiter based on format.
-   *
-   * @return delimiter
-   */
-  private String getDefaultDelimiter() {
-    String delimiter = getProperties().getProperties().get(NAME_DELIMITER);
-    if (delimiter != null) {
-      return delimiter;
-    }
-    final String format = getProperties().getProperties().get(NAME_FORMAT);
-    switch (format) {
-      case "tsv":
-        return "\t";
-      default:
-        return ",";
-    }
   }
 
   /**
@@ -165,60 +113,5 @@ public class DelimitedConfig extends PathTrackingConfig {
       }
     }
     return overrideDataTypes;
-  }
-
-  /**
-   * Gets the detected schema.
-   *
-   * @param context {@link FormatContext}
-   * @return The detected schema.
-   * @throws IOException If the data can't be read from the datasource.
-   */
-  public Schema getDefaultSchema(@Nullable FormatContext context) throws IOException {
-    final String format = getProperties().getProperties().getOrDefault(NAME_FORMAT, "delimited");
-    String delimiter = getDefaultDelimiter();
-    String regexPathFilter = getProperties().getProperties().get(NAME_REGEX_PATH_FILTER);
-    String path = getProperties().getProperties().get(NAME_PATH);
-    if (format.equals("delimited") && Strings.isNullOrEmpty(delimiter)) {
-      throw new IllegalArgumentException("Delimiter is required when format is set to 'delimited'.");
-    }
-
-    Job job = JobUtils.createInstance();
-    Configuration configuration = job.getConfiguration();
-    for (Map.Entry<String, String> entry : getFileSystemProperties().entrySet()) {
-      configuration.set(entry.getKey(), entry.getValue());
-    }
-
-    List<Path> paths = getFilePathsForSchemaGeneration(path, regexPathFilter, configuration, job);
-    Path filePath = paths.get(0);
-    DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper = new DataTypeDetectorStatusKeeper();
-    String line = null;
-    String[] columnNames = null;
-    String[] rowValue = null;
-
-    try (FileSystem fileSystem = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
-                                                                    f -> FileSystem.get(filePath.toUri(),
-                                                                                        configuration));
-         FSDataInputStream input = fileSystem.open(filePath);
-         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
-    ) {
-      for (int rowIndex = 0; rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null; rowIndex++) {
-        rowValue = line.split(delimiter, -1);
-        if (rowIndex == 0) {
-          columnNames = DataTypeDetectorUtils.setColumnNames(line, getSkipHeader(), getEnableQuotedValues(), delimiter);
-          if (getSkipHeader()) {
-            continue;
-          }
-        }
-        DataTypeDetectorUtils.detectDataTypeOfRowValues(getOverride(), dataTypeDetectorStatusKeeper, columnNames,
-                rowValue);
-      }
-      dataTypeDetectorStatusKeeper.validateDataTypeDetector();
-    } catch (IOException e) {
-      throw new RuntimeException(String.format("Failed to open file at path %s!", path), e);
-    }
-    List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(getOverride(), columnNames,
-            dataTypeDetectorStatusKeeper);
-    return Schema.recordOf("text", fields);
   }
 }
