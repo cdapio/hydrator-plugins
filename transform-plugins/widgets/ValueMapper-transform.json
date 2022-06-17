@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.0"
   },
+  "display-name": "Value Mapper (Deprecated)",
   "configuration-groups": [
     {
       "label": "Mapping Configuration",
