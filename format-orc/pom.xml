@@ -37,6 +37,12 @@
     <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-formats</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.cdap.plugin</groupId>
@@ -82,8 +88,6 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>3.3.0</version>
-        <extensions>true</extensions>
         <configuration>
           <instructions>
             <_exportcontents>
@@ -94,14 +98,6 @@
             <Embed-Directory>lib</Embed-Directory>
           </instructions>
         </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>io.cdap</groupId>

@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.format.plugin;
 
-import com.google.gson.Gson;
 import io.cdap.cdap.api.data.batch.Input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -37,7 +36,9 @@ import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.FileFormat;
 import io.cdap.plugin.format.RegexPathFilter;
+import io.cdap.plugin.format.SchemaDetector;
 import io.cdap.plugin.format.input.EmptyInputFormat;
+import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -74,9 +75,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFileSource.class);
   private static final String NAME_FORMAT = "format";
-  private static final String FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
   private final T config;
-  private static final Gson GSON = new Gson();
 
   protected AbstractFileSource(T config) {
     this.config = config;
@@ -115,20 +114,26 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     PluginProperties.Builder builder = PluginProperties.builder();
     builder.addAll(config.getRawProperties().getProperties());
 
-    if (shouldGetSchema()) {
-      // Include source file system properties for schema auto detection
-      builder.add(FILE_SYSTEM_PROPERTIES, GSON.toJson(getFileSystemProperties(null)));
-    }
-
     ValidatingInputFormat validatingInputFormat =
       pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat, fileFormat, builder.build());
     FormatContext context = new FormatContext(collector, null);
-    validateInputFormatProvider(context, fileFormat, validatingInputFormat);
 
-    if (validatingInputFormat != null && shouldGetSchema()) {
+    if (validatingInputFormat != null && schema == null && !config.containsMacro("schema")) {
+      // some formats like text, blob, etc have static schemas
       schema = validatingInputFormat.getSchema(context);
+      if (schema == null && shouldGetSchema()) {
+        try {
+          SchemaDetector schemaDetector = new SchemaDetector(validatingInputFormat);
+          schema = schemaDetector.detectSchema(config.getPath(), context, getFileSystemProperties(null));
+        } catch (IOException e) {
+          context.getFailureCollector()
+            .addFailure("Error when trying to detect schema: " + e.getMessage(), null)
+            .withStacktrace(e.getStackTrace());
+        }
+      }
     }
-
+    context = new FormatContext(collector, schema);
+    validateInputFormatProvider(context, fileFormat, validatingInputFormat);
     validatePathField(collector, schema);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
@@ -153,9 +158,16 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       throw new IllegalArgumentException(errorMessage, e);
     }
 
-    FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
+    FormatContext formatContext = new FormatContext(collector, null);
+    Schema schema = context.getOutputSchema() == null ?
+      validatingInputFormat.getSchema(formatContext) : context.getOutputSchema();
+    if (schema == null) {
+      SchemaDetector schemaDetector = new SchemaDetector(validatingInputFormat);
+      schema = schemaDetector.detectSchema(config.getPath(context), formatContext, getFileSystemProperties(null));
+    }
+    formatContext = new FormatContext(collector, schema);
     validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
-    validatePathField(collector, validatingInputFormat.getSchema(formatContext));
+    validatePathField(collector, schema);
     collector.getOrThrowException();
 
     Job job = JobUtils.createInstance();
@@ -168,7 +180,6 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     }
     FileInputFormat.setInputDirRecursive(job, config.shouldReadRecursively());
 
-    Schema schema = config.getSchema();
     LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
     lineageRecorder.createExternalDataset(schema);
 
@@ -203,6 +214,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       for (Map.Entry<String, String> propertyEntry : inputFormatConfiguration.entrySet()) {
         hConf.set(propertyEntry.getKey(), propertyEntry.getValue());
       }
+      if (schema != null) {
+        // schema will not be in the inputformat configuration if it was auto-detected, so need to add it here
+        hConf.set(PathTrackingInputFormat.SCHEMA, schema.toString());
+      }
     }
 
     // set entries here again, in case anything set by PathTrackingInputFormat should be overridden
@@ -224,7 +239,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
    * For example, if the FileSystem requires setting properties for credentials, those should be returned by
    * this method.
    */
-  protected Map<String, String> getFileSystemProperties(BatchSourceContext context) {
+  protected Map<String, String> getFileSystemProperties(@Nullable BatchSourceContext context) {
     return Collections.emptyMap();
   }
 
@@ -277,4 +292,5 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   protected boolean shouldGetSchema() {
     return true;
   }
+
 }

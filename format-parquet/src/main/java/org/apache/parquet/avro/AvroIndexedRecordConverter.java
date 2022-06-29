@@ -19,20 +19,14 @@
 
 package org.apache.parquet.avro;
 
-import java.lang.reflect.Constructor;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import org.apache.avro.Conversion;
+import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.specific.SpecificData;
 import org.apache.parquet.Preconditions;
-import org.apache.parquet.io.InvalidRecordException;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.io.api.Converter;
 import org.apache.parquet.io.api.GroupConverter;
@@ -42,6 +36,12 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 
+import java.lang.reflect.Constructor;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
@@ -124,7 +124,7 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
       if (field.schema().getType() == Schema.Type.NULL) {
         continue; // skip null since Parquet does not write nulls
       }
-      if (field.defaultValue() == null || model.getDefaultValue(field) == null) {
+      if (field.defaultVal() == null || model.getDefaultValue(field) == null) {
         continue; // field has no default
       }
       recordDefaults.put(field, model.getDefaultValue(field));
@@ -133,6 +133,11 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
 
   @SuppressWarnings("unchecked")
   private static <T> Class<T> getDatumClass(GenericData model, Schema schema) {
+    if (model.getConversionFor(schema.getLogicalType()) != null) {
+      // use generic classes to pass data to conversions
+      return null;
+    }
+
     if (model instanceof SpecificData) {
       return (Class<T>) ((SpecificData) model).getClass(schema);
     }
@@ -151,7 +156,16 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
   }
 
   private static Converter newConverter(Schema schema, Type type,
-      GenericData model, ParentValueContainer parent) {
+                                        GenericData model, ParentValueContainer setter) {
+
+    LogicalType logicalType = schema.getLogicalType();
+    // the expected type is always null because it is determined by the parent
+    // datum class, which never helps for generic. when logical types are added
+    // to specific, this should pass the expected type here.
+    Conversion<?> conversion = model.getConversionFor(logicalType);
+    ParentValueContainer parent = ParentValueContainer
+      .getConversionContainer(setter, conversion, schema);
+
     // this is the modified section
     if (type.asPrimitiveType().getPrimitiveTypeName() == PrimitiveType.PrimitiveTypeName.INT96) {
       if (schema.getType().equals(Schema.Type.BYTES)) {
@@ -176,35 +190,38 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
       }
     }
     // end of modified section
-    if (schema.getType().equals(Schema.Type.BOOLEAN)) {
-      return new AvroConverters.FieldBooleanConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.INT)) {
-      return new AvroConverters.FieldIntegerConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.LONG)) {
-      return new AvroConverters.FieldLongConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.FLOAT)) {
-      return new AvroConverters.FieldFloatConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.DOUBLE)) {
-      return new AvroConverters.FieldDoubleConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.BYTES)) {
-      return new AvroConverters.FieldByteBufferConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.STRING)) {
-      return new AvroConverters.FieldStringConverter(parent);
-    } else if (schema.getType().equals(Schema.Type.RECORD)) {
-      return new AvroIndexedRecordConverter(parent, type.asGroupType(), schema, model);
-    } else if (schema.getType().equals(Schema.Type.ENUM)) {
-      return new FieldEnumConverter(parent, schema, model);
-    } else if (schema.getType().equals(Schema.Type.ARRAY)) {
-      return new AvroArrayConverter(parent, type.asGroupType(), schema, model);
-    } else if (schema.getType().equals(Schema.Type.MAP)) {
-      return new MapConverter(parent, type.asGroupType(), schema, model);
-    } else if (schema.getType().equals(Schema.Type.UNION)) {
-      return new AvroUnionConverter(parent, type, schema, model);
-    } else if (schema.getType().equals(Schema.Type.FIXED)) {
-      return new FieldFixedConverter(parent, schema, model);
+    switch (schema.getType()) {
+      case ARRAY:
+        return new AvroArrayConverter(parent, type.asGroupType(), schema, model);
+      case BOOLEAN:
+        return new AvroConverters.FieldBooleanConverter(parent);
+      case BYTES:
+        return new AvroConverters.FieldByteBufferConverter(parent);
+      case DOUBLE:
+        return new AvroConverters.FieldDoubleConverter(parent);
+      case ENUM:
+        return new FieldEnumConverter(parent, schema, model);
+      case FIXED:
+        return new FieldFixedConverter(parent, schema, model);
+      case FLOAT:
+        return new AvroConverters.FieldFloatConverter(parent);
+      case INT:
+        return new AvroConverters.FieldIntegerConverter(parent);
+      case LONG:
+        return new AvroConverters.FieldLongConverter(parent);
+      case MAP:
+        return new MapConverter(parent, type.asGroupType(), schema, model);
+      case RECORD:
+        return new AvroIndexedRecordConverter(parent, type.asGroupType(), schema, model);
+      case STRING:
+        return new AvroConverters.FieldStringConverter(parent);
+      case UNION:
+        return new AvroUnionConverter(parent, type, schema, model);
+      case NULL: // fall through
+      default:
+        throw new UnsupportedOperationException(String.format("Cannot convert Avro type: %s" +
+                                                                " (Parquet type: %s) ", schema, type));
     }
-    throw new UnsupportedOperationException(String.format("Cannot convert Avro type: %s" +
-        " (Parquet type: %s) ", schema, type));
   }
 
   private void set(int index, Object value) {
@@ -265,7 +282,7 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
     private final Class<? extends Enum> enumClass;
 
     public FieldEnumConverter(ParentValueContainer parent, Schema enumSchema,
-        GenericData model) {
+                              GenericData model) {
       this.parent = parent;
       this.enumClass = model instanceof SpecificData ?
           ((SpecificData) model).getClass(enumSchema) :
@@ -298,7 +315,7 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
           SpecificData.get().getClass(avroSchema);
       if (fixedClass != null) {
         try {
-          this.fixedClassCtor = 
+          this.fixedClassCtor =
               fixedClass.getConstructor(new Class[] { byte[].class });
         } catch (Exception e) {
           throw new RuntimeException(e);
@@ -356,7 +373,7 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
       Type repeatedType = type.getType(0);
       // always determine whether the repeated type is the element type by
       // matching it against the element schema.
-      if (isElementType(repeatedType, elementSchema)) {
+      if (AvroRecordConverter.isElementType(repeatedType, elementSchema)) {
         // the element type is the repeated type (and required)
         converter = newConverter(elementSchema, repeatedType, model, new ParentValueContainer() {
           @Override
@@ -384,37 +401,6 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
     @Override
     public void end() {
       parent.add(array);
-    }
-
-    /**
-     * Returns whether the given type is the element type of a list or is a
-     * synthetic group with one field that is the element type. This is
-     * determined by checking whether the type can be a synthetic group and by
-     * checking whether a potential synthetic group matches the expected schema.
-     * <p>
-     * Unlike {@link AvroSchemaConverter#isElementType(Type, String)}, this
-     * method never guesses because the expected schema is known.
-     *
-     * @param repeatedType a type that may be the element type
-     * @param elementSchema the expected Schema for list elements
-     * @return {@code true} if the repeatedType is the element schema
-     */
-    static boolean isElementType(Type repeatedType, Schema elementSchema) {
-      if (repeatedType.isPrimitive() ||
-          repeatedType.asGroupType().getFieldCount() > 1) {
-        // The repeated type must be the element type because it is an invalid
-        // synthetic wrapper (must be a group with one field).
-        return true;
-      } else if (elementSchema != null &&
-          elementSchema.getType() == Schema.Type.RECORD &&
-          elementSchema.getFields().size() == 1 &&
-          elementSchema.getFields().get(0).name().equals(
-              repeatedType.asGroupType().getFieldName(0))) {
-        // The repeated type must be the element type because it matches the
-        // structure of the Avro element's schema.
-        return true;
-      }
-      return false;
     }
 
     /**

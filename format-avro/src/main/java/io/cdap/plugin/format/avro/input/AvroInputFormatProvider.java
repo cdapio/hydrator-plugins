@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.format.avro.input;
 
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -24,24 +23,18 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.InputFile;
+import io.cdap.cdap.etl.api.validation.InputFiles;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.avro.AvroToStructuredTransformer;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.file.FileReader;
-import org.apache.avro.file.SeekableInput;
+import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
-import org.apache.avro.mapred.FsInput;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -89,60 +82,16 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
 
   @Nullable
   @Override
-  public Schema getSchema(FormatContext context) {
-    if (conf.containsMacro("schema")) {
-      return super.getSchema(context);
-    }
-    if (!Strings.isNullOrEmpty(conf.schema)) {
-      return super.getSchema(context);
-    }
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    if (filePath == null) {
-      return super.getSchema(context);
-    }
-    try {
-      return getDefaultSchema(context);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Extract schema from file
-   *
-   * @param context {@link FormatContext}
-   * @return {@link Schema}
-   * @throws IOException raised when error occurs during schema extraction
-   */
-  public Schema getDefaultSchema(@Nullable FormatContext context) throws IOException {
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    Job job = JobUtils.createInstance();
-    Configuration hconf = job.getConfiguration();
-
-    for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
-      hconf.set(entry.getKey(), entry.getValue());
-    }
-
-    List<Path> paths = conf.getFilePathsForSchemaGeneration(filePath, ".+\\.avro$", hconf, job);
-    for (Path file : paths) {
-      DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
-      try (SeekableInput seekableInput = new FsInput(file, hconf);
-           FileReader<GenericRecord> dataFileReader = DataFileReader.openReader(seekableInput, dataReader)) {
-        if (!dataFileReader.hasNext()) {
-          continue;
-        }
-        GenericRecord firstRecord = dataFileReader.next();
-        if (firstRecord == null) {
-          continue;
-        }
-        return new AvroToStructuredTransformer().convertSchema(firstRecord.getSchema());
-      } catch (IOException e) {
-        context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
+  public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
+    DatumReader<GenericRecord> datumReader = new GenericDatumReader<>();
+    for (InputFile inputFile : inputFiles) {
+      if (!inputFile.getName().toLowerCase().endsWith(".avro")) {
+        continue;
+      }
+      try (DataFileStream<GenericRecord> dataFileStream = new DataFileStream<>(inputFile.open(), datumReader)) {
+        return new AvroToStructuredTransformer().convertSchema(dataFileStream.getSchema());
       }
     }
-    context.getFailureCollector().addFailure("Could not find a valid Avro file to parse schema. " +
-                                               "Expected to find non-empty Avro file with valid schema.",
-                                                 null);
-    return null;
+    throw new IOException("Unable to find any files that end in .avro");
   }
 }
