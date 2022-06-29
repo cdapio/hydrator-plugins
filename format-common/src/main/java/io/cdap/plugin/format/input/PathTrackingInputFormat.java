@@ -49,7 +49,7 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
   static final String PATH_FIELD = "path.tracking.path.field";
   static final String FILENAME_ONLY = "path.tracking.filename.only";
   public static final String SOURCE_FILE_ENCODING = "path.tracking.encoding";
-  static final String SCHEMA = "schema";
+  public static final String SCHEMA = "schema";
   public static final String TARGET_ENCODING = "utf-8";
 
   @Override

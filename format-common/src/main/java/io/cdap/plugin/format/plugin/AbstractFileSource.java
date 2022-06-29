@@ -38,6 +38,7 @@ import io.cdap.plugin.format.FileFormat;
 import io.cdap.plugin.format.RegexPathFilter;
 import io.cdap.plugin.format.SchemaDetector;
 import io.cdap.plugin.format.input.EmptyInputFormat;
+import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -49,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -158,9 +158,16 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       throw new IllegalArgumentException(errorMessage, e);
     }
 
-    FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
+    FormatContext formatContext = new FormatContext(collector, null);
+    Schema schema = context.getOutputSchema() == null ?
+      validatingInputFormat.getSchema(formatContext) : context.getOutputSchema();
+    if (schema == null) {
+      SchemaDetector schemaDetector = new SchemaDetector(validatingInputFormat);
+      schema = schemaDetector.detectSchema(config.getPath(context), formatContext, getFileSystemProperties(null));
+    }
+    formatContext = new FormatContext(collector, schema);
     validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
-    validatePathField(collector, validatingInputFormat.getSchema(formatContext));
+    validatePathField(collector, schema);
     collector.getOrThrowException();
 
     Job job = JobUtils.createInstance();
@@ -173,7 +180,6 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     }
     FileInputFormat.setInputDirRecursive(job, config.shouldReadRecursively());
 
-    Schema schema = config.getSchema();
     LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
     lineageRecorder.createExternalDataset(schema);
 
@@ -207,6 +213,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       Map<String, String> inputFormatConfiguration = validatingInputFormat.getInputFormatConfiguration();
       for (Map.Entry<String, String> propertyEntry : inputFormatConfiguration.entrySet()) {
         hConf.set(propertyEntry.getKey(), propertyEntry.getValue());
+      }
+      if (schema != null) {
+        // schema will not be in the inputformat configuration if it was auto-detected, so need to add it here
+        hConf.set(PathTrackingInputFormat.SCHEMA, schema.toString());
       }
     }
 

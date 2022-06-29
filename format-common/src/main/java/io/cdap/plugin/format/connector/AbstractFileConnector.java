@@ -24,6 +24,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginProperties;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchConnector;
 import io.cdap.cdap.etl.api.connector.BrowseEntity;
 import io.cdap.cdap.etl.api.connector.BrowseEntityPropertyValue;
@@ -41,6 +42,7 @@ import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.common.batch.ThrowableFunction;
 import io.cdap.plugin.format.FileFormat;
 import io.cdap.plugin.format.SchemaDetector;
+import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.plugin.FileSourceProperties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -153,11 +155,7 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
                                                     SampleRequest sampleRequest) throws IOException {
     String fullPath = getFullPath(sampleRequest.getPath());
     Map<String, String> sampleRequestProperties = sampleRequest.getProperties();
-    ValidatingInputFormat inputFormat =
-      getValidatingInputFormat(context, fullPath, sampleRequestProperties);
-    FormatContext formatContext = new FormatContext(context.getFailureCollector(), null);
-    inputFormat.validate(formatContext);
-    context.getFailureCollector().getOrThrowException();
+    FormatAndSchema inputFormat = getValidatedInputFormat(context, fullPath, sampleRequestProperties);
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
@@ -185,11 +183,14 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
       return null;
     });
 
-    String inputFormatClassName = inputFormat.getInputFormatClassName();
+    String inputFormatClassName = inputFormat.format.getInputFormatClassName();
     Configuration hConf = job.getConfiguration();
-    Map<String, String> inputFormatConfiguration = inputFormat.getInputFormatConfiguration();
+    Map<String, String> inputFormatConfiguration = inputFormat.format.getInputFormatConfiguration();
     for (Map.Entry<String, String> propertyEntry : inputFormatConfiguration.entrySet()) {
       hConf.set(propertyEntry.getKey(), propertyEntry.getValue());
+    }
+    if (inputFormat.schema != null) {
+      hConf.set(PathTrackingInputFormat.SCHEMA, inputFormat.schema.toString());
     }
 
     // set entries here again, in case anything set by PathTrackingInputFormat should be overridden
@@ -216,14 +217,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     ConnectorSpec.Builder builder = ConnectorSpec.builder();
 
     String path = getFullPath(connectorSpecRequest.getPath());
-    ValidatingInputFormat format = getValidatingInputFormat(context, path, connectorSpecRequest.getProperties());
-    FormatContext formatContext = new FormatContext(context.getFailureCollector(), null);
-    Schema schema = format.getSchema(formatContext);
-    if (schema == null) {
-      SchemaDetector schemaDetector = new SchemaDetector(format);
-      schema = schemaDetector.detectSchema(path, formatContext, getFileSystemProperties(path));
-    }
-    builder.setSchema(schema);
+    FormatAndSchema format = getValidatedInputFormat(context, path, connectorSpecRequest.getProperties());
+    builder.setSchema(format.schema);
     setConnectorSpec(connectorSpecRequest, builder);
     return builder.build();
   }
@@ -296,8 +291,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     return sampleProperties;
   }
 
-  private ValidatingInputFormat getValidatingInputFormat(ConnectorContext context, String path,
-                                                 Map<String, String> sampleProperties) throws IOException {
+  private FormatAndSchema getValidatedInputFormat(ConnectorContext context, String path,
+                                                  Map<String, String> sampleProperties) throws IOException {
     PluginProperties.Builder builder = PluginProperties.builder();
     builder.addAll(sampleProperties);
 
@@ -330,7 +325,28 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
       throw new IOException(
         String.format("Unsupported file format %s on path %s", format, path));
     }
-    return inputFormat;
+
+    FailureCollector failureCollector = context.getFailureCollector();
+    FormatContext formatContext = new FormatContext(failureCollector, null);
+    Schema schema = inputFormat.getSchema(formatContext);
+    if (schema == null) {
+      SchemaDetector schemaDetector = new SchemaDetector(inputFormat);
+      schema = schemaDetector.detectSchema(path, formatContext, getFileSystemProperties(path));
+      formatContext = new FormatContext(failureCollector, schema);
+    }
+    inputFormat.validate(formatContext);
+    failureCollector.getOrThrowException();
+    return new FormatAndSchema(inputFormat, schema);
+  }
+
+  private static class FormatAndSchema {
+    private final ValidatingInputFormat format;
+    private final Schema schema;
+
+    FormatAndSchema(ValidatingInputFormat format, Schema schema) {
+      this.format = format;
+      this.schema = schema;
+    }
   }
 
 }
