@@ -34,6 +34,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.SamplePropertyField;
+import io.cdap.cdap.etl.api.connector.SampleRequest;
 import io.cdap.cdap.etl.mock.common.MockConnectorConfigurer;
 import io.cdap.cdap.etl.mock.common.MockConnectorContext;
 import io.cdap.cdap.etl.proto.validation.SimpleFailureCollector;
@@ -45,6 +46,7 @@ import io.cdap.plugin.format.delimited.input.CSVInputFormatProvider;
 import io.cdap.plugin.format.delimited.input.DelimitedConfig;
 import io.cdap.plugin.format.delimited.input.DelimitedInputFormatProvider;
 import io.cdap.plugin.format.delimited.input.TSVInputFormatProvider;
+import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.parquet.input.ParquetInputFormatProvider;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -266,6 +268,14 @@ public class FileConnectorTest {
     ConnectorContext context = new TestConnectorContext(plugin);
     ConnectorSpec spec = fileConnector.generateSpec(context, connectorSpecRequest);
     Assert.assertEquals(expectedSchema, spec.getSchema());
+
+    SampleRequest sampleRequest = SampleRequest.builder(10)
+      .setPath(parquetFile.getAbsolutePath())
+      .build();
+    InputFormatProvider inputFormatProvider = fileConnector.getInputFormatProvider(context, sampleRequest);
+    Map<String, String> formatConfigs = inputFormatProvider.getInputFormatConfiguration();
+    Assert.assertTrue(formatConfigs.containsKey(PathTrackingInputFormat.SCHEMA));
+    Assert.assertEquals(expectedSchema, Schema.parseJson(formatConfigs.get(PathTrackingInputFormat.SCHEMA)));
   }
 
   @Test
@@ -298,6 +308,14 @@ public class FileConnectorTest {
     ConnectorContext context = new TestConnectorContext(plugin);
     ConnectorSpec spec = fileConnector.generateSpec(context, connectorSpecRequest);
     Assert.assertEquals(expectedSchema, spec.getSchema());
+
+    SampleRequest sampleRequest = SampleRequest.builder(10)
+      .setPath(avroFile.getAbsolutePath())
+      .build();
+    InputFormatProvider inputFormatProvider = fileConnector.getInputFormatProvider(context, sampleRequest);
+    Map<String, String> formatConfigs = inputFormatProvider.getInputFormatConfiguration();
+    Assert.assertTrue(formatConfigs.containsKey(PathTrackingInputFormat.SCHEMA));
+    Assert.assertEquals(expectedSchema, Schema.parseJson(formatConfigs.get(PathTrackingInputFormat.SCHEMA)));
   }
 
   @Test
@@ -334,6 +352,14 @@ public class FileConnectorTest {
                                             Schema.Field.of("body_1", Schema.of(Schema.Type.STRING)),
                                             Schema.Field.of("body_2", Schema.of(Schema.Type.STRING)));
     Assert.assertEquals(expectedSchema, spec.getSchema());
+
+    SampleRequest sampleRequest = SampleRequest.builder(10)
+      .setPath(file.getAbsolutePath())
+      .build();
+    InputFormatProvider inputFormatProvider = fileConnector.getInputFormatProvider(context, sampleRequest);
+    Map<String, String> formatConfigs = inputFormatProvider.getInputFormatConfiguration();
+    Assert.assertTrue(formatConfigs.containsKey(PathTrackingInputFormat.SCHEMA));
+    Assert.assertEquals(expectedSchema, Schema.parseJson(formatConfigs.get(PathTrackingInputFormat.SCHEMA)));
   }
 
   private static class TestConnectorContext implements ConnectorContext {
