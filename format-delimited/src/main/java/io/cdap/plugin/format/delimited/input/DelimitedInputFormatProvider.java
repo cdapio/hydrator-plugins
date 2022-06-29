@@ -25,11 +25,19 @@ import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.InputFile;
+import io.cdap.cdap.etl.api.validation.InputFiles;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
+import io.cdap.plugin.format.delimited.common.DataTypeDetectorStatusKeeper;
+import io.cdap.plugin.format.delimited.common.DataTypeDetectorUtils;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -66,7 +74,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   public void validate(FormatContext context) {
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
-    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null && context.getInputSchema() == null) {
       collector.addFailure(
         "Delimited format cannot be used without specifying a schema.",
         "Schema must be specified.")
@@ -92,6 +100,41 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 
+  @Nullable
+  @Override
+  public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
+    return detectSchema(conf, conf.delimiter == null ? "," : conf.delimiter, inputFiles);
+  }
+
+  static Schema detectSchema(DelimitedConfig conf, String delimiter,
+                             InputFiles inputFiles) throws IOException {
+    DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper = new DataTypeDetectorStatusKeeper();
+    for (InputFile inputFile : inputFiles) {
+      String line;
+      String[] columnNames = null;
+      String[] rowValue;
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.open()))) {
+        for (int rowIndex = 0; rowIndex < conf.getSampleSize() && (line = reader.readLine()) != null; rowIndex++) {
+          rowValue = line.split(delimiter, -1);
+          if (rowIndex == 0) {
+            columnNames = DataTypeDetectorUtils.setColumnNames(line, conf.getSkipHeader(), conf.getEnableQuotedValues(),
+                                                               delimiter);
+            if (conf.getSkipHeader()) {
+              continue;
+            }
+          }
+          DataTypeDetectorUtils.detectDataTypeOfRowValues(conf.getOverride(), dataTypeDetectorStatusKeeper, columnNames,
+                                                          rowValue);
+        }
+        dataTypeDetectorStatusKeeper.validateDataTypeDetector();
+      }
+      List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(
+        conf.getOverride(), columnNames, dataTypeDetectorStatusKeeper);
+      return Schema.recordOf("text", fields);
+    }
+    return null;
+  }
+
   /**
    * Plugin config for delimited input format
    */
@@ -103,6 +146,14 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     @Nullable
     @Description(DELIMITER_DESC)
     private String delimiter;
+
+    public Conf() {
+      this(null);
+    }
+
+    public Conf(@Nullable String delimiter) {
+      this.delimiter = delimiter;
+    }
   }
 
   private static PluginClass getPluginClass() {

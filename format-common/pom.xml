@@ -41,6 +41,12 @@
     <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-formats</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.cdap.plugin</groupId>

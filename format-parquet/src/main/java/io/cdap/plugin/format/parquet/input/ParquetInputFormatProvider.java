@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.format.parquet.input;
 
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -24,19 +23,20 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.InputFile;
+import io.cdap.cdap.etl.api.validation.InputFiles;
+import io.cdap.cdap.etl.api.validation.SeekableInputStream;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.common.batch.JobUtils;
+import io.cdap.plugin.format.avro.AvroToStructuredTransformer;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
-import org.apache.avro.generic.GenericData;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.parquet.ParquetReadOptions;
+import org.apache.parquet.avro.AvroSchemaConverter;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.io.DelegatingSeekableInputStream;
+import org.apache.parquet.schema.MessageType;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -72,49 +72,48 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
 
   @Nullable
   @Override
-  public Schema getSchema(FormatContext context) {
-    if (conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) || !Strings.isNullOrEmpty(conf.schema)) {
-      return super.getSchema(context);
-    }
-    try {
-      return getDefaultSchema(context);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Extract schema from file
-   *
-   * @param context {@link FormatContext}
-   * @return {@link Schema}
-   * @throws IOException raised when error occurs during schema extraction
-   */
-  public Schema getDefaultSchema(FormatContext context) throws IOException {
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    Job job = JobUtils.createInstance();
-    Configuration hconf = job.getConfiguration();
-
-    for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
-      hconf.set(entry.getKey(), entry.getValue());
-    }
-
-    List<Path> paths = conf.getFilePathsForSchemaGeneration(filePath, ".+\\.parquet$", hconf, job);
-    for (Path file : paths) {
-      try (ParquetReader reader = AvroParquetReader.builder(file).withConf(hconf).build()) {
-        GenericData.Record record = (GenericData.Record) reader.read();
-        if (record == null) {
-          continue;
-        }
-        return Schema.parseJson(record.getSchema().toString());
-      } catch (IOException e) {
-        context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
+  public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
+    ParquetReadOptions readOptions = ParquetReadOptions.builder().build();
+    for (InputFile inputFile : inputFiles) {
+      if (!inputFile.getName().toLowerCase().endsWith(".parquet")) {
+        continue;
+      }
+      try (ParquetFileReader parquetFileReader = ParquetFileReader.open(new HadoopInputFile(inputFile), readOptions)) {
+        MessageType parquetSchema = parquetFileReader.getFooter().getFileMetaData().getSchema();
+        return new AvroToStructuredTransformer().convertSchema(new AvroSchemaConverter().convert(parquetSchema));
       }
     }
-    context.getFailureCollector().addFailure("Could not find a valid Parquet file to parse schema. " +
-                                                   "Expected to find non-empty Parquet file with valid schema.",
-                                                 null);
-    return null;
+    throw new IOException("Unable to find any files that end with .parquet");
+  }
+
+  private static class HadoopInputFile implements org.apache.parquet.io.InputFile {
+    private final InputFile file;
+
+    HadoopInputFile(InputFile file) {
+      this.file = file;
+    }
+
+    @Override
+    public long getLength() {
+      return file.getLength();
+    }
+
+    @Override
+    public org.apache.parquet.io.SeekableInputStream newStream() throws IOException {
+      SeekableInputStream inputStream = file.open();
+      return new DelegatingSeekableInputStream(inputStream) {
+
+        @Override
+        public long getPos() throws IOException {
+          return inputStream.getPos();
+        }
+
+        @Override
+        public void seek(long newPos) throws IOException {
+          inputStream.seek(newPos);
+        }
+      };
+    }
   }
 
   /**

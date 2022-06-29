@@ -427,7 +427,8 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     inputManager.flush();
     Location location = inputManager.get().getPartitionByTime(timeInMillis).getLocation();
     location = location.append("file.parquet");
-    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(location.toURI()), avroSchema);
+    ParquetWriter<GenericRecord> parquetWriter = AvroParquetWriter.<GenericRecord>builder(new Path(location.toURI()))
+      .withSchema(avroSchema).build();
     parquetWriter.write(record);
     parquetWriter.close();
     inputManager.flush();
