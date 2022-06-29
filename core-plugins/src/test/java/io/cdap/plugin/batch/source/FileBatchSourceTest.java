@@ -74,6 +74,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1088,6 +1089,38 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     Assert.assertEquals("date", failureCauses.get(1).getAttribute("outputField"));
     Assert.assertEquals("Type 'date' in schema is not supported for 'delimited' format.",
                         collector.getValidationFailures().get(0).getMessage());
+  }
+
+  @Test
+  public void testCSVAutoSchema() throws Exception {
+    File inputFile = new File(temporaryFolder.newFolder(), "test.csv");
+    try (FileWriter fileWriter = new FileWriter(inputFile)) {
+      fileWriter.write("a,b,c");
+    }
+
+    String appName = "FileSourceCSVAutoSchema";
+    String outputDatasetName = UUID.randomUUID().toString();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, inputFile, "csv", outputDatasetName,
+                                                             null, null, false, false, false);
+
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    Schema expectedSchema = Schema.recordOf("text",
+                                            Schema.Field.of("body_0", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("body_1", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("body_2", Schema.of(Schema.Type.STRING)));
+    List<StructuredRecord> expected = Collections.singletonList(
+      StructuredRecord.builder(expectedSchema)
+        .set("body_0", "a")
+        .set("body_1", "b")
+        .set("body_2", "c")
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(expected, output);
   }
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
