@@ -103,12 +103,6 @@
       <plugin>
         <groupId>io.cdap</groupId>
         <artifactId>cdap-maven-plugin</artifactId>
-        <configuration combine.self="override">
-          <cdapArtifacts>
-            <parent>system:cdap-data-pipeline[6.7.1-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
-            <parent>system:cdap-data-streams[6.7.1-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
-          </cdapArtifacts>
-        </configuration>
       </plugin>
     </plugins>
   </build>
