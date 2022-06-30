@@ -39,7 +39,6 @@ import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
-import io.cdap.plugin.common.batch.ThrowableFunction;
 import io.cdap.plugin.format.FileFormat;
 import io.cdap.plugin.format.SchemaDetector;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
@@ -50,7 +49,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
@@ -166,9 +164,9 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     }
 
     Path path = new Path(fullPath);
-    // need this to load the extra class loader to avoid ClassNotFoundException for the file system
-    FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
-                                                       f -> FileSystem.get(path.toUri(), conf));
+    ClassLoader cl = conf.getClassLoader();
+    conf.setClassLoader(getClass().getClassLoader());
+    FileSystem fs = FileSystem.get(path.toUri(), conf);
 
     FileStatus[] fileStatus = fs.globStatus(path);
 
@@ -176,12 +174,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
       throw new IOException(String.format("Input path %s does not exist", path));
     }
 
-    // add input path also needs to create the file system so need to wrap it
-    JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
-                                       (ThrowableFunction<JobContext, Void, IOException>) t -> {
-      FileInputFormat.addInputPath(job, path);
-      return null;
-    });
+    FileInputFormat.addInputPath(job, path);
+    conf.setClassLoader(cl);
 
     String inputFormatClassName = inputFormat.format.getInputFormatClassName();
     Configuration hConf = job.getConfiguration();

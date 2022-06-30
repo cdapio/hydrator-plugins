@@ -75,8 +75,10 @@ public class SchemaDetector {
 
     Path fsPath = new Path(path);
 
-    FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
-                                                       f -> FileSystem.get(fsPath.toUri(), configuration));
+    ClassLoader cl = configuration.getClassLoader();
+    configuration.setClassLoader(getClass().getClassLoader());
+    FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
+    configuration.setClassLoader(cl);
 
     if (!fs.exists(fsPath)) {
       throw new IOException("Input path not found");
