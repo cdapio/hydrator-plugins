@@ -21,7 +21,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.AbstractIterator;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.format.StructuredRecordStringConverter;
 import io.cdap.plugin.common.SchemaValidator;
+import io.cdap.plugin.format.delimited.common.DelimitedStructuredRecordStringConverter;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -119,14 +121,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
           }
 
           Schema.Field nextField = fields.next();
-          if (part.isEmpty()) {
-            builder.set(nextField.getName(), null);
-          } else {
-            String fieldName = nextField.getName();
-            // Ensure if date time field, value is in correct format
-            SchemaValidator.validateDateTimeField(nextField.getSchema(), fieldName, part);
-            builder.convertAndSet(fieldName, part);
-          }
+          DelimitedStructuredRecordStringConverter.parseAndSetFieldValue(builder, nextField, part);
         }
         return builder;
       }
