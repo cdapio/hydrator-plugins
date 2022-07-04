@@ -15,7 +15,10 @@
  */
 package io.cdap.plugin.joiner.stepsdesign;
 
+import io.cdap.e2e.pages.locators.CdfPluginPropertiesLocators;
 import io.cdap.e2e.utils.CdfHelper;
+import io.cdap.e2e.utils.ElementHelper;
+import io.cdap.plugin.common.stepsdesign.TestSetupHooks;
 import io.cdap.plugin.joiner.actions.JoinerActions;
 import io.cucumber.java.en.Then;
 
@@ -36,5 +39,20 @@ public class Joiner implements CdfHelper {
   @Then("Enter numPartitions {int}")
   public void openJoinerProperties(int numPartitions) {
     JoinerActions.enterNumPartitions(String.valueOf(numPartitions));
+  }
+
+  @Then("Select joiner type {string}")
+  public void selectJoinerType(String joinerType) {
+    JoinerActions.selectJoinerType(joinerType);
+  }
+
+  @Then("Scroll to validation button and click")
+  public void scrollToValidationButton() {
+    ElementHelper.clickUsingActions(CdfPluginPropertiesLocators.validateButton);
+  }
+
+  @Then("Verify the Output File matches the Expected Output File")
+  public void verifyOutput() {
+    TestSetupHooks.verifyOutput();
   }
 }

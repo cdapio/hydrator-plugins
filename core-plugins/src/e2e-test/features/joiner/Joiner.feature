@@ -16,16 +16,16 @@
 
 @Joiner
 Feature: Joiner analytics - Verify File source data transfer using Joiner analytics
-  @HDF_FILE_SOURCE_TEST @HDF_FILE_SOURCE_JOINER_TEST @HDF_FILE_SINK_TEST @HDF_FILE_SINK_JOINER_TEST
+  @GCS_SOURCE_TEST @GCS_SOURCE_JOINER_TEST @GCS_SINK_TEST
   Scenario: To verify data is getting transferred from File source to File sink plugin successfully with Joiner
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
     When Select plugin: "File" from the plugins list as: "Source"
+    Then Move plugins: "File2" by xOffset 0 and yOffset 200
     When Expand Plugin group in the LHS plugins list: "Analytics"
     When Select plugin: "Joiner" from the plugins list as: "Analytics"
     Then Connect plugins: "File" and "Joiner" to establish connection
     Then Connect plugins: "File2" and "Joiner" to establish connection
-    Then Move plugins: "File" by xOffset 200 and yOffset 200
     When Expand Plugin group in the LHS plugins list: "Sink"
     When Select plugin: "File" from the plugins list as: "Sink"
     Then Connect plugins: "Joiner" and "File3" to establish connection
@@ -52,7 +52,10 @@ Feature: Joiner analytics - Verify File source data transfer using Joiner analyt
     Then Navigate to the properties page of plugin: "Joiner"
     Then Expand fields
     Then Uncheck plugin "File2" field "id" alias checkbox
+    Then Select joiner type "Inner"
     Then Enter numPartitions 1
+    Then Select dropdown plugin property: "inputsToLoadMemory" with option value: "File"
+    Then Scroll to validation button and click
     Then Validate "Joiner" plugin properties
     Then Close the Plugin Properties page
     Then Navigate to the properties page of plugin: "File3"
@@ -72,4 +75,5 @@ Feature: Joiner analytics - Verify File source data transfer using Joiner analyt
     Then Wait till pipeline is in running state
     Then Open and capture logs
     Then Verify the pipeline status is "Succeeded"
+    Then Verify the Output File matches the Expected Output File
     Then Close the pipeline logs

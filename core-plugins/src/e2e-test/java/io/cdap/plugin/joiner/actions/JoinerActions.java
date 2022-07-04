@@ -15,6 +15,7 @@
  */
 package io.cdap.plugin.joiner.actions;
 
+import io.cdap.e2e.pages.locators.CdfPluginPropertiesLocators;
 import io.cdap.e2e.utils.ElementHelper;
 import io.cdap.e2e.utils.SeleniumHelper;
 import io.cdap.plugin.joiner.locators.JoinerLocators;
@@ -39,4 +40,8 @@ public class JoinerActions {
     ElementHelper.selectCheckbox(JoinerLocators.fieldAliasCheckBox(plugin, field));
   }
 
+  public static void selectJoinerType(String targetJoinerType) {
+    ElementHelper.selectDropdownOption(JoinerLocators.joinerTypeSelectDropdown,
+                                       CdfPluginPropertiesLocators.locateDropdownListItem(targetJoinerType));
+  }
 }

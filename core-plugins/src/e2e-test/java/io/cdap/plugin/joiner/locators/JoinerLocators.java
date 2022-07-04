@@ -37,4 +37,7 @@ public class JoinerLocators {
 
   @FindBy(how = How.XPATH, using = "//input[@data-cy='numPartitions']")
   public static WebElement numPartitions;
+
+  @FindBy(how = How.XPATH, using = "//*[@data-cy='requiredInputs']//*[@title='Outer']")
+  public static WebElement joinerTypeSelectDropdown;
 }

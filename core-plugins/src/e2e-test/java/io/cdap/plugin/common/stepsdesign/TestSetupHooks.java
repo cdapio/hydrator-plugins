@@ -22,12 +22,17 @@ import io.cdap.e2e.utils.StorageClient;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.directory.api.util.Strings;
 import org.junit.Assert;
 import stepsdesign.BeforeActions;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -39,63 +44,47 @@ public class TestSetupHooks {
   public static String gcsSourceBucketName2 = StringUtils.EMPTY;
   public static String gcsTargetBucketName = StringUtils.EMPTY;
 
-  @Before(order = 1, value = "@FILE_SOURCE_TEST")
-  public static void setFileSourceAbsolutePath() {
-    PluginPropertyUtils.addPluginProp("firstNameGCSCsvFile", Paths.get(TestSetupHooks.class.getResource
-      ("/" + PluginPropertyUtils.pluginProp("firstNameGCSCsvFile")).getPath()).toString());
-    PluginPropertyUtils.addPluginProp("lastNameGCSCsvFile", Paths.get(TestSetupHooks.class.getResource
-      ("/" + PluginPropertyUtils.pluginProp("lastNameGCSCsvFile")).getPath()).toString());
-  }
-
-  @Before(order = 1, value = "@FILE_SINK_TEST")
-  public static void setFileSinkAbsolutePath() {
-    PluginPropertyUtils.addPluginProp("filePluginOutputFolder"
-      , Paths.get("target/" + PluginPropertyUtils.pluginProp("filePluginOutputFolder"))
-                                        .toAbsolutePath().toString());
-  }
-
-  @Before(order = 1, value = "@HDF_FILE_SOURCE_TEST")
+  @Before(order = 1, value = "@GCS_SOURCE_TEST")
   public static void createBucketWithCSVFile() throws IOException, URISyntaxException {
-    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("gcsCsvFile1"));
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("firstNameCsvFile"));
     PluginPropertyUtils.addPluginProp("gcsSourceBucket1", "gs://" + gcsSourceBucketName1 + "/"  +
-      PluginPropertyUtils.pluginProp("gcsCsvFile1"));
+      PluginPropertyUtils.pluginProp("firstNameCsvFile"));
   }
 
-  @Before(order = 1, value = "@HDF_FILE_SOURCE_JOINER_TEST")
+  @Before(order = 1, value = "@GCS_SOURCE_JOINER_TEST")
   public static void createBucketWithCSVFileForJoinerTest() throws IOException, URISyntaxException {
-    gcsSourceBucketName2 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("gcsCsvFile2"));
+    gcsSourceBucketName2 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("lastNameCsvFile"));
     PluginPropertyUtils.addPluginProp("gcsSourceBucket2", "gs://" + gcsSourceBucketName2 + "/" +
-      PluginPropertyUtils.pluginProp("gcsCsvFile2"));
+      PluginPropertyUtils.pluginProp("lastNameCsvFile"));
   }
 
-  @After(order = 1, value = "@HDF_FILE_SOURCE_TEST")
+  @After(order = 1, value = "@GCS_SOURCE_TEST")
   public static void deleteSourceBucketWithFile() {
     deleteGCSBucket(gcsSourceBucketName1);
     gcsSourceBucketName1 = StringUtils.EMPTY;
   }
 
-  @After(order = 1, value = "@HDF_FILE_SOURCE_JOINER_TEST")
+  @After(order = 1, value = "@GCS_SOURCE_JOINER_TEST")
   public static void deleteSourceBucketWithFileForJoinerTest() {
     deleteGCSBucket(gcsSourceBucketName2);
     gcsSourceBucketName2 = StringUtils.EMPTY;
   }
 
-  @Before(order = 1, value = "@HDF_FILE_SINK_TEST")
+  @Before(order = 1, value = "@GCS_SINK_TEST")
   public static void setTempTargetGCSBucketName() throws IOException {
     gcsTargetBucketName = createGCSBucket();
     PluginPropertyUtils.addPluginProp("gcsTargetBucket", "gs://" + gcsTargetBucketName);
     BeforeActions.scenario.write("GCS target bucket name - " + gcsTargetBucketName);
   }
 
-  @After(order = 1, value = "@HDF_FILE_SINK_TEST")
+  @After(order = 1, value = "@GCS_SINK_TEST")
   public static void deleteTargetBucketWithFile() {
     deleteGCSBucket(gcsTargetBucketName);
     gcsTargetBucketName = StringUtils.EMPTY;
   }
 
   private static String createGCSBucket() throws IOException {
-    String bucketName = StorageClient.createBucket("hdf-e2e-test-" + UUID.randomUUID()).getName();
-    return bucketName;
+    return StorageClient.createBucket("hdf-e2e-test-" + UUID.randomUUID()).getName();
   }
 
   private static String createGCSBucketWithFile(String filePath) throws IOException, URISyntaxException {
@@ -114,6 +103,50 @@ public class TestSetupHooks {
     } catch (StorageException | IOException e) {
       if (e.getMessage().contains("The specified bucket does not exist")) {
         BeforeActions.scenario.write("GCS Bucket " + bucketName + " does not exist.");
+      } else {
+        Assert.fail(e.getMessage());
+      }
+    }
+  }
+
+  static String readFile(String path) throws IOException {
+    File file = new File(path);
+    FileInputStream fis = new FileInputStream(file);
+    byte[] data = new byte[(int) file.length()];
+    fis.read(data);
+    fis.close();
+    return new String(data, StandardCharsets.UTF_8);
+  }
+
+  public static void verifyOutput() {
+    try {
+      String path = Paths.get(Objects.requireNonNull(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerOutput"))).getPath()).toString();
+      String expectedOutput = readFile(path);
+      int partitions = 0;
+      String content = null;
+      // The output gcs folder will be like:
+      // hdf-e2e-test-xxxxxx
+      // --2022-06-26-00-27/
+      // ----_SUCCESS
+      // ----part-r-0000
+      // ----part-r-0001....
+      // Since the number of partition is set to 1 in Joiner plugin, only part-r-0000 and _SUCCESS are expected.
+      for (Blob blob : StorageClient.listObjects(gcsTargetBucketName).iterateAll()) {
+        String name = blob.getName();
+        if (name.contains("part-r")) {
+          partitions++;
+        }
+        if (name.contains("part-r-00000")) {
+          content = new String((blob.getContent()));
+        }
+      }
+      Assert.assertEquals("Output partition should match",
+                          partitions, Integer.parseInt(PluginPropertyUtils.pluginProp("expectedPartitions")));
+      Assert.assertTrue("Output content should match", Strings.equals(content, expectedOutput));
+    } catch (StorageException | IOException e) {
+      if (e.getMessage().contains("The specified bucket does not exist")) {
+        BeforeActions.scenario.write("GCS Bucket " + gcsTargetBucketName + " does not exist.");
       } else {
         Assert.fail(e.getMessage());
       }
