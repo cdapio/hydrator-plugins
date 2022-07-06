@@ -14,21 +14,22 @@
 # the License.
 #
 
-@Joiner
-Feature: Joiner analytics - Verify File source data transfer using Joiner analytics
-  @GCS_SOURCE_TEST @GCS_SOURCE_JOINER_TEST @GCS_SINK_TEST
-  Scenario: To verify data is getting transferred from File source to File sink plugin successfully with Joiner
+@ErrorCollector
+Feature: Error Collector - Verification of successful error emitted to ErrorCollector plugin.
+  @GCS_SOURCE_TEST @GCS_SINK_TEST
+  Scenario: To verify error is emitted to ErrorCollector plugin successfully.
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
-    When Select plugin: "File" from the plugins list as: "Source"
-    Then Move plugins: "File2" by xOffset 0 and yOffset 200
-    When Expand Plugin group in the LHS plugins list: "Analytics"
-    When Select plugin: "Joiner" from the plugins list as: "Analytics"
-    Then Connect plugins: "File" and "Joiner" to establish connection
-    Then Connect plugins: "File2" and "Joiner" to establish connection
+    When Expand Plugin group in the LHS plugins list: "Transform"
+    When Select plugin: "JavaScript" from the plugins list as: "Transform"
+    When Expand Plugin group in the LHS plugins list: "Error Handlers and Alerts"
+    When Select plugin: "Error Collector" from the plugins list as: "Error Handlers and Alerts"
+    Then Move plugins: "ErrorCollector" by xOffset 200 and yOffset 200
     When Expand Plugin group in the LHS plugins list: "Sink"
     When Select plugin: "File" from the plugins list as: "Sink"
-    Then Connect plugins: "Joiner" and "File3" to establish connection
+    Then Connect plugins: "File" and "JavaScript" to establish connection
+    Then Connect node type: "error" of plugin: "JavaScript" to plugin: "ErrorCollector"
+    Then Connect plugins: "ErrorCollector" and "File2" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "firstName"
     Then Enter input plugin property: "path" with value: "gcsSourceBucket1"
@@ -39,29 +40,22 @@ Feature: Joiner analytics - Verify File source data transfer using Joiner analyt
     Then Verify the Output Schema matches the Expected Schema: "firstNameOutputSchema"
     Then Validate "File" plugin properties
     Then Close the Plugin Properties page
-    Then Navigate to the properties page of plugin: "File2"
-    Then Enter input plugin property: "referenceName" with value: "lastName"
-    Then Enter input plugin property: "path" with value: "gcsSourceBucket2"
-    Then Select dropdown plugin property: "format" with option value: "csv"
-    Then Click plugin property: "skipHeader"
-    Then Click plugin property: "enableQuotedValues"
+    Then Navigate to the properties page of plugin: "JavaScript"
+    Then Replace textarea plugin property: "script" with value: "transformScript"
+    Then Validate "JavaScript" plugin properties
+    Then Verify the Output Schema matches the Expected Schema: "firstNameOutputSchema"
+    Then Validate "JavaScript" plugin properties
+    Then Close the Plugin Properties page
+    Then Navigate to the properties page of plugin: "ErrorCollector"
     Then Click on the Get Schema button
-    Then Verify the Output Schema matches the Expected Schema: "lastNameOutputSchema"
-    Then Validate "File" plugin properties
+    Then Verify the Output Schema matches the Expected Schema: "errorCollectorOutputSchema"
+    Then Validate "ErrorCollector" plugin properties
     Then Close the Plugin Properties page
-    Then Navigate to the properties page of plugin: "Joiner"
-    Then Expand fields
-    Then Uncheck plugin "File2" field "id" alias checkbox
-    Then Select joiner type "Inner"
-    Then Enter numPartitions 1
-    Then Select dropdown plugin property: "inputsToLoadMemory" with option value: "File"
-    Then Scroll to validation button and click
-    Then Validate "Joiner" plugin properties
-    Then Close the Plugin Properties page
-    Then Navigate to the properties page of plugin: "File3"
-    Then Enter input plugin property: "referenceName" with value: "result"
+    Then Navigate to the properties page of plugin: "File2"
+    Then Enter input plugin property: "referenceName" with value: "errorSink"
     Then Enter input plugin property: "path" with value: "gcsTargetBucket"
     Then Select dropdown plugin property: "format" with option value: "csv"
+    Then Validate "File2" plugin properties
     Then Close the Plugin Properties page
     Then Save the pipeline
     Then Preview and run the pipeline
@@ -75,5 +69,6 @@ Feature: Joiner analytics - Verify File source data transfer using Joiner analyt
     Then Wait till pipeline is in running state
     Then Open and capture logs
     Then Verify the pipeline status is "Succeeded"
-    Then Verify the CSV Output File matches the Expected Output File: "joinerOutput" With Expected Partition: "expectedJoinerOutputPartitions"
+    # TODO: this line needs to change. where to put the code?
+    Then Verify the CSV Output File matches the Expected Output File: "errorCollectorOutput" With Expected Partition: "expectedErrorCollectorOutputPartitions"
     Then Close the pipeline logs
