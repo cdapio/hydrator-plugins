@@ -118,32 +118,31 @@ public class TestSetupHooks {
     return new String(data, StandardCharsets.UTF_8);
   }
 
-  public static void verifyOutput() {
+  public static void verifyOutputContentAndPartitions() {
     try {
       String path = Paths.get(Objects.requireNonNull(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("joinerOutput"))).getPath()).toString();
       String expectedOutput = readFile(path);
       int partitions = 0;
-      String content = null;
+      StringBuilder sb = new StringBuilder();
       // The output gcs folder will be like:
       // hdf-e2e-test-xxxxxx
       // --2022-06-26-00-27/
       // ----_SUCCESS
       // ----part-r-0000
-      // ----part-r-0001....
-      // Since the number of partition is set to 1 in Joiner plugin, only part-r-0000 and _SUCCESS are expected.
+      // ----part-r-0001
+      // ----part-r-...
+      // The number of part-r-* files should match the expected partitions.
       for (Blob blob : StorageClient.listObjects(gcsTargetBucketName).iterateAll()) {
         String name = blob.getName();
         if (name.contains("part-r")) {
           partitions++;
-        }
-        if (name.contains("part-r-00000")) {
-          content = new String((blob.getContent()));
+          sb.append(new String((blob.getContent())));
         }
       }
       Assert.assertEquals("Output partition should match",
                           partitions, Integer.parseInt(PluginPropertyUtils.pluginProp("expectedPartitions")));
-      Assert.assertTrue("Output content should match", Strings.equals(content, expectedOutput));
+      Assert.assertTrue("Output content should match", Strings.equals(sb.toString(), expectedOutput));
     } catch (StorageException | IOException e) {
       if (e.getMessage().contains("The specified bucket does not exist")) {
         BeforeActions.scenario.write("GCS Bucket " + gcsTargetBucketName + " does not exist.");

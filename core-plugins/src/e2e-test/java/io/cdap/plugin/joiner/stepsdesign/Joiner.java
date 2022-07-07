@@ -51,8 +51,8 @@ public class Joiner implements CdfHelper {
     ElementHelper.clickUsingActions(CdfPluginPropertiesLocators.validateButton);
   }
 
-  @Then("Verify the Output File matches the Expected Output File")
+  @Then("Verify the Output File matches the Expected Output File With Expected Partition")
   public void verifyOutput() {
-    TestSetupHooks.verifyOutput();
+    TestSetupHooks.verifyOutputContentAndPartitions();
   }
 }
