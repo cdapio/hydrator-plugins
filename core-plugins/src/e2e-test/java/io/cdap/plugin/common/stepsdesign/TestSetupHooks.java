@@ -22,17 +22,11 @@ import io.cdap.e2e.utils.StorageClient;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.directory.api.util.Strings;
 import org.junit.Assert;
 import stepsdesign.BeforeActions;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -103,49 +97,6 @@ public class TestSetupHooks {
     } catch (StorageException | IOException e) {
       if (e.getMessage().contains("The specified bucket does not exist")) {
         BeforeActions.scenario.write("GCS Bucket " + bucketName + " does not exist.");
-      } else {
-        Assert.fail(e.getMessage());
-      }
-    }
-  }
-
-  static String readFile(String path) throws IOException {
-    File file = new File(path);
-    FileInputStream fis = new FileInputStream(file);
-    byte[] data = new byte[(int) file.length()];
-    fis.read(data);
-    fis.close();
-    return new String(data, StandardCharsets.UTF_8);
-  }
-
-  public static void verifyOutputContentAndPartitions() {
-    try {
-      String path = Paths.get(Objects.requireNonNull(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerOutput"))).getPath()).toString();
-      String expectedOutput = readFile(path);
-      int partitions = 0;
-      StringBuilder sb = new StringBuilder();
-      // The output gcs folder will be like:
-      // hdf-e2e-test-xxxxxx
-      // --2022-06-26-00-27/
-      // ----_SUCCESS
-      // ----part-r-0000
-      // ----part-r-0001
-      // ----part-r-...
-      // The number of part-r-* files should match the expected partitions.
-      for (Blob blob : StorageClient.listObjects(gcsTargetBucketName).iterateAll()) {
-        String name = blob.getName();
-        if (name.contains("part-r")) {
-          partitions++;
-          sb.append(new String((blob.getContent())));
-        }
-      }
-      Assert.assertEquals("Output partition should match",
-                          partitions, Integer.parseInt(PluginPropertyUtils.pluginProp("expectedPartitions")));
-      Assert.assertTrue("Output content should match", Strings.equals(sb.toString(), expectedOutput));
-    } catch (StorageException | IOException e) {
-      if (e.getMessage().contains("The specified bucket does not exist")) {
-        BeforeActions.scenario.write("GCS Bucket " + gcsTargetBucketName + " does not exist.");
       } else {
         Assert.fail(e.getMessage());
       }

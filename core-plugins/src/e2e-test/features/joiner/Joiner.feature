@@ -75,5 +75,5 @@ Feature: Joiner analytics - Verify File source data transfer using Joiner analyt
     Then Wait till pipeline is in running state
     Then Open and capture logs
     Then Verify the pipeline status is "Succeeded"
-    Then Verify the Output File matches the Expected Output File With Expected Partition
+    Then Verify the CSV Output File matches the Expected Output File With Expected Partition
     Then Close the pipeline logs
