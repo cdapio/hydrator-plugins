@@ -15,6 +15,6 @@
  */
 
 /**
- * Package contains the step actions for the Joiner features.
+ * Package contains the stepDesign for the Joiner features.
  */
 package io.cdap.plugin.joiner.stepsdesign;

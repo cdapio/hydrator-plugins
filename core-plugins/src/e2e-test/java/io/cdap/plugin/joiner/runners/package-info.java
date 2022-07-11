@@ -15,6 +15,6 @@
  */
 
 /**
- * Package contains the locators for the Joiner plugin.
+ * Package contains the runners for the Joiner plugin.
  */
 package io.cdap.plugin.joiner.runners;

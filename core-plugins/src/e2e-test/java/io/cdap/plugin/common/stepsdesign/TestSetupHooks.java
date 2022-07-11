@@ -43,6 +43,7 @@ public class TestSetupHooks {
     gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("firstNameCsvFile"));
     PluginPropertyUtils.addPluginProp("gcsSourceBucket1", "gs://" + gcsSourceBucketName1 + "/"  +
       PluginPropertyUtils.pluginProp("firstNameCsvFile"));
+    BeforeActions.scenario.write("GCS source bucket1 name - " + gcsSourceBucketName1);
   }
 
   @Before(order = 1, value = "@GCS_SOURCE_JOINER_TEST")
@@ -50,6 +51,7 @@ public class TestSetupHooks {
     gcsSourceBucketName2 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("lastNameCsvFile"));
     PluginPropertyUtils.addPluginProp("gcsSourceBucket2", "gs://" + gcsSourceBucketName2 + "/" +
       PluginPropertyUtils.pluginProp("lastNameCsvFile"));
+    BeforeActions.scenario.write("GCS source bucket2 name - " + gcsSourceBucketName2);
   }
 
   @After(order = 1, value = "@GCS_SOURCE_TEST")
@@ -78,11 +80,11 @@ public class TestSetupHooks {
   }
 
   private static String createGCSBucket() throws IOException {
-    return StorageClient.createBucket("hdf-e2e-test-" + UUID.randomUUID()).getName();
+    return StorageClient.createBucket("e2e-test-" + UUID.randomUUID()).getName();
   }
 
   private static String createGCSBucketWithFile(String filePath) throws IOException, URISyntaxException {
-    String bucketName = StorageClient.createBucket("hdf-e2e-test-" + UUID.randomUUID()).getName();
+    String bucketName = StorageClient.createBucket("e2e-test-" + UUID.randomUUID()).getName();
     StorageClient.uploadObject(bucketName, filePath, filePath);
     return bucketName;
   }

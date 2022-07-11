@@ -75,7 +75,7 @@ public class Joiner implements CdfHelper {
   public void verifyCSVOutput() {
     try {
       // The output gcs folder will be like:
-      // hdf-e2e-test-[uuid]
+      // e2e-test-[uuid]
       // --2022-06-26-00-27/
       // ----_SUCCESS
       // ----part-r-0000
