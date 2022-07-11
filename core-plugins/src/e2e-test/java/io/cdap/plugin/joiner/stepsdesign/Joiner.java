@@ -20,6 +20,7 @@ import io.cdap.e2e.utils.CdfHelper;
 import io.cdap.e2e.utils.ElementHelper;
 import io.cdap.plugin.joiner.actions.JoinerActions;
 import io.cucumber.java.en.Then;
+
 /**
  *  Joiner Related Step Design.
  */
