@@ -1,0 +1,31 @@
+testscenarioid	testdescription	testconditionid	testtype
+TS-GCS-DSGN-01-01	Verify user is able to place the path of the file that the record was read from	TC-GCS-DSGN-01	Positive
+TS-GCS-DSGN-01-02	Verify in the Split Size field the default value should be 128MB.	TC-GCS-DSGN-02	Positive
+TS-GCS-DSGN-01-03	To Verify in the Split Size field the value less than 128MB.	TC-GCS-DSGN-03	Negative
+TS-GCS-DSGN-01-04	To Verify in the Split Size field the value greater than128MB.	TC-GCS-DSGN-04	Negative
+TS-GCS-DSGN-01-05	To Verify by passing the blank value in path field	TC-GCS-DSGN-05	Negative
+TS-GCS-DSGN-01-06	Verify by selecting the different File Format from actual file in file format drop down menu	TC-GCS-DSGN-06	Negative
+TS-GCS-DSGN-01-07	Verify the GCS properties of valid File Format of the data to read listed below:  CSV file AVRO file BLOB file TSV file Delimeted file JSON file Parquet File Text file  	TC-GCS-DSGN-07	Positive
+TS-GCS-DSGN-01-08	Verfiy the below data types supported in GCS: Integer                                         Float                                         string                                         Boolean                                                                                  See io.cdap.cdap.api.data.schema.Schema.Type and io.cdap.cdap.api.data.schema.Schema.LogicalType                                         Current list                                         Type:                                         NULL(true),                                         BOOLEAN(true),                                         INT(true),                                         LONG(true),                                         FLOAT(true),        1.4                                 DOUBLE(true),                                         BYTES(true),                                         STRING(true),                                                                                  ENUM(false),                                                                                  ARRAY(false),                                         MAP(false),                                         RECORD(false),                                         UNION(false);                                                                                  LogicalType:                                         DATE(Type.INT, "date"),                                         TIMESTAMP_MILLIS(Type.LONG, "timestamp-millis"),                                         TIMESTAMP_MICROS(Type.LONG, "timestamp-micros"),                                         TIME_MILLIS(Type.INT, "time-millis"),                                         TIME_MICROS(Type.LONG, "time-micros"),                                         DECIMAL(Type.BYTES, "decimal"),                                         DATETIME(Type.STRING, "datetime");                                                                                  Each type must be checked for "nullable" and "non-null"                                         Decimal must be checked for various setting of precision and scale, including edge ones                                         Double/Float must be checked for special cases (INF, NAN, ...)                                         	TC-GCS-DSGN-08	Positive
+TS-GCS-DSGN-01-09	To verify the browse button functionality by selecting the path of the file through browse button	TC-GCS-DSGN-01	positive
+TS-GCS-DSGN-01-10	To verify the output of get schema by using browse button functionality	TC-GCS-DSGN-10	positive
+TS-GCS-DSGN-01-11	To verify the output of get schema without using browse button functionality, direcltly place the path	TC-GCS-DSGN-11	Negative
+TS-GCS-DSGN-01-12	Verify the GCS properties of Delimeter field if the file format is delimeted	TC-GCS-DSGN-12	positive
+TS-GCS-DSGN-01-13	Verify the GCS properties of Overrride field by placing the column and data type to be override, data type supported:  Bytes double float  Int long string date time timestamp boolean	TC-GCS-DSGN-13	positive
+TS-GCS-DSGN-01-14	Verify the various combinations in override field:  Int to double double to float  Int to long Int to boolean 	TC-GCS-DSGN-14	Positive
+TS-GCS-DSGN-01-15	To verify the invalid format of data types in override field	TC-GCS-DSGN-15	Negative
+TS-GCS-DSGN-01-01	To verify Get schema button to validate output schema	TC-GCS-DSGN-16	positive
+TS-GCS-DSGN-01-01	To verify Skip header button with true value and validate the schema that header should skipped	TC-GCS-DSGN-17	positive
+TS-GCS-DSGN-01-01	To verify Skip header button with false value and validate the schema that header should not be skipped	TC-GCS-DSGN-18	negative
+TS-GCS-DSGN-01-01	In the credentials verify service account type field by selecting filepath radio button	TC-GCS-DSGN-19	positive
+TS-GCS-DSGN-01-01	In the credentials verify service account type field by selecting JSON radio button	TC-GCS-DSGN-20	positive
+TS-GCS-DSGN-01-01	To verify Regex path filter by validating regular expression for files to read	TC-GCS-DSGN-21	positive
+TS-GCS-DSGN-01-01	In path field put the path of the file and verify that if output field to contain the path of the object that was read from	TC-GCS-DSGN-22	positive
+TS-GCS-DSGN-01-01	Verify the path field name only field with true value to check whether to use file name only instead of URI	TC-GCS-DSGN-23	positive
+TS-GCS-DSGN-01-01	Verify the GCS properties of Read files recursively field with true or false value	TC-GCS-DSGN-24	positive
+TS-GCS-DSGN-01-01	Verify the GCS properties of Data file encrypted field with true or false value	TC-GCS-DSGN-25	positive
+TS-GCS-DSGN-01-01	Verify the GCS properties of encryption metadata file suffix field	TC-GCS-DSGN-26	positive
+TS-GCS-DSGN-01-01	Verify the GCS properties of File system properties field which is Additional properties to use with the InputFormat when reading the data	TC-GCS-DSGN-27	positive
+TS-GCS-DSGN-01-01	Verify the GCS properties of File encoding field(UTF-8)	TC-GCS-DSGN-28	positive
+TS-GCS-DSGN-01-01	Verify the maximum split size for each partion in bytes in Advance GCS properties	TC-GCS-DSGN-29	positive
+TS-GCS-DSGN-01-01	Verify the minimum split size for each partion in bytes in Advance GCS properties	TC-GCS-DSGN-30	positive
