@@ -25,6 +25,19 @@ on:
 jobs:
   modules:
     runs-on: ubuntu-latest
+    # We allow builds:
+    # 1) When triggered manually
+    # 2) When it's a merge into a branch
+    # 3) For PRs that are labeled as build and
+    #  - It's a code change
+    #  - A build label was just added
+    # A bit complex, but prevents builds when other labels are manipulated
+    if: >
+      github.event_name == 'workflow_dispatch'
+      || github.event_name == 'push'
+      || (contains(github.event.pull_request.labels.*.name, 'build')
+          && (github.event.action != 'labeled' || github.event.label.name == 'build')
+          )
     steps:
       - uses: actions/checkout@v2.3.4
         with:
@@ -42,21 +55,7 @@ jobs:
   build:
     needs: modules
     runs-on: k8s-runner-e2e
-
-    # We allow builds:
-    # 1) When triggered manually
-    # 2) When it's a merge into a branch
-    # 3) For PRs that are labeled as build and
-    #  - It's a code change
-    #  - A build label was just added
-    # A bit complex, but prevents builds when other labels are manipulated
-    if: >
-      (needs.modules.outputs.matrix != '[]' && needs.modules.outputs.matrix != '')
-      && (github.event_name == 'workflow_dispatch'
-      || github.event_name == 'push'
-      || (contains(github.event.pull_request.labels.*.name, 'build')
-         && (github.event.action != 'labeled' || github.event.label.name == 'build')
-         ))
+    if: needs.modules.outputs.matrix != '[]' && needs.modules.outputs.matrix != ''
     strategy:
       matrix:
         module: ${{ fromJson(needs.modules.outputs.matrix) }}
