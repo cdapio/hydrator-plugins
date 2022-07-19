@@ -2,7 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "Key Value Dataset",
+  "display-name": "Key Value Dataset (Deprecated)",
   "configuration-groups": [
     {
       "label": "Basic",
