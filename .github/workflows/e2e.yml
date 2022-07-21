@@ -89,10 +89,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-${{ github.workflow }}
       - name: Run required e2e tests
-        if: github.event_name != 'workflow_dispatch' && (!contains( github.event.head_commit.message, 'Merge pull request'))
+        if: github.event_name != 'workflow_dispatch' && github.event_name != 'push'
         run: python3 e2e/src/main/scripts/run_e2e_test.py --module ${{ matrix.module }} --testRunner TestRunnerRequired.java
       - name: Run all e2e tests
-        if: github.event_name == 'workflow_dispatch' || (contains( github.event.head_commit.message, 'Merge pull request'))
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: python3 e2e/src/main/scripts/run_e2e_test.py --module ${{ matrix.module }}
       - name: Upload report
         uses: actions/upload-artifact@v2.2.4
