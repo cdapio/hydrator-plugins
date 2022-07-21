@@ -1,0 +1,9 @@
+id,name,yearofbirth,tablename,offset
+1,albert einstein,1879,employeedata,q
+2,isaac newton,1643,employeedata,q
+3,marie curie,1867,employeedata,a
+4,galilée,1564,employeedata,a
+5,surya,1899,userdata,b
+6,ragini,1980,userdata,b
+7,sumit,1981,userdata,b
+8,asish,1982,userdata,b

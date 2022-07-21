@@ -1,0 +1,5 @@
+id@name@yearofbirth@datatype@tablename
+1@albert einstein@1879@15000000000@test
+2@isaac newton@1643@15000000000@test
+3@marie curie@1867@15000000000@type
+4@galilÃ©e@1564@15000000000@type

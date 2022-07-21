@@ -1,0 +1,4 @@
+id,firstname,lastname,photo,outputfield
+1,Tom,Cruise,https://jsonformatter.org/img/tom-cruise.jpg,gs://cdf-athena-test/testoutputfield.csv
+2,Maria,Sharapova,https://jsonformatter.org/img/Maria-Sharapova.jpg,gs://cdf-athena-test/testoutputfield.csv
+3,Robert,Downey Jr,https://jsonformatter.org/img/Robert-Downey-Jr.jpg,gs://cdf-athena-test/testoutputfield.csv

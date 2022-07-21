@@ -27,16 +27,52 @@ import stepsdesign.BeforeActions;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
- * Joiner test hooks.
+ * Common test setup hooks.
  */
 public class TestSetupHooks {
 
+  private static boolean firstFileSourceTestFlag = true;
+  private static boolean firstFileSinkTestFlag = true;
   public static String gcsSourceBucketName1 = StringUtils.EMPTY;
   public static String gcsSourceBucketName2 = StringUtils.EMPTY;
   public static String gcsTargetBucketName = StringUtils.EMPTY;
+
+  @Before(order = 1, value = "@FILE_SOURCE_TEST")
+  public static void setFileSourceAbsolutePath() {
+    if (firstFileSourceTestFlag) {
+      PluginPropertyUtils.addPluginProp("csvFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("csvFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("csvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("csvAllDataTypeFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("tsvFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("tsvFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("blobFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("blobFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("delimitedFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("delimitedFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("textFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("textFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("outputFieldTestFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("outputFieldTestFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("readRecursivePath", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("readRecursivePath")).getPath()) + "/");
+      firstFileSourceTestFlag = false;
+    }
+  }
+
+  @Before(order = 1, value = "@FILE_SINK_TEST")
+  public static void setFileSinkAbsolutePath() {
+    if (firstFileSinkTestFlag) {
+      PluginPropertyUtils.addPluginProp("filePluginOutputFolder"
+        , Paths.get("target/" + PluginPropertyUtils.pluginProp("filePluginOutputFolder"))
+                                          .toAbsolutePath().toString());
+      firstFileSinkTestFlag = false;
+    }
+  }
 
   @Before(order = 1, value = "@GCS_SOURCE_TEST")
   public static void createBucketWithCSVFile() throws IOException, URISyntaxException {
