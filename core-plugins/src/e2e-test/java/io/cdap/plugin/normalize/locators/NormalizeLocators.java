@@ -1,0 +1,107 @@
+/*
+ * Copyright © 2022 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package io.cdap.plugin.normalize.locators;
+
+import io.cdap.e2e.utils.SeleniumDriver;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.How;
+
+/**
+ * Normalize Related Locators.
+ */
+public class NormalizeLocators {
+
+  public static WebElement fieldsMappingKey(int row) {
+    String xpath = "//*[@data-cy='fieldMapping']//*[@data-cy= '" + row + "']//*[@data-cy='key']/input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement fieldsMappingValue(int row) {
+    String xpath = "//*[@data-cy='fieldMapping']//*[@data-cy= '" + row + "']//*[@data-cy='value']/input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement fieldsMappingAddRowButton(int row) {
+    String xpath = "//*[@data-cy='fieldMapping']//*[@data-cy='" + row + "']//button[@data-cy='add-row']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement fieldsNormalizeAddRowButton(int row) {
+    String xpath = "//*[@data-cy='fieldNormalizing']//*[@data-cy='" + row + "']//button[@data-cy='add-row']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement fieldNormalizingNormalizeField(int row) {
+    String xpath = "//*[@data-cy='fieldNormalizing']//*[@data-cy= '" + row + "']" +
+      "//div[@data-cy='multiple-values-input-0']/input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement fieldNormalizingFieldName(int row) {
+    String xpath = "//*[@data-cy='fieldNormalizing']//*[@data-cy= '" + row + "']" +
+      "//div[@data-cy='multiple-values-input-1']/input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement fieldNormalizingFieldValue(int row) {
+    String xpath = "//*[@data-cy='fieldNormalizing']//*[@data-cy= '" + row + "']" +
+      "//div[@data-cy='multiple-values-input-2']/input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement outputSchemaDeleteRowButton(int row) {
+    String xpath = "//*[@data-cy='Output Schema']//*[@data-cy='schema-fields-list']" +
+      "//*[@data-cy='schema-row-" + row + "']" +
+      "//button[@data-cy='schema-field-remove-button']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement locatePluginPropertyInlineError(String propertyName, int row) {
+    return SeleniumDriver.getDriver().findElement(By.xpath("//*[@data-cy='" + propertyName + "']//div[@data-cy=" +
+                                                             "'error-text-" + row + "']"));
+  }
+
+  public static WebElement outputSchemaFieldName(int row) {
+    String xpath = "//*[@data-cy='Output Schema']//*[@data-cy='schema-fields-list']//*[@data-cy='schema-row-"
+      + row + "']//input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement outputSchemaDataTypeDropdown(int row) {
+    String xpath = "//*[@data-cy='Output Schema']//*[@data-cy='schema-fields-list']" +
+      "//*[@data-cy='schema-row-" + row + "']" +
+      "//*[@data-cy='select-undefined']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static By outputSchemaDataTypeOption(int row, String option) {
+    return By.xpath("//*[@data-cy='Output Schema']//*[@data-cy='schema-fields-list']" +
+                      "//*[@data-cy='schema-row-" + row + "']" +
+                      "//*[@data-cy='select-undefined']//*[text()='" + option + "']");
+  }
+
+  public static WebElement outputSchemaAddRowButton(int row) {
+    String xpath = "//*[@data-cy='Output Schema']//*[@data-cy='schema-fields-list']" +
+      "//*[@data-cy='schema-row-" + row + "']" +
+      "//button[@data-cy='schema-field-add-button']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  @FindBy(how = How.XPATH, using = "(//*[contains(@class, 'metric-records-out-label')])[3]/following-sibling::span")
+  public static WebElement targetRecordsCount;
+}
