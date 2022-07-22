@@ -76,6 +76,14 @@ jobs:
         with:
           path: plugin
           submodules: 'recursive'
+      - uses: dorny/paths-filter@b2feaf19c27470162a626bd6fa8438ae5b263721
+        if: github.event_name != 'workflow_dispatch' && github.event_name != 'push'
+        id: filter
+        with:
+          working-directory: plugin
+          filters: |
+            e2e-test:
+              - '${{ matrix.module }}/**/e2e-test/**'
       - name: Checkout e2e test repo
         uses: actions/checkout@v2.3.4
         with:
@@ -89,10 +97,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-${{ github.workflow }}
       - name: Run required e2e tests
-        if: github.event_name != 'workflow_dispatch' && github.event_name != 'push'
+        if: github.event_name != 'workflow_dispatch' && github.event_name != 'push' && steps.filter.outputs.e2e-test == 'false'
         run: python3 e2e/src/main/scripts/run_e2e_test.py --module ${{ matrix.module }} --testRunner TestRunnerRequired.java
       - name: Run all e2e tests
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || steps.filter.outputs.e2e-test == 'true'
         run: python3 e2e/src/main/scripts/run_e2e_test.py --module ${{ matrix.module }}
       - name: Upload report
         uses: actions/upload-artifact@v2.2.4
