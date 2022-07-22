@@ -21,3 +21,15 @@ Feature:File Source - Verify File Source Plugin Error scenarios
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click on the Get Schema button
     Then Verify that the Plugin is displaying an error message: "errorMessageInputPath" on the header
+
+  Scenario:Verify File source plugin error for incorrect pathField
+    Given Open Datafusion Project to configure pipeline
+    When Select plugin: "File" from the plugins list as: "Source"
+    Then Navigate to the properties page of plugin: "File"
+    Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
+    Then Enter input plugin property: "path" with value: "outputFieldTestFile"
+    Then Select dropdown plugin property: "format" with option value: "csv"
+    Then Click plugin property: "skipHeader"
+    Then Enter input plugin property: "pathField" with value: "invalidOutputPathField"
+    Then Click on the Get Schema button
+    Then Verify file plugin in-line error message for incorrect pathField value: "invalidOutputPathField"
