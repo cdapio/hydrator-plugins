@@ -87,7 +87,8 @@ jobs:
       - name: Checkout e2e test repo
         uses: actions/checkout@v2.3.4
         with:
-          repository: cdapio/cdap-e2e-tests
+          repository: sawantpritam/cdap-e2e-tests
+          ref: gcs-jar
           path: e2e
       - name: Cache
         uses: actions/cache@v2.1.3

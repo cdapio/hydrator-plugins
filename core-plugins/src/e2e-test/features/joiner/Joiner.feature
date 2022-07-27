@@ -15,7 +15,7 @@
 #
 
 @Joiner
-Feature: Joiner analytics - Verify File source data transfer using Joiner analytics
+Feature: Joiner Analytics - Verify File source data transfer using Joiner Analytics
   @GCS_SOURCE_TEST @GCS_SOURCE_JOINER_TEST @GCS_SINK_TEST
   Scenario: To verify data is getting transferred from File source to File sink plugin successfully with Joiner
     Given Open Datafusion Project to configure pipeline
