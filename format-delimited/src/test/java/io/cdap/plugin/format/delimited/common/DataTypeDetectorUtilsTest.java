@@ -38,15 +38,23 @@ public class DataTypeDetectorUtilsTest {
   @Test
   public void testExtractedColumnNames() {
     String headerLine = "column_A;column_B;column_C";
-    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, false, ";");
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, false, ";", null);
     String[] expectedColumnNames = new String[]{"column_A", "column_B", "column_C"};
+    assertArrayEquals(expectedColumnNames, actualColumnNames);
+  }
+
+  @Test
+  public void testExtractedColumnNamesWithPathField() {
+    String headerLine = "column_A|column_B|column_C";
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, false, "|", "pathField");
+    String[] expectedColumnNames = new String[]{"column_A", "column_B", "column_C", "pathField"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
   }
 
   @Test
   public void testExtractedColumnNamesRegexMetaCharacterDelimiter() {
     String headerLine = "column_A|column_B|column_C";
-    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, false, "|");
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, false, "|", null);
     String[] expectedColumnNames = new String[]{"column_A", "column_B", "column_C"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
   }
@@ -54,7 +62,7 @@ public class DataTypeDetectorUtilsTest {
   @Test
   public void testExtractedQuotedColumnNames() {
     String headerLine = "\"column_A\";\"column_B\";\"column_C\"";
-    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, true, ";");
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, true, ";", null);
     String[] expectedColumnNames = new String[]{"column_A", "column_B", "column_C"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
   }
@@ -62,7 +70,7 @@ public class DataTypeDetectorUtilsTest {
   @Test
   public void testExtractedQuotedColumnNamesRegexMetaCharacterDelimiter() {
     String headerLine = "\"column_A\"|\"column_B\"|\"column_C\"";
-    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, true, "|");
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, true, "|", null);
     String[] expectedColumnNames = new String[]{"column_A", "column_B", "column_C"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
   }
@@ -70,15 +78,23 @@ public class DataTypeDetectorUtilsTest {
   @Test
   public void testGeneratedColumnNamesForRegexMetaCharacterDelimiter() {
     String dataLine = "John|Doe|27";
-    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, false, "|");
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, false, "|", null);
     String[] expectedColumnNames = new String[]{"body_0", "body_1", "body_2"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
   }
 
   @Test
+  public void testGeneratedColumnNamesWithPathField() {
+      String dataLine = "Col1|Col2|Col3";
+      String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, false, "|", "pathField");
+      String[] expectedColumnNames = new String[]{"body_0", "body_1", "body_2", "pathField"};
+      assertArrayEquals(expectedColumnNames, actualColumnNames);
+  }
+
+  @Test
   public void testGeneratedColumnNames() {
     String dataLine = "John;Doe;27";
-    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, false, ";");
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, false, ";", null);
     String[] expectedColumnNames = new String[]{"body_0", "body_1", "body_2"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
   }
@@ -88,7 +104,7 @@ public class DataTypeDetectorUtilsTest {
     String fieldNames = "\"column-1\", \"1column\", \"1234\", \" column#a\", \"\", \",\", \" \", \"_\", " +
       "\"column_1\", \"column_1\", \"column_1_2\", \" s p a c e s \", \"1!)@#*$%&!@\"";
     String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(
-      fieldNames, true, true, ",");
+      fieldNames, true, true, ",", null);
     String[] expectedColumnNames = new String[]{"column_1", "col_1column", "col_1234", "column_a", "BLANK",
       "_", "BLANK_2", "__2", "column_1_2", "column_1_3", "column_1_2_2", "s_p_a_c_e_s", "col_1_"};
     assertArrayEquals(expectedColumnNames, actualColumnNames);
