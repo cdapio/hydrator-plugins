@@ -113,16 +113,21 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
       String line;
       String[] columnNames = null;
       String[] rowValue;
+      String pathField = conf.getPathField();
+
       try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.open()))) {
         for (int rowIndex = 0; rowIndex < conf.getSampleSize() && (line = reader.readLine()) != null; rowIndex++) {
+
           rowValue = line.split(delimiter, -1);
           if (rowIndex == 0) {
+
             columnNames = DataTypeDetectorUtils.setColumnNames(line, conf.getSkipHeader(), conf.getEnableQuotedValues(),
-                                                               delimiter);
+                                                               delimiter, pathField);
             if (conf.getSkipHeader()) {
               continue;
             }
           }
+
           DataTypeDetectorUtils.detectDataTypeOfRowValues(conf.getOverride(), dataTypeDetectorStatusKeeper, columnNames,
                                                           rowValue);
         }

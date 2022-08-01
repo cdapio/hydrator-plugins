@@ -102,29 +102,33 @@ public class DataTypeDetectorUtils {
    * @return Array of column names.
    */
   public static String[] setColumnNames(String rawLine, boolean skipHeader,
-                                        boolean enableQuotedValues, String delimiter) {
+                                        boolean enableQuotedValues, String delimiter, String pathField) {
     String[] columnNames;
+    List<String> columnNamesList =  new ArrayList<>();
+
     final String quotedDelimiter = Pattern.quote(delimiter);
     if (skipHeader) {
-      // need to check enableQuotedValues to remove quotes on headers
+      // need to check enableQuotedValues to remove quotes on columnNamesList
       if (enableQuotedValues) {
         Iterator<String> splitsIterator = new SplitQuotesIterator(rawLine, delimiter);
-        List<String> tempHeaders = new ArrayList<String>();
         while (splitsIterator.hasNext()) {
-          tempHeaders.add(splitsIterator.next());
+          columnNamesList.add(splitsIterator.next());
         }
-        columnNames = tempHeaders.toArray(new String[tempHeaders.size()]);
       } else {
         // String.split uses regex. Here we safely escape regex sequences by using Pattern.quote
-        // Pattern.quote returns a literal pattern string
-        columnNames = rawLine.split(quotedDelimiter);
+        // Pattern.quote returns a literal pattern string converted to List
+        columnNamesList.addAll(Arrays.asList(rawLine.split(quotedDelimiter)));
       }
     } else {
-      columnNames = new String[rawLine.split(quotedDelimiter, -1).length];
-      for (int j = 0; j < columnNames.length; j++) {
-        columnNames[j] = String.format("%s_%s", "body", j);
+      int columnLength = rawLine.split(quotedDelimiter, -1).length;
+      for (int j = 0; j < columnLength; j++) {
+        columnNamesList.add(String.format("%s_%s", "body", j));
       }
     }
+    if (pathField != null) {
+      columnNamesList.add(pathField);
+    }
+    columnNames = columnNamesList.toArray(new String[0]);
     columnNames = cleanSchemaFieldNames(columnNames);
     validateSchemaFieldNames(columnNames);
     return columnNames;
