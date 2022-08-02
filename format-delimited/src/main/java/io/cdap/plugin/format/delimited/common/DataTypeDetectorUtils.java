@@ -46,15 +46,15 @@ public class DataTypeDetectorUtils {
    */
   public static void detectDataTypeOfRowValues(Map<String, Schema> override,
                                                DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper,
-                                               String[] columnNames, String[] rowValues) {
+                                               List<String> columnNames, String[] rowValues) {
     ArrayList<String> rowValuesList = new ArrayList<>(Arrays.asList(rowValues));
     // Pad empty strings at the end if fewer values than required
     // This is the same behaviour exhibited by Spark during pipeline execution
-    while (rowValuesList.size() < columnNames.length) {
+    while (rowValuesList.size() < columnNames.size()) {
       rowValuesList.add("");
     }
-    for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
-      String name = columnNames[columnIndex];
+    for (int columnIndex = 0; columnIndex < columnNames.size(); columnIndex++) {
+      String name = columnNames.get(columnIndex);
       String value = rowValuesList.get(columnIndex);
       if (!override.containsKey(name)) {
         dataTypeDetectorStatusKeeper.addDataType(name, DataTypeDetectorStatusKeeper.detectValueDataType(value));
@@ -71,10 +71,10 @@ public class DataTypeDetectorUtils {
    * @return A list of detected schema fields per each column of the dataset.
    */
   public static List<Schema.Field> detectDataTypeOfEachDatasetColumn(
-    Map<String, Schema> override, String[] columnNames, DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper) {
+    Map<String, Schema> override, List<String> columnNames, DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper) {
     List<Schema.Field> fields = new ArrayList<>();
     for (HashMap.Entry<String, Schema> entry : override.entrySet()) {
-      if (!Arrays.asList(columnNames).contains(entry.getKey())) {
+      if (!columnNames.contains(entry.getKey())) {
         throw new IllegalArgumentException(String.format("Field %s is not present in the input schema!",
                                                          entry.getKey()));
       }
@@ -101,11 +101,9 @@ public class DataTypeDetectorUtils {
    * @param rawLine A raw string line read from the dataset.
    * @return Array of column names.
    */
-  public static String[] setColumnNames(String rawLine, boolean skipHeader,
-                                        boolean enableQuotedValues, String delimiter, String pathField) {
-    String[] columnNames;
+  public static List<String> setColumnNames(String rawLine, boolean skipHeader,
+                                        boolean enableQuotedValues, String delimiter) {
     List<String> columnNamesList =  new ArrayList<>();
-
     final String quotedDelimiter = Pattern.quote(delimiter);
     if (skipHeader) {
       // need to check enableQuotedValues to remove quotes on columnNamesList
@@ -125,13 +123,9 @@ public class DataTypeDetectorUtils {
         columnNamesList.add(String.format("%s_%s", "body", j));
       }
     }
-    if (pathField != null) {
-      columnNamesList.add(pathField);
-    }
-    columnNames = columnNamesList.toArray(new String[0]);
-    columnNames = cleanSchemaFieldNames(columnNames);
-    validateSchemaFieldNames(columnNames);
-    return columnNames;
+    columnNamesList = cleanSchemaFieldNames(columnNamesList);
+    validateSchemaFieldNames(columnNamesList);
+    return columnNamesList;
   }
 
   /**
@@ -140,7 +134,7 @@ public class DataTypeDetectorUtils {
    *
    * @param fieldNames an array of field names to be validated
    */
-  public static void validateSchemaFieldNames(String[] fieldNames) {
+  public static void validateSchemaFieldNames(List<String> fieldNames) {
     for (String fieldName : fieldNames) {
       Matcher matcher = AVRO_NAMING_STANDARD.matcher(fieldName);
       if (!matcher.matches()) {
@@ -169,7 +163,7 @@ public class DataTypeDetectorUtils {
    *    if so add _# where # is the number of times seen before + 1
    * @param fieldNames an array of field names to be cleaned
    */
-  private static String[] cleanSchemaFieldNames(String[] fieldNames) {
+  private static List<String> cleanSchemaFieldNames(List<String> fieldNames) {
     final String replacementChar = "_";
     final List<String> cleanFieldNames = new ArrayList<>();
     final Map<String, Integer> seenFieldNames = new HashMap<>();
@@ -204,6 +198,6 @@ public class DataTypeDetectorUtils {
 
       cleanFieldNames.add(cleanFieldName);
     }
-    return cleanFieldNames.toArray(new String[0]);
+    return cleanFieldNames;
   }
 }

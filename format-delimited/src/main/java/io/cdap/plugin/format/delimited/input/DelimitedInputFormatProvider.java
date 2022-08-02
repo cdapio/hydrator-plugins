@@ -111,9 +111,9 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper = new DataTypeDetectorStatusKeeper();
     for (InputFile inputFile : inputFiles) {
       String line;
-      String[] columnNames = null;
+
+      List<String> columnNamesList = null;
       String[] rowValue;
-      String pathField = conf.getPathField();
 
       try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.open()))) {
         for (int rowIndex = 0; rowIndex < conf.getSampleSize() && (line = reader.readLine()) != null; rowIndex++) {
@@ -121,20 +121,23 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
           rowValue = line.split(delimiter, -1);
           if (rowIndex == 0) {
 
-            columnNames = DataTypeDetectorUtils.setColumnNames(line, conf.getSkipHeader(), conf.getEnableQuotedValues(),
-                                                               delimiter, pathField);
+            columnNamesList = DataTypeDetectorUtils.setColumnNames(line, conf.getSkipHeader(),
+                    conf.getEnableQuotedValues(), delimiter);
+            if (conf.getPathField() != null) {
+              columnNamesList.add(conf.getPathField());
+            }
             if (conf.getSkipHeader()) {
               continue;
             }
           }
 
-          DataTypeDetectorUtils.detectDataTypeOfRowValues(conf.getOverride(), dataTypeDetectorStatusKeeper, columnNames,
-                                                          rowValue);
+          DataTypeDetectorUtils.detectDataTypeOfRowValues(conf.getOverride(), dataTypeDetectorStatusKeeper,
+                  columnNamesList, rowValue);
         }
         dataTypeDetectorStatusKeeper.validateDataTypeDetector();
       }
       List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(
-        conf.getOverride(), columnNames, dataTypeDetectorStatusKeeper);
+        conf.getOverride(), columnNamesList, dataTypeDetectorStatusKeeper);
       return Schema.recordOf("text", fields);
     }
     return null;
