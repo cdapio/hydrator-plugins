@@ -124,7 +124,8 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       if (schema == null && shouldGetSchema()) {
         try {
           SchemaDetector schemaDetector = new SchemaDetector(validatingInputFormat);
-          schema = schemaDetector.detectSchema(config.getPath(), context, getFileSystemProperties(null));
+          schema = schemaDetector.detectSchema(config.getPath(), config.getFilePattern(),
+                                               context, getFileSystemProperties(null));
         } catch (IOException e) {
           context.getFailureCollector()
             .addFailure("Error when trying to detect schema: " + e.getMessage(), null)
@@ -161,9 +162,11 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     FormatContext formatContext = new FormatContext(collector, null);
     Schema schema = context.getOutputSchema() == null ?
       validatingInputFormat.getSchema(formatContext) : context.getOutputSchema();
+    Pattern pattern = config.getFilePattern();
     if (schema == null) {
       SchemaDetector schemaDetector = new SchemaDetector(validatingInputFormat);
-      schema = schemaDetector.detectSchema(config.getPath(context), formatContext, getFileSystemProperties(null));
+      schema = schemaDetector.detectSchema(config.getPath(context), pattern,
+                                           formatContext, getFileSystemProperties(null));
     }
     formatContext = new FormatContext(collector, schema);
     validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
@@ -173,7 +176,6 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
 
-    Pattern pattern = config.getFilePattern();
     if (pattern != null) {
       RegexPathFilter.configure(conf, pattern);
       FileInputFormat.setInputPathFilter(job, RegexPathFilter.class);
