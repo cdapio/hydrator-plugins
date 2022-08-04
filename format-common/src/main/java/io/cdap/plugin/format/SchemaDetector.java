@@ -95,38 +95,41 @@ public class SchemaDetector {
       configuration.set(entry.getKey(), entry.getValue());
     }
 
-    PathFilter pathFilter = getPathFilter(pattern, configuration);
     Path fsPath = new Path(path);
 
     ClassLoader cl = configuration.getClassLoader();
     configuration.setClassLoader(getClass().getClassLoader());
-    FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
-    configuration.setClassLoader(cl);
+    try {
+      FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
 
-    if (!fs.exists(fsPath) || !pathFilter.accept(fsPath)) {
-      throw new IOException("Input path not found");
+      PathFilter pathFilter = getPathFilter(pattern, configuration);
+      if (!fs.exists(fsPath) || !pathFilter.accept(fsPath)) {
+        throw new IOException("Input path not found");
+      }
+
+      FileStatus fileStatus = fs.getFileStatus(fsPath);
+      if (fileStatus.isFile()) {
+        return new FileSystemInputFiles(fs, Collections.singletonList(fileStatus));
+      }
+
+      FileStatus[] files = fs.listStatus(fsPath);
+
+      if (files == null) {
+        throw new IllegalArgumentException("Cannot read files from provided path " + path);
+      }
+
+      if (files.length == 0) {
+        throw new IllegalArgumentException("Provided directory '" + path + "' is empty");
+      }
+
+      List<FileStatus> filteredFiles = Arrays.stream(files)
+        .filter(fStatus -> pathFilter.accept(fStatus.getPath()))
+        .collect(Collectors.toList());
+
+      return new FileSystemInputFiles(fs, filteredFiles);
+    } finally {
+      configuration.setClassLoader(cl);
     }
-
-    FileStatus fileStatus = fs.getFileStatus(fsPath);
-    if (fileStatus.isFile()) {
-      return new FileSystemInputFiles(fs, Collections.singletonList(fileStatus));
-    }
-
-    FileStatus[] files = fs.listStatus(fsPath);
-
-    if (files == null) {
-      throw new IllegalArgumentException("Cannot read files from provided path " + path);
-    }
-
-    if (files.length == 0) {
-      throw new IllegalArgumentException("Provided directory '" + path + "' is empty");
-    }
-
-    List<FileStatus> filteredFiles = Arrays.stream(files)
-      .filter(fStatus -> pathFilter.accept(fStatus.getPath()))
-      .collect(Collectors.toList());
-
-    return new FileSystemInputFiles(fs, filteredFiles);
   }
 
   private PathFilter getPathFilter(@Nullable Pattern pattern, Configuration configuration) {
