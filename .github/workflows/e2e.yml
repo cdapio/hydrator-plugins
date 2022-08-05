@@ -23,8 +23,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  modules:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: k8s-runner-e2e
+
     # We allow builds:
     # 1) When triggered manually
     # 2) When it's a merge into a branch
@@ -38,38 +39,9 @@ jobs:
       || (contains(github.event.pull_request.labels.*.name, 'build')
           && (github.event.action != 'labeled' || github.event.label.name == 'build')
           )
-    steps:
-      - uses: actions/checkout@v2.3.4
-        if: github.event_name != 'workflow_dispatch'
-        with:
-          path: plugin
-      - uses: dorny/paths-filter@b2feaf19c27470162a626bd6fa8438ae5b263721
-        if: github.event_name != 'workflow_dispatch'
-        id: filter
-        with:
-          working-directory: plugin
-          filters: |
-            core-plugins:
-              - 'core-plugins/**'
-      - name: Set modules list
-        id: sml
-        run: |
-          if [ ${{ github.event_name }} != 'workflow_dispatch' ]; then
-            echo "::set-output name=matrix::$( jq '.' --compact-output <<< '${{ steps.filter.outputs.changes }}')"
-          else
-            echo "::set-output name=matrix::['core-plugins']"
-          fi
-        shell: bash
-    outputs:
-      matrix: ${{ steps.sml.outputs.matrix }}
-
-  build:
-    needs: modules
-    runs-on: k8s-runner-e2e
-    if: needs.modules.outputs.matrix != '[]' && needs.modules.outputs.matrix != ''
     strategy:
       matrix:
-        module: ${{ fromJson(needs.modules.outputs.matrix) }}
+        module: [core-plugins]
     steps:
       # Pinned 1.0.0 version
       - uses: actions/checkout@v2.3.4
