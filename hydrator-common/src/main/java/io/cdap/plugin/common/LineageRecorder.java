@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -28,6 +28,7 @@ import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -36,15 +37,20 @@ import javax.annotation.Nullable;
 public class LineageRecorder {
 
   private final BatchContext context;
-  private final String dataset;
+  private final Asset asset;
 
   public LineageRecorder(BatchContext context, String dataset) {
     this.context = context;
-    this.dataset = dataset;
+    this.asset = new Asset(dataset);
+  }
+
+  public LineageRecorder(BatchContext context, Asset asset) {
+    this.context = context;
+    this.asset = asset;
   }
 
   /**
-   * Creates an external dataset if a dataset with the given {@link LineageRecorder#dataset} name does not already
+   * Creates an external dataset if a dataset with the given {@link LineageRecorder#asset#fqn} name does not already
    * exists. If a non null schema is provided then the external dataset will have the given schema upon creation.
    *
    * @param schema the schema of the external dataset
@@ -58,10 +64,10 @@ public class LineageRecorder {
       datasetProperties = DatasetProperties.of(Collections.singletonMap(DatasetProperties.SCHEMA, schema.toString()));
     }
     try {
-      if (!context.datasetExists(dataset)) {
+      if (!context.datasetExists(asset.getFqn())) {
         // if the dataset does not already exists then create it with the given schema. If it does exists then there is
         // no need to create it.
-        context.createDataset(dataset, Constants.EXTERNAL_DATASET_TYPE, datasetProperties);
+        context.createDataset(asset.getFqn(), Constants.EXTERNAL_DATASET_TYPE, datasetProperties);
       }
     } catch (InstanceConflictException e) {
       // This will happen when multiple pipelines run simultaneously and are trying to create the same
@@ -69,7 +75,8 @@ public class LineageRecorder {
       // One will succeed and another will receive a InstanceConflictException. This exception can be ignored.
       return;
     } catch (DatasetManagementException e) {
-      throw new RuntimeException(String.format("Failed to create dataset %s with schema %s.", dataset, schema), e);
+      throw new RuntimeException(String.format("Failed to create dataset %s with schema %s.", asset.getFqn(), schema),
+                                 e);
     }
   }
 
@@ -81,10 +88,8 @@ public class LineageRecorder {
    * @param fields output fields of this read operation
    */
   public void recordRead(String operationName, String operationDescription, List<String> fields) {
-    context.record(Collections.singletonList(new FieldReadOperation(operationName,
-                                                                    operationDescription,
-                                                                    EndPoint.of(context.getNamespace(), dataset),
-                                                                    fields)));
+    context.record(Collections.singletonList(new FieldReadOperation(operationName, operationDescription,
+                                                                    getEndPoint(), fields)));
   }
 
   /**
@@ -95,9 +100,12 @@ public class LineageRecorder {
    * @param fields input fields of this read operation
    */
   public void recordWrite(String operationName, String operationDescription, List<String> fields) {
-    context.record(Collections.singletonList(new FieldWriteOperation(operationName,
-                                                                     operationDescription,
-                                                                     EndPoint.of(context.getNamespace(), dataset),
-                                                                     fields)));
+    context.record(Collections.singletonList(new FieldWriteOperation(operationName, operationDescription,
+                                                                     getEndPoint(), fields)));
+  }
+
+  private EndPoint getEndPoint() {
+    Map<String, String> properties = Collections.singletonMap(Constants.Reference.LOCATION, asset.getLocation());
+    return EndPoint.of(context.getNamespace(), asset.getFqn(), properties);
   }
 }
