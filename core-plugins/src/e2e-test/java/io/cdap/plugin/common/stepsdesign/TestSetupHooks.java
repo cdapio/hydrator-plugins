@@ -21,13 +21,17 @@ import io.cdap.e2e.utils.PluginPropertyUtils;
 import io.cdap.e2e.utils.StorageClient;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import stepsdesign.BeforeActions;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -37,6 +41,7 @@ public class TestSetupHooks {
 
   private static boolean firstFileSourceTestFlag = true;
   private static boolean firstFileSinkTestFlag = true;
+  private static String fileSinkOutputFolder = StringUtils.EMPTY;
   public static String gcsSourceBucketName1 = StringUtils.EMPTY;
   public static String gcsSourceBucketName2 = StringUtils.EMPTY;
   public static String gcsTargetBucketName = StringUtils.EMPTY;
@@ -60,6 +65,10 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("outputFieldTestFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("readRecursivePath", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("readRecursivePath")).getPath()) + "/");
+      PluginPropertyUtils.addPluginProp("normalizeCsvFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("normalizeCsvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeFile")).getPath()).toString());
       firstFileSourceTestFlag = false;
     }
   }
@@ -67,11 +76,20 @@ public class TestSetupHooks {
   @Before(order = 1, value = "@FILE_SINK_TEST")
   public static void setFileSinkAbsolutePath() {
     if (firstFileSinkTestFlag) {
-      PluginPropertyUtils.addPluginProp("filePluginOutputFolder"
-        , Paths.get("target/" + PluginPropertyUtils.pluginProp("filePluginOutputFolder"))
-                                          .toAbsolutePath().toString());
+      PluginPropertyUtils.addPluginProp("normalizeCsvAllDataTypeOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("normalizeCsvOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvOutputFile")).getPath()).toString());
+      fileSinkOutputFolder = PluginPropertyUtils.pluginProp("filePluginOutputFolder");
       firstFileSinkTestFlag = false;
     }
+    PluginPropertyUtils.addPluginProp("filePluginOutputFolder", Paths.get("target/" + fileSinkOutputFolder + "/"
+             + (new SimpleDateFormat("yyyyMMdd-HH-mm-ssSSS").format(new Date()))).toAbsolutePath().toString());
+  }
+
+  @After(order = 1, value = "@FILE_SINK_TEST")
+  public static void deleteFileSinkOutputFolder() throws IOException {
+    FileUtils.deleteDirectory(new File(PluginPropertyUtils.pluginProp("filePluginOutputFolder")));
   }
 
   @Before(order = 1, value = "@GCS_SOURCE_TEST")

@@ -13,13 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.cdap.plugin.utils;
-
 /**
- * E2E test constants.
+ * Package contains the locators for the Normalize plugin.
  */
-public class E2ETestConstants {
-  public static final String ERROR_MSG_FILE_INVALID_OUTPUTFIELD = "errorMessageFileInvalidOutputField";
-  public static final String ERROR_MSG_NORMALIZE_INVALID_FIELDMAPPING = "errorMessageNormalizeInvalidFieldMapping";
-  public static final String ERROR_MSG_NORMALIZE_INVALID_FIELDNORMALIZE = "errorMessageNormalizeInvalidFieldNormalize";
-}
+package io.cdap.plugin.normalize.locators;
