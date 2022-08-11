@@ -73,6 +73,8 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("distinctCsvAllDataTypeFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("distinctFileCsvFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("distinctFileCsvFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("deduplicateFileCsvFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("deduplicateFileCsvFile")).getPath()).toString());
       firstFileSourceTestFlag = false;
     }
   }
@@ -90,6 +92,14 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("distinctCsvOutputFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("distinctMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("distinctMacroOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("deduplicateTest1OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("deduplicateTest1OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("deduplicateTest2OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("deduplicateTest2OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("deduplicateTest3OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("deduplicateTest3OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("deduplicateMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("deduplicateMacroOutputFile")).getPath()).toString());
       fileSinkOutputFolder = PluginPropertyUtils.pluginProp("filePluginOutputFolder");
       firstFileSinkTestFlag = false;
     }
