@@ -69,6 +69,10 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("normalizeCsvFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("normalizeCsvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("distinctCsvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("distinctCsvAllDataTypeFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("distinctFileCsvFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("distinctFileCsvFile")).getPath()).toString());
       firstFileSourceTestFlag = false;
     }
   }
@@ -80,6 +84,12 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeOutputFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("normalizeCsvOutputFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("normalizeCsvOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("distinctDatatypeOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("distinctDatatypeOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("distinctCsvOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("distinctCsvOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("distinctMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("distinctMacroOutputFile")).getPath()).toString());
       fileSinkOutputFolder = PluginPropertyUtils.pluginProp("filePluginOutputFolder");
       firstFileSinkTestFlag = false;
     }

@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  *  Core Plugin Common Step Design.
@@ -130,5 +131,39 @@ public class CorePlugin implements CdfHelper {
     byte[] first = Files.readAllBytes(new File(firstFilePath).toPath());
     byte[] second = Files.readAllBytes(new File(secondFilePath).toPath());
     return Arrays.equals(first, second);
+  }
+
+  @Then("Validate output records in output folder path {string} is equal to expected output file {string}")
+  public void validateOutputRecordsInOutputFolderIsEqualToExpectedOutputFile(String outputFolder
+    , String expectedOutputFile) throws IOException {
+
+    List<String> expectedOutput = new ArrayList<>();
+    int expectedOutputRecordsCount = 0;
+    try (BufferedReader bf1 = Files.newBufferedReader(Paths.get(PluginPropertyUtils.pluginProp(expectedOutputFile)))) {
+      String line;
+      while ((line = bf1.readLine()) != null) {
+        expectedOutput.add(line);
+        expectedOutputRecordsCount++;
+      }
+
+      List<Path> partFiles = Files.walk(Paths.get(PluginPropertyUtils.pluginProp(outputFolder)))
+        .filter(Files::isRegularFile)
+        .filter(file -> file.toFile().getName().startsWith("part-r")).collect(Collectors.toList());
+
+      int outputRecordsCount = 0;
+      for (Path partFile : partFiles) {
+        try (BufferedReader bf = Files.newBufferedReader(partFile.toFile().toPath())) {
+          String line1;
+          while ((line1 = bf.readLine()) != null) {
+            if (!(expectedOutput.contains(line1))) {
+              Assert.fail("Output records not equal to expected output");
+            }
+            outputRecordsCount++;
+          }
+        }
+      }
+      Assert.assertEquals("Output records count should be equal to expected output records count"
+        , expectedOutputRecordsCount, outputRecordsCount);
+    }
   }
 }
