@@ -1,0 +1,17 @@
+user,item,action,timestamp
+bob,donut,buy,2019-03-10 04:50:01 UTC
+bob,donut,buy,2019-03-10 04:50:01 UTC
+bob,donut,buy,2019-03-11 04:50:01 UTC
+bob,coffee,buy,2019-03-11 04:50:01 UTC
+bob,donut,eat,2019-03-09 04:50:01 UTC
+bob,donut,eat,2019-03-08 04:50:01 UTC
+bob,coffee,drink,2019-03-12 04:50:01 UTC
+bob,coffee,buy,2019-03-11 04:50:01 UTC
+bob,coffee,buy,2019-03-11 04:50:01 UTC
+bob,coffee,buy,2019-03-11 04:50:01 UTC
+bob,donut,buy,2019-03-10 04:50:01 UTC
+bob,donut,buy,2019-03-10 04:50:01 UTC
+bob,donut,buy,2019-03-10 04:50:01 UTC
+bob,donut,eat,2019-03-09 04:50:01 UTC
+bob,donut,eat,2019-03-09 04:50:01 UTC
+bob,donut,eat,2019-03-09 04:50:01 UTC
