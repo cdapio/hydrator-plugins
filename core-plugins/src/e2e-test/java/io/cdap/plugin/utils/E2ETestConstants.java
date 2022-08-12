@@ -23,4 +23,6 @@ public class E2ETestConstants {
   public static final String ERROR_MSG_NORMALIZE_INVALID_FIELDMAPPING = "errorMessageNormalizeInvalidFieldMapping";
   public static final String ERROR_MSG_NORMALIZE_INVALID_FIELDNORMALIZE = "errorMessageNormalizeInvalidFieldNormalize";
   public static final String ERROR_MSG_DISTINCT_INVALID_FIELDS = "errorMessageDistinctInvalidFields";
+  public static final String ERROR_MSG_GROUPBY_INVALID_FIELDS = "errorMessageGroupByInvalidFields";
+  public static final String ERROR_MSG_GROUPBY_AGGREGATOR_INVALID_FIELD = "errorMessageGroupByInvalidAggregatorFields";
 }
