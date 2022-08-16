@@ -1,0 +1,4 @@
+purchase_id,customer_name,item
+1,alice,donut
+2,,coffee
+3,bob,water

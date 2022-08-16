@@ -44,4 +44,9 @@ public class JoinerActions {
     ElementHelper.selectDropdownOption(JoinerLocators.joinerTypeSelectDropdown,
                                        CdfPluginPropertiesLocators.locateDropdownListItem(targetJoinerType));
   }
+
+  public static int getTargetRecordsCount() {
+    String incount = JoinerLocators.targetRecordsCount.getText();
+    return Integer.parseInt(incount.replaceAll(",", ""));
+  }
 }

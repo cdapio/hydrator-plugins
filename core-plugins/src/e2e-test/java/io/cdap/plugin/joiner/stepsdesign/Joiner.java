@@ -21,6 +21,7 @@ import io.cdap.e2e.utils.ElementHelper;
 import io.cdap.e2e.utils.PluginPropertyUtils;
 import io.cdap.plugin.joiner.actions.JoinerActions;
 import io.cucumber.java.en.Then;
+import org.junit.Assert;
 /**
  *  Joiner Related Step Design.
  */
@@ -48,5 +49,10 @@ public class Joiner implements CdfHelper {
   @Then("Scroll to validation button and click")
   public void scrollToValidationButton() {
     ElementHelper.clickUsingActions(CdfPluginPropertiesLocators.validateButton);
+  }
+
+  @Then("Validate OUT record count of joiner is equal to IN record count of sink")
+  public void validateOUTRecordCountOfJoinerIsEqualToINRecordCountOfSink() {
+    Assert.assertEquals(recordOut(), JoinerActions.getTargetRecordsCount());
   }
 }
