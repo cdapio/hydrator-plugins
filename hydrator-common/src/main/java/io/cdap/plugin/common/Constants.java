@@ -28,6 +28,7 @@ public final class Constants {
     public static final String REFERENCE_NAME = "referenceName";
     public static final String REFERENCE_NAME_DESCRIPTION = "This will be used to uniquely identify this source/sink " +
       "for lineage, annotating metadata, etc.";
+    public static final String LOCATION = "location";
   }
 
   public static final String EXTERNAL_DATASET_TYPE = "externalDataset";
