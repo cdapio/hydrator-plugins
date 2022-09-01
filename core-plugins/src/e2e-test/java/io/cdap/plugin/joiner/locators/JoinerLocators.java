@@ -40,4 +40,7 @@ public class JoinerLocators {
 
   @FindBy(how = How.XPATH, using = "//*[@data-cy='requiredInputs']//*[@title='Outer']")
   public static WebElement joinerTypeSelectDropdown;
+
+  @FindBy(how = How.XPATH, using = "(//*[contains(@class, 'metric-records-out-label')])[3]/following-sibling::span")
+  public static WebElement targetRecordsCount;
 }

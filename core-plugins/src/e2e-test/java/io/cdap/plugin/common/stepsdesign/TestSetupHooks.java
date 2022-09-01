@@ -77,6 +77,14 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("deduplicateFileCsvFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("groupByGcsCsvFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("groupByGcsCsvFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerCsvFileSecondInput", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerCsvFileSecondInput")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerCsvFileFirstInput", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerCsvFileFirstInput")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerCsvNullFileSecondInput", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerCsvNullFileSecondInput")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerCsvNullFileFirstInput", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerCsvNullFileFirstInput")).getPath()).toString());
       firstFileSourceTestFlag = false;
     }
   }
@@ -110,6 +118,16 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("groupByTest3OutputFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("groupByMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("groupByMacroOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerTest1OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerTest1OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerTest2OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerTest2OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerTest3OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerTest3OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerTest4OutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerTest4OutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("joinerMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("joinerMacroOutputFile")).getPath()).toString());
       fileSinkOutputFolder = PluginPropertyUtils.pluginProp("filePluginOutputFolder");
       firstFileSinkTestFlag = false;
     }
