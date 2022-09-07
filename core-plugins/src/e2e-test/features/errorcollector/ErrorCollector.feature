@@ -71,3 +71,110 @@ Feature: Error Collector - Verification of successful error emitted to ErrorColl
     Then Verify the pipeline status is "Succeeded"
     Then Verify the CSV Output File matches the Expected Output File: "errorCollectorOutput" With Expected Partitions: "expectedErrorCollectorOutputPartitions"
     Then Close the pipeline logs
+
+  @FILE_SOURCE_TEST @FILE_SINK_TEST @ErrorCollector
+  Scenario: Verify error collector plugin functionality with default config using File Plugins and Wrangler
+    Given Open Datafusion Project to configure pipeline
+    When Select plugin: "File" from the plugins list as: "Source"
+    When Expand Plugin group in the LHS plugins list: "Transform"
+    When Select plugin: "Wrangler" from the plugins list as: "Transform"
+    When Expand Plugin group in the LHS plugins list: "Error Handlers and Alerts"
+    When Select plugin: "Error Collector" from the plugins list as: "Error Handlers and Alerts"
+    Then Move plugins: "ErrorCollector" by xOffset 80 and yOffset 200
+    When Expand Plugin group in the LHS plugins list: "Sink"
+    When Select plugin: "File" from the plugins list as: "Sink"
+    Then Connect plugins: "File" and "Wrangler" to establish connection
+    Then Connect node type: "error" of plugin: "Wrangler" to plugin: "ErrorCollector"
+    Then Connect plugins: "ErrorCollector" and "File2" to establish connection
+    When Navigate to the properties page of plugin: "File"
+    Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
+    Then Enter input plugin property: "path" with value: "csvFile"
+    Then Select dropdown plugin property: "format" with option value: "csv"
+    Then Click plugin property: "skipHeader"
+    Then Click on the Get Schema button
+    Then Verify the Output Schema matches the Expected Schema: "csvFileSchema"
+    Then Validate "File" plugin properties
+    Then Close the Plugin Properties page
+    When Navigate to the properties page of plugin: "Wrangler"
+    Then Enter textarea plugin property: "recipe" with value: "errorCollectorWranglerCondition"
+    Then Validate "Wrangler" plugin properties
+    When Close the Plugin Properties page
+    When Navigate to the properties page of plugin: "ErrorCollector"
+    Then Validate "ErrorCollector" plugin properties
+    When Close the Plugin Properties page
+    When Navigate to the properties page of plugin: "File2"
+    Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
+    Then Enter input plugin property: "path" with value: "filePluginOutputFolder"
+    Then Replace input plugin property: "pathSuffix" with value: "yyyy-MM-dd-HH-mm"
+    Then Select dropdown plugin property: "format" with option value: "csv"
+    Then Click plugin property: "writeHeader"
+    Then Validate "File" plugin properties
+    Then Close the Plugin Properties page
+    Then Save the pipeline
+    Then Preview and run the pipeline
+    Then Wait till pipeline preview is in running state
+    Then Open and capture pipeline preview logs
+    Then Verify the preview run status of pipeline in the logs is "succeeded"
+    Then Close the pipeline logs
+    Then Close the preview
+    Then Save and Deploy Pipeline
+    Then Run the Pipeline in Runtime
+    Then Wait till pipeline is in running state
+    Then Open and capture logs
+    Then Verify the pipeline status is "Succeeded"
+    Then Validate output records in output folder path "filePluginOutputFolder" is equal to expected output file "errorCollectorDefaultConfigOutput"
+
+  @FILE_SOURCE_TEST @FILE_SINK_TEST @ErrorCollector
+  Scenario: Verify error collector plugin functionality with custom config using File Plugins and Wrangler
+    Given Open Datafusion Project to configure pipeline
+    When Select plugin: "File" from the plugins list as: "Source"
+    When Expand Plugin group in the LHS plugins list: "Transform"
+    When Select plugin: "Wrangler" from the plugins list as: "Transform"
+    When Expand Plugin group in the LHS plugins list: "Error Handlers and Alerts"
+    When Select plugin: "Error Collector" from the plugins list as: "Error Handlers and Alerts"
+    Then Move plugins: "ErrorCollector" by xOffset 80 and yOffset 200
+    When Expand Plugin group in the LHS plugins list: "Sink"
+    When Select plugin: "File" from the plugins list as: "Sink"
+    Then Connect plugins: "File" and "Wrangler" to establish connection
+    Then Connect node type: "error" of plugin: "Wrangler" to plugin: "ErrorCollector"
+    Then Connect plugins: "ErrorCollector" and "File2" to establish connection
+    When Navigate to the properties page of plugin: "File"
+    Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
+    Then Enter input plugin property: "path" with value: "csvFile"
+    Then Select dropdown plugin property: "format" with option value: "csv"
+    Then Click plugin property: "skipHeader"
+    Then Click on the Get Schema button
+    Then Verify the Output Schema matches the Expected Schema: "csvFileSchema"
+    Then Validate "File" plugin properties
+    Then Close the Plugin Properties page
+    When Navigate to the properties page of plugin: "Wrangler"
+    Then Enter textarea plugin property: "recipe" with value: "errorCollectorWranglerCondition"
+    Then Validate "Wrangler" plugin properties
+    When Close the Plugin Properties page
+    When Navigate to the properties page of plugin: "ErrorCollector"
+    Then Replace input plugin property: "errorMessageColumnName" with value: "errorMessageColumnName"
+    Then Replace input plugin property: "errorCodeColumnName" with value: "errorCodeColumnName"
+    Then Replace input plugin property: "errorEmitterNodeName" with value: "errorEmitterNodeName"
+    Then Validate "ErrorCollector" plugin properties
+    When Close the Plugin Properties page
+    When Navigate to the properties page of plugin: "File2"
+    Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
+    Then Enter input plugin property: "path" with value: "filePluginOutputFolder"
+    Then Replace input plugin property: "pathSuffix" with value: "yyyy-MM-dd-HH-mm"
+    Then Select dropdown plugin property: "format" with option value: "csv"
+    Then Click plugin property: "writeHeader"
+    Then Validate "File" plugin properties
+    Then Close the Plugin Properties page
+    Then Save the pipeline
+    Then Preview and run the pipeline
+    Then Wait till pipeline preview is in running state
+    Then Open and capture pipeline preview logs
+    Then Verify the preview run status of pipeline in the logs is "succeeded"
+    Then Close the pipeline logs
+    Then Close the preview
+    Then Save and Deploy Pipeline
+    Then Run the Pipeline in Runtime
+    Then Wait till pipeline is in running state
+    Then Open and capture logs
+    Then Verify the pipeline status is "Succeeded"
+    Then Validate output records in output folder path "filePluginOutputFolder" is equal to expected output file "errorCollectorCustomConfigOutput"

@@ -128,6 +128,10 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("joinerTest4OutputFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("joinerMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("joinerMacroOutputFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("errorCollectorDefaultConfigOutput", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("errorCollectorDefaultConfigOutput")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("errorCollectorCustomConfigOutput", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("errorCollectorCustomConfigOutput")).getPath()).toString());
       fileSinkOutputFolder = PluginPropertyUtils.pluginProp("filePluginOutputFolder");
       firstFileSinkTestFlag = false;
     }
