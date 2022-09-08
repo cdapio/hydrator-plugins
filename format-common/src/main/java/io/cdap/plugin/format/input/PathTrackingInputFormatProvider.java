@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -21,7 +21,9 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -61,6 +63,28 @@ public abstract class PathTrackingInputFormatProvider<T extends PathTrackingConf
   @Deprecated
   protected void validate() {
     // no-op
+  }
+
+  protected Schema addPathField(Schema dataSchema, FailureCollector failureCollector) {
+    return addPathField(failureCollector, dataSchema, conf.getPathField());
+  }
+
+  public static Schema addPathField(FailureCollector failureCollector, Schema dataSchema, @Nullable String pathField) {
+    if (pathField == null) {
+      return dataSchema;
+    }
+    List<Schema.Field> fields = new ArrayList<>(dataSchema.getFields());
+    for (Schema.Field field : fields) {
+      if (pathField.equals(field.getName())) {
+        failureCollector.addFailure(
+          String.format("Path Field %s already exists in the data schema ", pathField),
+            "Please provide a field that does not already exist")
+                        .withConfigProperty("pathField");
+        return dataSchema;
+      }
+    }
+    fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+    return Schema.recordOf(dataSchema.getRecordName(), fields);
   }
 
   public void validate(FormatContext context) {

@@ -77,6 +77,10 @@ public class DelimitedConfig extends PathTrackingConfig {
     return Long.parseLong(getProperties().getProperties().getOrDefault(NAME_SAMPLE_SIZE, "1000"));
   }
 
+  public DelimitedConfig() {
+    super();
+  }
+
   /**
    * Parses a list of key-value items of column names and their corresponding data types, manually set by the user.
    *

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -83,6 +83,6 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   @Nullable
   @Override
   public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
-    return DelimitedInputFormatProvider.detectSchema(conf, ",", inputFiles);
+    return DelimitedInputFormatProvider.detectSchema(conf, ",", inputFiles, context);
   }
 }

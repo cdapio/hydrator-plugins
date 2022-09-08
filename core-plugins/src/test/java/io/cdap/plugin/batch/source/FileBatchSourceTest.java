@@ -841,8 +841,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     String appName = "FileSourceAvroNullSchema";
     Schema recordSchemaWithoutPathField = Schema.recordOf("record",
                                                           Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
-                                                          Schema.Field.of("file", Schema.of(Schema.Type.STRING))
+                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG))
     );
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchemaWithoutPathField.
@@ -850,7 +849,6 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
-      .set("file", fileAvro.getAbsolutePath())
       .build();
 
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
@@ -976,15 +974,13 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     String appName = "FileSourceParquetNullSchema";
     Schema recordSchemaWithMissingField = Schema.recordOf("record",
                                                           Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
-                                                          Schema.Field.of("file", Schema.of(Schema.Type.STRING))
+                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG))
     );
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchemaWithMissingField.
       toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
-      .set("file", fileParquet.getAbsoluteFile())
       .build();
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
     ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()),

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.text.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
@@ -245,6 +246,15 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
       fields.put("skipHeader", new PluginPropertyField("skipHeader", SKIP_HEADER_DESC,
                                                        "boolean", false, true));
       TEXT_FIELDS = Collections.unmodifiableMap(fields);
+    }
+
+    public TextConfig() {
+      super();
+    }
+
+    @VisibleForTesting
+    public TextConfig(String pathField) {
+      super(pathField);
     }
 
     @Macro

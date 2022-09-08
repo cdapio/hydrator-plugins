@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.blob.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
@@ -152,6 +153,15 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
   public static class BlobConfig extends PathTrackingConfig {
     static final String NAME_SCHEMA = "schema";
     static final String NAME_BODY = "body";
+
+    @VisibleForTesting
+    public BlobConfig(String pathField) {
+      super(pathField);
+    }
+
+    public BlobConfig() {
+      super();
+    }
 
     /**
      * Return the configured schema, or the default schema if none was given. Should never be called if the

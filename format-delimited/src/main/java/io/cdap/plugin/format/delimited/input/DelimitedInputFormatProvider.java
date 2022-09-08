@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.delimited.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -103,11 +104,11 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   @Nullable
   @Override
   public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
-    return detectSchema(conf, conf.delimiter == null ? "," : conf.delimiter, inputFiles);
+    return detectSchema(conf, conf.delimiter == null ? "," : conf.delimiter, inputFiles, context);
   }
 
   static Schema detectSchema(DelimitedConfig conf, String delimiter,
-                             InputFiles inputFiles) throws IOException {
+                             InputFiles inputFiles, FormatContext context) throws IOException {
     DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper = new DataTypeDetectorStatusKeeper();
     for (InputFile inputFile : inputFiles) {
       String line;
@@ -130,7 +131,8 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
       }
       List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(
         conf.getOverride(), columnNames, dataTypeDetectorStatusKeeper);
-      return Schema.recordOf("text", fields);
+      Schema schema = Schema.recordOf("text", fields);
+      return PathTrackingInputFormatProvider.addPathField(context.getFailureCollector(), schema, conf.getPathField());
     }
     return null;
   }
@@ -153,6 +155,12 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
 
     public Conf(@Nullable String delimiter) {
       this.delimiter = delimiter;
+    }
+
+    @VisibleForTesting
+    public Conf(@Nullable String delimiter, String pathField) {
+      this.delimiter = delimiter;
+      this.pathField = pathField;
     }
   }
 
