@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Cask Data, Inc.
+ * Copyright © 2018-2022 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.parquet.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -37,6 +38,7 @@ import org.apache.parquet.io.DelegatingSeekableInputStream;
 import org.apache.parquet.schema.MessageType;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -80,7 +82,9 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
       }
       try (ParquetFileReader parquetFileReader = ParquetFileReader.open(new HadoopInputFile(inputFile), readOptions)) {
         MessageType parquetSchema = parquetFileReader.getFooter().getFileMetaData().getSchema();
-        return new AvroToStructuredTransformer().convertSchema(new AvroSchemaConverter().convert(parquetSchema));
+        Schema schema = new AvroToStructuredTransformer()
+          .convertSchema(new AvroSchemaConverter().convert(parquetSchema));
+        return addPathField(schema, context.getFailureCollector());
       }
     }
     throw new IOException("Unable to find any files that end with .parquet");
@@ -125,5 +129,14 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
     @Nullable
     @Description(NAME_SCHEMA)
     public String schema;
+
+    @VisibleForTesting
+    public Conf(String pathField) {
+      super(pathField);
+    }
+
+    public Conf() {
+
+    }
   }
 }

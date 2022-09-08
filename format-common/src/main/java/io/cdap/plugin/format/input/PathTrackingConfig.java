@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -104,7 +105,14 @@ public class PathTrackingConfig extends PluginConfig {
     }
   }
 
+  public PathTrackingConfig() {
 
+  }
+
+  @VisibleForTesting
+  public PathTrackingConfig(String pathField) {
+    this.pathField = pathField;
+  }
   /**
    * Checks whether provided path is directory or file and returns file based on the following
    * conditions: if provided path directs to file - file from the provided path will be returned if

@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.avro.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -78,6 +79,14 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
     @Description(NAME_SCHEMA)
     public String schema;
 
+    @VisibleForTesting
+    public Conf(String pathField) {
+      super(pathField);
+    }
+
+    public Conf() {
+      
+    }
   }
 
   @Nullable
@@ -89,7 +98,8 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
         continue;
       }
       try (DataFileStream<GenericRecord> dataFileStream = new DataFileStream<>(inputFile.open(), datumReader)) {
-        return new AvroToStructuredTransformer().convertSchema(dataFileStream.getSchema());
+        Schema schema = new AvroToStructuredTransformer().convertSchema(dataFileStream.getSchema());
+        return addPathField(schema, context.getFailureCollector());
       }
     }
     throw new IOException("Unable to find any files that end in .avro");

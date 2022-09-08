@@ -56,18 +56,36 @@ public class DelimitedInputFormatProviderTest {
   }
 
   private void testSchemaDetection(String delimiter, ValidatingInputFormat inputFormat) throws IOException {
-    File file = TMP_FOLDER.newFile(UUID.randomUUID() + ".txt");
-    try (FileOutputStream fos = new FileOutputStream(file)) {
-      fos.write(String.format("a%sb%sc", delimiter, delimiter).getBytes(StandardCharsets.UTF_8));
-    }
-
-    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
-    SchemaDetector schemaDetector = new SchemaDetector(inputFormat);
-    Schema schema = schemaDetector.detectSchema(file.getAbsolutePath(), formatContext, Collections.emptyMap());
+    Schema schema = getSchema(inputFormat, delimiter);
     Schema expected = Schema.recordOf("text",
                                       Schema.Field.of("body_0", Schema.of(Schema.Type.STRING)),
                                       Schema.Field.of("body_1", Schema.of(Schema.Type.STRING)),
                                       Schema.Field.of("body_2", Schema.of(Schema.Type.STRING)));
+    Assert.assertEquals(expected, schema);
+  }
+
+  private Schema getSchema(ValidatingInputFormat inputFormat, String delimiter) throws IOException {
+    String content = String.format("a%sb%sc", delimiter, delimiter);
+    File file = TMP_FOLDER.newFile(UUID.randomUUID() + ".txt");
+    try (FileOutputStream fos = new FileOutputStream(file)) {
+      fos.write(content.getBytes(StandardCharsets.UTF_8));
+    }
+    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
+    SchemaDetector schemaDetector = new SchemaDetector(inputFormat);
+    Schema schema = schemaDetector.detectSchema(file.getAbsolutePath(), formatContext, Collections.emptyMap());
+    return schema;
+  }
+
+  @Test
+  public void testAddPathField() throws IOException {
+    String delimiter = "|";
+    Schema schema = getSchema(new DelimitedInputFormatProvider(new
+      DelimitedInputFormatProvider.Conf(delimiter, "pathField")), delimiter);
+    Schema expected = Schema.recordOf("text",
+                                      Schema.Field.of("body_0", Schema.of(Schema.Type.STRING)),
+                                      Schema.Field.of("body_1", Schema.of(Schema.Type.STRING)),
+                                      Schema.Field.of("body_2", Schema.of(Schema.Type.STRING)),
+                                      Schema.Field.of("pathField", Schema.of(Schema.Type.STRING)));
     Assert.assertEquals(expected, schema);
   }
 }
