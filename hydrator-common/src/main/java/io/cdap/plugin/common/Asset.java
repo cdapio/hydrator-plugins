@@ -15,25 +15,31 @@
  */
 package io.cdap.plugin.common;
 
+import javax.annotation.Nullable;
+
 /**
  * Represents a dataset with a FQN which is a fully-qualified unique identifier for a dataset
  * and the location of the dataset.
  */
 public class Asset {
 
-  public static final String DEFAULT_LOCATION = "unknown";
+  private static final String DEFAULT_LOCATION = "unknown";
 
+  private final String referenceName;
   private final String fqn;
   private final String location;
 
-  public Asset(String fqn) {
-      this.fqn = fqn;
-      this.location = DEFAULT_LOCATION;
+  private Asset(String referenceName, @Nullable String fqn, @Nullable String location) {
+    this.referenceName = referenceName;
+    this.fqn = fqn == null ? referenceName : fqn;
+    this.location = location == null ? DEFAULT_LOCATION : location;
   }
 
-  public Asset(String fqn, String location) {
-      this.fqn = fqn;
-      this.location = location;
+  /**
+   * @return the reference name or the normalized FQN of the {@link Asset}
+   */
+  public String getReferenceName() {
+    return referenceName;
   }
 
   /**
@@ -52,9 +58,50 @@ public class Asset {
 
   @Override
   public String toString() {
-      return "Asset{" +
-        "fqn='" + fqn + '\'' +
-        ", location='" + location + '\'' +
-        '}';
+    return "Asset{" +
+      "referenceName='" + referenceName + '\'' +
+      ", fqn='" + fqn + '\'' +
+      ", location='" + location + '\'' +
+      '}';
+  }
+
+  public static Asset.Builder builder(String referenceName) {
+    return new Builder(referenceName);
+  }
+
+  /**
+   * A builder to create {@link Asset} instance.
+   */
+  public static final class Builder {
+    private final String referenceName;
+    private String fqn;
+    private String location;
+
+    private Builder(String referenceName) {
+      this.referenceName = referenceName;
+    }
+
+    /**
+     * Set the ID of the program that created the run.
+     */
+    public Builder setFqn(String fqn) {
+      this.fqn = fqn;
+      return this;
+    }
+
+    /**
+     * Set the ID of the program that created the run.
+     */
+    public Builder setLocation(String location) {
+      this.location = location;
+      return this;
+    }
+
+    /**
+     * Creates a new instance of {@link Asset}.
+     */
+    public Asset build() {
+      return new Asset(referenceName, fqn, location);
+    }
   }
 }

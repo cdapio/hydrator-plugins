@@ -15,6 +15,7 @@
  */
 package io.cdap.plugin.common;
 
+import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.DatasetManagementException;
 import io.cdap.cdap.api.dataset.DatasetProperties;
@@ -41,7 +42,7 @@ public class LineageRecorder {
 
   public LineageRecorder(BatchContext context, String dataset) {
     this.context = context;
-    this.asset = new Asset(dataset);
+    this.asset = Asset.builder(dataset).build();
   }
 
   public LineageRecorder(BatchContext context, Asset asset) {
@@ -64,10 +65,10 @@ public class LineageRecorder {
       datasetProperties = DatasetProperties.of(Collections.singletonMap(DatasetProperties.SCHEMA, schema.toString()));
     }
     try {
-      if (!context.datasetExists(asset.getFqn())) {
+      if (!context.datasetExists(asset.getReferenceName())) {
         // if the dataset does not already exists then create it with the given schema. If it does exists then there is
         // no need to create it.
-        context.createDataset(asset.getFqn(), Constants.EXTERNAL_DATASET_TYPE, datasetProperties);
+        context.createDataset(asset.getReferenceName(), Constants.EXTERNAL_DATASET_TYPE, datasetProperties);
       }
     } catch (InstanceConflictException e) {
       // This will happen when multiple pipelines run simultaneously and are trying to create the same
@@ -75,8 +76,8 @@ public class LineageRecorder {
       // One will succeed and another will receive a InstanceConflictException. This exception can be ignored.
       return;
     } catch (DatasetManagementException e) {
-      throw new RuntimeException(String.format("Failed to create dataset %s with schema %s.", asset.getFqn(), schema),
-                                 e);
+      throw new RuntimeException(String.format("Failed to create dataset %s with schema %s.", asset.getReferenceName(),
+                                               schema), e);
     }
   }
 
@@ -105,7 +106,10 @@ public class LineageRecorder {
   }
 
   private EndPoint getEndPoint() {
-    Map<String, String> properties = Collections.singletonMap(Constants.Reference.LOCATION, asset.getLocation());
-    return EndPoint.of(context.getNamespace(), asset.getFqn(), properties);
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.FQN, asset.getFqn())
+      .put(Constants.Reference.LOCATION, asset.getLocation())
+      .build();
+    return EndPoint.of(context.getNamespace(), asset.getReferenceName(), properties);
   }
 }
