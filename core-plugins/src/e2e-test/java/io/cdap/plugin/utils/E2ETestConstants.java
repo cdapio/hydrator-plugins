@@ -19,7 +19,7 @@ package io.cdap.plugin.utils;
  * E2E test constants.
  */
 public class E2ETestConstants {
-  public static final String ERROR_MSG_FILE_INVALID_OUTPUTFIELD = "errorMessageFileInvalidOutputField";
+  public static final String ERROR_MSG_FILE_INVALID_PATHFIELD = "errorMessageFileInvalidPathField";
   public static final String ERROR_MSG_NORMALIZE_INVALID_FIELDMAPPING = "errorMessageNormalizeInvalidFieldMapping";
   public static final String ERROR_MSG_NORMALIZE_INVALID_FIELDNORMALIZE = "errorMessageNormalizeInvalidFieldNormalize";
   public static final String ERROR_MSG_DISTINCT_INVALID_FIELDS = "errorMessageDistinctInvalidFields";

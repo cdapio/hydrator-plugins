@@ -63,10 +63,16 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("delimitedFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("textFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("textFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputFieldTestFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputFieldTestFile")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("pathFieldTestFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("pathFieldTestFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("readRecursivePath", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("readRecursivePath")).getPath()) + "/");
+      PluginPropertyUtils.addPluginProp("quotedValueCSVFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("quotedValueCSVFile")).getPath()) + "/");
+      PluginPropertyUtils.addPluginProp("quotedValueTSVFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("quotedValueTSVFile")).getPath()) + "/");
+      PluginPropertyUtils.addPluginProp("quotedValueDelimitedFile", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("quotedValueDelimitedFile")).getPath()) + "/");
       PluginPropertyUtils.addPluginProp("normalizeCsvFile", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("normalizeCsvFile")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("normalizeCsvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
@@ -138,8 +144,8 @@ public class TestSetupHooks {
         ("/" + PluginPropertyUtils.pluginProp("outputForAllDataTypeTest")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("outputForTsvInputTest", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("outputForTsvInputTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForOutputFieldTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForOutputFieldTest")).getPath()).toString());
+      PluginPropertyUtils.addPluginProp("outputForPathFieldTest", Paths.get(TestSetupHooks.class.getResource
+        ("/" + PluginPropertyUtils.pluginProp("outputForPathFieldTest")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("outputForOverrideTest", Paths.get(TestSetupHooks.class.getResource
         ("/" + PluginPropertyUtils.pluginProp("outputForOverrideTest")).getPath()).toString());
       PluginPropertyUtils.addPluginProp("outputForDelimitedTest", Paths.get(TestSetupHooks.class.getResource

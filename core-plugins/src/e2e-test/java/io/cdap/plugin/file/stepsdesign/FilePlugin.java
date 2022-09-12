@@ -42,7 +42,7 @@ public class FilePlugin implements CdfHelper {
   public void verifyFilePluginInLineErrorMessageForIncorrectPathField(String pathField) {
     CdfPluginPropertiesActions.verifyPluginPropertyInlineErrorMessage
       ("pathField",
-       PluginPropertyUtils.errorProp(E2ETestConstants.ERROR_MSG_FILE_INVALID_OUTPUTFIELD)
+       PluginPropertyUtils.errorProp(E2ETestConstants.ERROR_MSG_FILE_INVALID_PATHFIELD)
          .replace("PATH_FIELD", PluginPropertyUtils.pluginProp(pathField)));
     CdfPluginPropertiesActions.verifyPluginPropertyInlineErrorMessageColor("pathField");
   }
