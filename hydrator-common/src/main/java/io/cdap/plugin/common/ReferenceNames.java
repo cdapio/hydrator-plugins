@@ -53,4 +53,16 @@ public class ReferenceNames {
     String result = referenceName.replaceAll(REGEX, "");
     return result.isEmpty() ? "sample" : result;
   }
+
+  /**
+   * Normalize the given FQN. This method will remove all the disallowed characters in the given reference
+   * name and replace it with . For example, gs://myBucket/myFolder/_SUCCESS will get converted to
+   * gs.myBucket.myFolder._SUCCESS.
+   *
+   * @param fqn the old FQN
+   * @return the normalized FQN with only allowed characters
+   */
+  public static String normalizeFqn(String fqn) {
+    return fqn.replaceAll(REGEX, ".");
+  }
 }

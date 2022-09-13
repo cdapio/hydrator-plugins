@@ -61,4 +61,72 @@ public class ReferenceNamesTest {
       // expected
     }
   }
+
+  @Test
+  public void testNormalizeFqnForIndividualChars() {
+    // chars that are retained
+    Assert.assertEquals("$", ReferenceNames.normalizeFqn("$"));
+    Assert.assertEquals("-", ReferenceNames.normalizeFqn("-"));
+    Assert.assertEquals("_", ReferenceNames.normalizeFqn("_"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("."));
+
+    // chars that are replaced
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("!"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("@"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("#"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("%"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("^"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("&"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("*"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("("));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn(")"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("["));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("]"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("{"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("}"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("`"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("~"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn(":"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn(";"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("\""));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("|"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("<"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn(">"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("+"));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("="));
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("\\"));
+  }
+
+  @Test
+  public void testNormalizeFqn() {
+    // valid strings
+    Assert.assertEquals("111-22-33.csv", ReferenceNames.normalizeFqn("111-22-33.csv"));
+    Assert.assertEquals("abc$2.txt", ReferenceNames.normalizeFqn("abc$2.txt"));
+    Assert.assertEquals("1$-2.random", ReferenceNames.normalizeFqn("1$-2.random"));
+
+    // FQNs
+    Assert.assertEquals("bigquery.myProject.myDataset.myTable",
+                        ReferenceNames.normalizeFqn("bigquery:myProject.myDataset.myTable"));
+    Assert.assertEquals("dataplex.myProject.us.myLake.myZone.myTable",
+                        ReferenceNames.normalizeFqn("dataplex:myProject.us.myLake.myZone.myTable"));
+    Assert.assertEquals("gs.myBucket.myFolder._SUCCESS",
+                        ReferenceNames.normalizeFqn("gs://myBucket/myFolder/_SUCCESS"));
+    Assert.assertEquals("cloudsql.myProject.myLocation.myInstance.mySchema.myTable",
+                        ReferenceNames.normalizeFqn("cloudsql:myProject.myLocation.myInstance.mySchema.myTable"));
+    Assert.assertEquals("oracle.myhost.1521.mydb.mytable",
+                        ReferenceNames.normalizeFqn("oracle://myhost:1521/mydb.mytable"));
+    Assert.assertEquals("ftp.host.port.path", ReferenceNames.normalizeFqn("ftp://host:port/path"));
+    Assert.assertEquals("sap.odata.10.132.0.30.myservice.myentity",
+                        ReferenceNames.normalizeFqn("sap:odata//10.132.0.30.myservice.myentity"));
+    Assert.assertEquals("s3.mybucket.mypathfolder.mypathsubfolder",
+                        ReferenceNames.normalizeFqn("s3://mybucket/mypathfolder/mypathsubfolder"));
+
+    // test groups of chars
+    Assert.assertEquals("111-22-33.1..csv", ReferenceNames.normalizeFqn("111-22-33(1).csv"));
+    Assert.assertEquals("1..csv", ReferenceNames.normalizeFqn("1*!.csv"));
+    Assert.assertEquals(".$.", ReferenceNames.normalizeFqn("!@#$%^&"));
+
+    // string with no valid characters
+    Assert.assertEquals(".", ReferenceNames.normalizeFqn("!@#%^&*()"));
+  }
 }
