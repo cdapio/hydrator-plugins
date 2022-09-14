@@ -28,14 +28,9 @@ import io.cucumber.java.en.Then;
 
 public class FilePlugin implements CdfHelper {
 
-  @Then("Enter File plugin property: override field name with value: {string}")
-  public void enterFilePluginPropertyOverrideFieldNameWithValue(String fieldName) {
-    FileActions.enterOverrideFieldName(PluginPropertyUtils.pluginProp(fieldName));
-  }
-
-  @Then("Select File plugin property: override field data type with value: {string}")
-  public void selectFilePluginPropertyOverrideFieldDataTypeWithValue(String dataType) {
-    FileActions.selectOverrideFieldDatatype(PluginPropertyUtils.pluginProp(dataType));
+  @Then("Enter File plugin override fields with values from json: {string}")
+  public void enterFilePluginOverrideFieldsWithValuesFromJson(String jsonOverrideFields) {
+    FileActions.enterOverrideFields(jsonOverrideFields);
   }
 
   @Then("Verify file plugin in-line error message for incorrect pathField value: {string}")

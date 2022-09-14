@@ -207,8 +207,7 @@ Feature:File Source - Verification of File to File successful data transfer
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
     Then Enter input plugin property: "path" with value: "pathFieldTestFile"
     Then Select dropdown plugin property: "format" with option value: "csv"
-    Then Enter File plugin property: override field name with value: "overrideField"
-    Then Select File plugin property: override field data type with value: "overrideDataType"
+    Then Enter File plugin override fields with values from json: "overrideFields"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button
     Then Verify the Output Schema matches the Expected Schema: "overrideSchema"

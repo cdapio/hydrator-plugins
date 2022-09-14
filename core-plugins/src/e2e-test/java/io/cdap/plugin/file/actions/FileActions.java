@@ -20,7 +20,6 @@ import io.cdap.e2e.pages.locators.CdfPluginPropertiesLocators;
 import io.cdap.e2e.utils.ElementHelper;
 import io.cdap.e2e.utils.JsonUtils;
 import io.cdap.e2e.utils.PluginPropertyUtils;
-import io.cdap.e2e.utils.SeleniumDriver;
 import io.cdap.e2e.utils.SeleniumHelper;
 import io.cdap.plugin.file.locators.FileLocators;
 
@@ -36,12 +35,18 @@ public class FileActions {
     SeleniumHelper.getPropertiesLocators(FileLocators.class);
   }
 
-  public static void enterOverrideFieldName(String fieldName) {
-    ElementHelper.sendKeys(FileLocators.overrideFieldName, fieldName);
-  }
-
-  public static void selectOverrideFieldDatatype(String dataType) {
-    ElementHelper.selectDropdownOption(FileLocators.overrideFieldDatatype,
-                                       CdfPluginPropertiesLocators.locateDropdownListItem(dataType));
+  public static void enterOverrideFields(String jsonOverrideFields) {
+    Map<String, String> overrideFields =
+      JsonUtils.convertKeyValueJsonArrayToMap(PluginPropertyUtils.pluginProp(jsonOverrideFields));
+    int index = 0;
+    for (Map.Entry<String, String> entry : overrideFields.entrySet()) {
+      if (index != 0) {
+        ElementHelper.clickOnElement(FileLocators.locateOverrideFieldsAddRowButton(index - 1));
+      }
+      ElementHelper.sendKeys(FileLocators.locateOverrideFieldName(index), entry.getKey());
+      ElementHelper.selectDropdownOption(FileLocators.locateOverrideFieldDataType(index), CdfPluginPropertiesLocators.
+        locateDropdownListItem(entry.getValue()));
+      index++;
+    }
   }
 }

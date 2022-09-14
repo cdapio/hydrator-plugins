@@ -18,8 +18,6 @@ package io.cdap.plugin.file.locators;
 import io.cdap.e2e.utils.SeleniumDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.How;
 
 /**
  * File plugin Locators.
@@ -27,10 +25,18 @@ import org.openqa.selenium.support.How;
 
 public class FileLocators {
 
-  @FindBy(how = How.XPATH, using = "//*[@data-cy='override']//*[@data-cy='key']/input")
-  public static WebElement overrideFieldName;
+  public static WebElement locateOverrideFieldName(int row) {
+    String xpath = "//*[@data-cy='override']//*[@data-cy='" + row + "']//*[@data-cy='key']/input";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
 
-  @FindBy(how = How.XPATH, using = "//*[@data-cy='override']//*[@data-cy='value']")
-  public static WebElement overrideFieldDatatype;
+  public static WebElement locateOverrideFieldDataType(int row) {
+    String xpath = "//*[@data-cy='override']//*[@data-cy='" + row + "']//*[@data-cy='value']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
 
+  public static WebElement locateOverrideFieldsAddRowButton(int row) {
+    String xpath = "//*[@data-cy='override']//*[@data-cy='" + row + "']//button[@data-cy='add-row']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
 }
