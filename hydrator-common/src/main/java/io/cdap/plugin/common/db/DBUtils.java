@@ -322,6 +322,11 @@ public final class DBUtils {
 
       case Types.NUMERIC:
       case Types.DECIMAL:
+        // decimal type with precision 0 is not supported
+        if (precision == 0) {
+          throw new SQLException(new UnsupportedTypeException(
+            String.format("Column %s has unsupported SQL Type: %s with precision 0.", columnName, typeName)));
+        }
         if (handleAsDecimal) {
           return Schema.decimalOf(precision, scale);
         } else {
