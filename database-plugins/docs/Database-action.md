@@ -36,10 +36,8 @@ This is a semicolon-separated list of key-value pairs, where each pair is separa
 the key and value for the argument. For example, 'key1=value1;key2=value' specifies that the connection will be
 given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'value2'. (Macro-enabled)
 
-**Enable Auto-Commit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
-Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
-driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
-set to false. For drivers like those, you will need to set this to 'true'.
+**Enable Auto-Commit:** Whether to enable auto-commit for queries run by this source. In most cases, set to false.
+If you use a JDBC driver that results in an error when the commit operation is run, set to 'true'.
 
 
 Example

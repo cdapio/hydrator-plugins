@@ -52,10 +52,8 @@ public class DBBaseConfig extends PluginConfig {
   private String columnNameCase;
 
   @Name(ENABLE_AUTO_COMMIT)
-  @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
-    "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
-    "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
-    "an exception whenever a commit is called. For drivers like that, this should be set to true.")
+  @Description("Whether to enable auto-commit for queries run by this source. In most cases, set to false. \n" +
+    "If you use a JDBC driver that results in an error when the commit operation is run, set to 'true'.")
   @Nullable
   private Boolean enableAutoCommit;
 
