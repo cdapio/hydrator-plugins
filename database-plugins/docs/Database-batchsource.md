@@ -60,10 +60,8 @@ For example, 'SELECT MIN(id),MAX(id) FROM table'. Not required if numSplits is s
 **Fetch Size:** The number of rows to fetch at a time per split. Larger fetch size can result in faster import,
 with the tradeoff of higher memory usage.
 
-**Enable Auto-Commit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
-Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
-driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
-set to false. For drivers like those, you will need to set this to 'true'.
+**Enable Auto-Commit:** Whether to enable auto-commit for queries run by this source. In most cases, set to false. 
+If you use a JDBC driver that results in an error when the commit operation is run, set to 'true'.
 
 **Column Name Case:** Sets the case of the column names returned from the query.
 Possible options are ``upper`` or ``lower``. By default or for any other input, the column names are not modified and
