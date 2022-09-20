@@ -182,7 +182,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     }
     FileInputFormat.setInputDirRecursive(job, config.shouldReadRecursively());
 
-    LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
+    LineageRecorder lineageRecorder = getLineageRecorder(context);
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {
@@ -262,6 +262,13 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     } else {
       validatingInputFormat.validate(context);
     }
+  }
+
+  /**
+   * Override this to specify a custom asset instead of referenceName for the lineage recorder
+   */
+  protected LineageRecorder getLineageRecorder(BatchSourceContext context) {
+    return new LineageRecorder(context, config.getReferenceName());
   }
 
   private void validatePathField(FailureCollector collector, Schema schema) {

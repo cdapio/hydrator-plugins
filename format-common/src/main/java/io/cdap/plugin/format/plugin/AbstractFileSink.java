@@ -114,7 +114,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     if (schema == null) {
       schema = context.getInputSchema();
     }
-    LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
+    LineageRecorder lineageRecorder = getLineageRecorder(context);
     lineageRecorder.createExternalDataset(schema);
     if (schema != null && schema.getFields() != null && !schema.getFields().isEmpty()) {
       recordLineage(lineageRecorder,
@@ -176,6 +176,13 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     //Avoid the extra '/' since '/' is appended before timeSuffix in the next line
     String finalPath = configPath.endsWith("/") ? configPath.substring(0, configPath.length() - 1) : configPath;
     return String.format("%s/%s", finalPath, timeSuffix);
+  }
+
+  /**
+   * Override this to specify a custom asset instead of referenceName for the lineage recorder
+   */
+  protected LineageRecorder getLineageRecorder(BatchSinkContext context) {
+    return new LineageRecorder(context, config.getReferenceName());
   }
 
   private void validateOutputFormatProvider(FormatContext context, String format,
