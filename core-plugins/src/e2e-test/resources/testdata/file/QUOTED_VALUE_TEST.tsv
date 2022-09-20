@@ -1,0 +1,10 @@
+testscenarioid	testdescription	testconditionid	testtype
+"TS-GCS-DSGN-01-01"	Verify user is able to place the path of the file that the record was read from	TC-GCS-DSGN-01	"Positive"
+TS-GCS-DSGN-01-02	"Verify in the Split Size field the default value should be 128MB."	"TC-GCS-DSGN-02"	Positive
+"TS-GCS-DSGN-01-03"	To Verify in the Split Size field the value less than 128MB.	TC-GCS-DSGN-03	Negative
+TS-GCS-DSGN-01-04	"To Verify in the Split Size field the value greater than128MB."	TC-GCS-DSGN-04	"Negative"
+TS-GCS-DSGN-01-05	To Verify by passing the blank value in path field	TC-GCS-DSGN-05	Negative
+"TS-GCS-DSGN-01-06"	Verify by selecting the different File Format from actual file in file format drop down menu	TC-GCS-DSGN-06	Negative
+TS-GCS-DSGN-01-07	Verify the GCS properties of valid File Format of the data to read listed below:  CSV file AVRO file BLOB file TSV file Delimeted file JSON file Parquet File Text file  	TC-GCS-DSGN-07	Positive
+"TS-GCS-DSGN-01-09"	"To verify the browse button functionality by selecting the path of the file through browse button"	TC-GCS-DSGN-01	positive
+"TS-GCS-DSGN-01-10"	To verify the output of get schema by using browse button functionality	TC-GCS-DSGN-10	positive
