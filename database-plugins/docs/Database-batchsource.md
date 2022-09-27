@@ -38,7 +38,8 @@ This is a semicolon-separated list of key-value pairs, where each pair is separa
 the key and value for the argument. For example, 'key1=value1;key2=value' specifies that the connection will be
 given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'value2'. (Macro-enabled)
 
-**Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc.
+**Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc. 
+Typically, the name of the table/view.
 
 **Schema:** The schema of records output by the source. This will be used in place of whatever schema comes
 back from the query. However, it must match the schema that comes back from the query,

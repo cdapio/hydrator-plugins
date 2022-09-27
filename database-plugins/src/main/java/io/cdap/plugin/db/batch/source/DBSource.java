@@ -41,6 +41,7 @@ import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.FieldCase;
 import io.cdap.plugin.StructuredRecordUtils;
+import io.cdap.plugin.common.Asset;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
@@ -49,6 +50,7 @@ import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
+import io.cdap.plugin.db.common.FQNGenerator;
 import io.cdap.plugin.db.connector.DBConnector;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.apache.hadoop.conf.Configuration;
@@ -65,6 +67,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -270,6 +273,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     return DriverManager.getConnection(sourceConfig.getConnectionString(), properties);
   }
 
+  protected LineageRecorder getLineageRecorder(BatchSourceContext context) {
+    Asset asset = Asset.builder(sourceConfig.getReferenceName()).
+      setFqn(FQNGenerator.constructFQN(sourceConfig.getConnectionString(), sourceConfig.getReferenceName())).build();
+    return new LineageRecorder(context, asset);
+  }
+
   /**
    * {@link PluginConfig} for {@link DBSource}
    */
@@ -423,7 +432,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (schema == null) {
       schema = context.getOutputSchema();
     }
-    LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.getReferenceName());
+    LineageRecorder lineageRecorder = getLineageRecorder(context);
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {

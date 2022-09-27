@@ -43,12 +43,14 @@ import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.FieldCase;
+import io.cdap.plugin.common.Asset;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSink;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
+import io.cdap.plugin.db.common.FQNGenerator;
 import io.cdap.plugin.db.connector.DBConnector;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.apache.hadoop.io.NullWritable;
@@ -137,7 +139,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
     Schema schema = context.getInputSchema();
     if (schema != null && schema.getFields() != null) {
-      recordLineage(context, dbSinkConfig.getReferenceName(), schema,
+      recordLineage(context, schema,
                     schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
   }
@@ -215,8 +217,10 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     }
   }
 
-  private void recordLineage(BatchSinkContext context, String outputName, Schema tableSchema, List<String> fieldNames) {
-    LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
+  private void recordLineage(BatchSinkContext context, Schema tableSchema, List<String> fieldNames) {
+    Asset asset = Asset.builder(dbSinkConfig.getReferenceName()).
+      setFqn(FQNGenerator.constructFQN(dbSinkConfig.getConnectionString(), dbSinkConfig.getReferenceName())).build();
+    LineageRecorder lineageRecorder = new LineageRecorder(context, asset);
     lineageRecorder.createExternalDataset(tableSchema);
     if (!fieldNames.isEmpty()) {
       lineageRecorder.recordWrite("Write", "Wrote to Database.", fieldNames);

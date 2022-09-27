@@ -76,7 +76,7 @@
           "label": "Reference Name",
           "name": "referenceName",
           "widget-attributes": {
-            "placeholder": "Name used to identify this source for lineage"
+            "placeholder": "Name used to identify this source for lineage. Typically, the name of the table/view."
           }
         },
         {

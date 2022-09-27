@@ -61,6 +61,8 @@ public final class DBUtils {
   public static final String REPLACE_WITH = "io.cdap.plugin.db.replace.with";
   public static final String CONNECTION_ARGUMENTS = "io.cdap.hydrator.db.connection.arguments";
   public static final String FETCH_SIZE = "io.cdap.hydrator.db.fetch.size";
+  public static final String POSTGRESQL_TAG = "postgresql";
+  public static final String POSTGRESQL_DEFAULT_SCHEMA = "public";
 
   /**
    * Performs any Database related cleanup

@@ -27,6 +27,10 @@
   <artifactId>database-plugins</artifactId>
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <opentracingjdbc.version>0.2.15</opentracingjdbc.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
@@ -40,6 +44,11 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.opentracing.contrib</groupId>
+      <artifactId>opentracing-jdbc</artifactId>
+      <version>${opentracingjdbc.version}</version>
     </dependency>
 
     <!-- test dependencies -->
