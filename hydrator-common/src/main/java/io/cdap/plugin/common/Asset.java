@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
  */
 public class Asset {
 
-  private static final String DEFAULT_LOCATION = "unknown";
+  private static final String DEFAULT_LOCATION = "global";
 
   private final String referenceName;
   private final String fqn;
