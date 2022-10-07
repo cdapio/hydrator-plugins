@@ -41,6 +41,7 @@ import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.FieldCase;
 import io.cdap.plugin.StructuredRecordUtils;
+import io.cdap.plugin.common.Asset;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
@@ -49,6 +50,7 @@ import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
+import io.cdap.plugin.db.common.DBURLParser;
 import io.cdap.plugin.db.connector.DBConnector;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.apache.hadoop.conf.Configuration;
@@ -59,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -268,6 +271,15 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                                               sourceConfig.getUser(),
                                               sourceConfig.getPassword());
     return DriverManager.getConnection(sourceConfig.getConnectionString(), properties);
+  }
+
+  protected LineageRecorder getLineageRecorder(BatchSourceContext context) {
+    // dbtype, host, port, db from the connection string
+    // table is the reference name
+    URI uri = DBURLParser.parseURL(sourceConfig.getConnectionString());
+    String fqn = DBURLParser.constructFQN(uri, sourceConfig.getReferenceName());
+    Asset asset = Asset.builder(sourceConfig.getReferenceName()).setFqn(fqn).build();
+    return new LineageRecorder(context, asset);
   }
 
   /**
