@@ -16,7 +16,8 @@ of the FileSet to a database table where it can be served to your users.
 
 Properties
 ----------
-**Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc.
+**Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc. 
+Typically, the name of the table/view.
 
 **Use Connection** Whether to use a connection. If a connection is used, you do not need to provide the credentials.
 
