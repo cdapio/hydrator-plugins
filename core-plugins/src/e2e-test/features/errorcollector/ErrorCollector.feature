@@ -97,6 +97,7 @@ Feature: Error Collector - Verification of successful error emitted to ErrorColl
     Then Close the Plugin Properties page
     When Navigate to the properties page of plugin: "Wrangler"
     Then Enter textarea plugin property: "recipe" with value: "errorCollectorWranglerCondition"
+    Then Select radio button plugin property: "onError" with value: "send-to-error-port"
     Then Validate "Wrangler" plugin properties
     When Close the Plugin Properties page
     When Navigate to the properties page of plugin: "ErrorCollector"
@@ -149,6 +150,7 @@ Feature: Error Collector - Verification of successful error emitted to ErrorColl
     Then Close the Plugin Properties page
     When Navigate to the properties page of plugin: "Wrangler"
     Then Enter textarea plugin property: "recipe" with value: "errorCollectorWranglerCondition"
+    Then Select radio button plugin property: "onError" with value: "send-to-error-port"
     Then Validate "Wrangler" plugin properties
     When Close the Plugin Properties page
     When Navigate to the properties page of plugin: "ErrorCollector"
