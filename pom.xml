@@ -116,7 +116,7 @@
     <kafka.version>0.8.2.2</kafka.version>
     <mockftp.version>2.6</mockftp.version>
     <snappy.version>1.1.2</snappy.version>
-    <slf4j.version>1.7.5</slf4j.version>
+    <slf4j.version>1.7.15</slf4j.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
     <jython.version>2.5.2</jython.version>
