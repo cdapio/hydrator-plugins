@@ -19,20 +19,23 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a dataset with a FQN which is a fully-qualified unique identifier for a dataset
- * and the location of the dataset.
+ * and the location and project ID of the dataset if applicable.
  */
 public class Asset {
 
   private static final String DEFAULT_LOCATION = "global";
+  private static final String DEFAULT_PROJECT_ID = "";
 
   private final String referenceName;
   private final String fqn;
   private final String location;
+  private final String projectId;
 
-  private Asset(String referenceName, @Nullable String fqn, @Nullable String location) {
+  private Asset(String referenceName, @Nullable String fqn, @Nullable String location, @Nullable String project) {
     this.referenceName = referenceName;
     this.fqn = fqn == null ? referenceName : fqn;
     this.location = location == null ? DEFAULT_LOCATION : location;
+    this.projectId = project == null ? DEFAULT_PROJECT_ID : project;
   }
 
   /**
@@ -56,12 +59,20 @@ public class Asset {
       return location;
   }
 
+  /**
+   * @return the project ID of the {@link Asset}, if applicable.
+   */
+  public String getProjectId() {
+    return projectId;
+  }
+
   @Override
   public String toString() {
     return "Asset{" +
       "referenceName='" + referenceName + '\'' +
       ", fqn='" + fqn + '\'' +
       ", location='" + location + '\'' +
+      ", projectId='" + projectId + '\'' +
       '}';
   }
 
@@ -76,13 +87,14 @@ public class Asset {
     private final String referenceName;
     private String fqn;
     private String location;
+    private String projectId;
 
     private Builder(String referenceName) {
       this.referenceName = referenceName;
     }
 
     /**
-     * Set the ID of the program that created the run.
+     * Set the fully-qualified name of the {@link Asset}.
      */
     public Builder setFqn(String fqn) {
       this.fqn = fqn;
@@ -90,7 +102,7 @@ public class Asset {
     }
 
     /**
-     * Set the ID of the program that created the run.
+     * Set the location of the {@link Asset}.
      */
     public Builder setLocation(String location) {
       this.location = location;
@@ -98,10 +110,18 @@ public class Asset {
     }
 
     /**
+     * Set the project ID of the {@link Asset}.
+     */
+    public Builder setProjectId(String projectId) {
+      this.projectId = projectId;
+      return this;
+    }
+
+    /**
      * Creates a new instance of {@link Asset}.
      */
     public Asset build() {
-      return new Asset(referenceName, fqn, location);
+      return new Asset(referenceName, fqn, location, projectId);
     }
   }
 }
