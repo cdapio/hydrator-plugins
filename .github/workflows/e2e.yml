@@ -43,12 +43,12 @@ jobs:
       matrix:
         module: [core-plugins]
     steps:
-      # Pinned 1.0.0 version
-      - uses: actions/checkout@v2.3.4
+      - uses: actions/checkout@v3
         with:
           path: plugin
           submodules: 'recursive'
-      - uses: dorny/paths-filter@b2feaf19c27470162a626bd6fa8438ae5b263721
+      - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
+        # Pinned version 2.11.1
         if: github.event_name != 'workflow_dispatch' && github.event_name != 'push'
         id: filter
         with:
@@ -57,12 +57,12 @@ jobs:
             e2e-test:
               - '${{ matrix.module }}/**/e2e-test/**'
       - name: Checkout e2e test repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3
         with:
           repository: cdapio/cdap-e2e-tests
           path: e2e
       - name: Cache
-        uses: actions/cache@v2.1.3
+        uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ github.workflow }}-${{ hashFiles('**/pom.xml') }}
@@ -81,7 +81,7 @@ jobs:
           name: Cucumber report
           path: ./**/target/cucumber-reports
       - name: Upload debug files
-        uses: actions/upload-artifact@v2.2.4
+        uses: actions/upload-artifact@v3
         if: always()
         with:
           name: Debug files
