@@ -108,7 +108,7 @@
     <fastutil.version>6.6.1</fastutil.version>
     <geronimo-jms.version>1.1.1</geronimo-jms.version>
     <guava.version>13.0.1</guava.version>
-    <hadoop.version>2.6.0</hadoop.version>
+    <hadoop.version>2.10.2</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
     <javamail.version>1.4.1</javamail.version>
     <junit.version>4.13.1</junit.version>
@@ -226,6 +226,12 @@
         <artifactId>hydrator-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.cdap.cdap</groupId>
@@ -252,6 +258,10 @@
           <exclusion>
             <groupId>org.pentaho</groupId>
             <artifactId>*</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -482,6 +492,10 @@
           <exclusion>
             <groupId>org.pentaho</groupId>
             <artifactId>*</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
