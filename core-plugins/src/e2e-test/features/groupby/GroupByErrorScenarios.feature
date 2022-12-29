@@ -11,7 +11,7 @@ Feature: GroupBy - Verify GroupBy Plugin Error scenarios
       | groupByFields |
       | aggregates    |
 
-  @FILE_SOURCE_TEST @FILE_SINK_TEST
+  @GROUP_BY_TEST @FILE_SINK_TEST
   Scenario: Verify GroupBy plugin validation errors for incorrect data in Group by fields
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -23,7 +23,7 @@ Feature: GroupBy - Verify GroupBy Plugin Error scenarios
     Then Connect plugins: "Group By" and "File2" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "groupByGcsCsvFile"
+    Then Enter input plugin property: "path" with value: "groupByTest"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button

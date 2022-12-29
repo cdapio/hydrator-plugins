@@ -21,17 +21,11 @@ import io.cdap.e2e.utils.PluginPropertyUtils;
 import io.cdap.e2e.utils.StorageClient;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import stepsdesign.BeforeActions;
-
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -39,144 +33,18 @@ import java.util.UUID;
  */
 public class TestSetupHooks {
 
-  private static boolean firstFileSourceTestFlag = true;
-  private static boolean firstFileSinkTestFlag = true;
-  private static String fileSinkOutputFolder = StringUtils.EMPTY;
   public static String gcsSourceBucketName1 = StringUtils.EMPTY;
   public static String gcsSourceBucketName2 = StringUtils.EMPTY;
   public static String gcsTargetBucketName = StringUtils.EMPTY;
-
-  @Before(order = 1, value = "@FILE_SOURCE_TEST")
-  public static void setFileSourceAbsolutePath() {
-    if (firstFileSourceTestFlag) {
-      PluginPropertyUtils.addPluginProp("csvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("csvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("csvNoHeaderFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("csvNoHeaderFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("csvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("csvAllDataTypeFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("tsvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("tsvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("blobFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("blobFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("delimitedFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("delimitedFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("textFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("textFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("pathFieldTestFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("pathFieldTestFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("readRecursivePath", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("readRecursivePath")).getPath()) + "/");
-      PluginPropertyUtils.addPluginProp("quotedValueCSVFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("quotedValueCSVFile")).getPath()) + "/");
-      PluginPropertyUtils.addPluginProp("quotedValueTSVFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("quotedValueTSVFile")).getPath()) + "/");
-      PluginPropertyUtils.addPluginProp("quotedValueDelimitedFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("quotedValueDelimitedFile")).getPath()) + "/");
-      PluginPropertyUtils.addPluginProp("normalizeCsvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("normalizeCsvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("distinctCsvAllDataTypeFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("distinctCsvAllDataTypeFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("distinctFileCsvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("distinctFileCsvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("deduplicateFileCsvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("deduplicateFileCsvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("groupByGcsCsvFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("groupByGcsCsvFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerCsvFileSecondInput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerCsvFileSecondInput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerCsvFileFirstInput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerCsvFileFirstInput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerCsvNullFileSecondInput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerCsvNullFileSecondInput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerCsvNullFileFirstInput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerCsvNullFileFirstInput")).getPath()).toString());
-      firstFileSourceTestFlag = false;
-    }
-  }
-
-  @Before(order = 1, value = "@FILE_SINK_TEST")
-  public static void setFileSinkAbsolutePath() {
-    if (firstFileSinkTestFlag) {
-      PluginPropertyUtils.addPluginProp("normalizeCsvAllDataTypeOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("normalizeCsvOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("normalizeCsvOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("distinctDatatypeOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("distinctDatatypeOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("distinctCsvOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("distinctCsvOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("distinctMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("distinctMacroOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("deduplicateTest1OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("deduplicateTest1OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("deduplicateTest2OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("deduplicateTest2OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("deduplicateTest3OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("deduplicateTest3OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("deduplicateMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("deduplicateMacroOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("groupByTest1OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("groupByTest1OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("groupByTest2OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("groupByTest2OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("groupByTest3OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("groupByTest3OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("groupByMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("groupByMacroOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerTest1OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerTest1OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerTest2OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerTest2OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerTest3OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerTest3OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerTest4OutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerTest4OutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("joinerMacroOutputFile", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("joinerMacroOutputFile")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("errorCollectorDefaultConfigOutput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("errorCollectorDefaultConfigOutput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("errorCollectorCustomConfigOutput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("errorCollectorCustomConfigOutput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForAllDataTypeTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForAllDataTypeTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForTsvInputTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForTsvInputTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForPathFieldTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForPathFieldTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForOverrideTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForOverrideTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForDelimitedTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForDelimitedTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForRegexTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForRegexTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForRecursiveTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForRecursiveTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForCSVInputTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForCSVInputTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForTextInputTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForTextInputTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("outputForCSVDelimitedOutputTest", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("outputForCSVDelimitedOutputTest")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("tsvFormatOutput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("tsvFormatOutput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("jsonFormatOutput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("jsonFormatOutput")).getPath()).toString());
-      PluginPropertyUtils.addPluginProp("orcFormatOutput", Paths.get(TestSetupHooks.class.getResource
-        ("/" + PluginPropertyUtils.pluginProp("orcFormatOutput")).getPath()).toString());
-      fileSinkOutputFolder = PluginPropertyUtils.pluginProp("filePluginOutputFolder");
-      firstFileSinkTestFlag = false;
-    }
-    PluginPropertyUtils.addPluginProp("filePluginOutputFolder", Paths.get("target/" + fileSinkOutputFolder + "/"
-             + (new SimpleDateFormat("yyyyMMdd-HH-mm-ssSSS").format(new Date()))).toAbsolutePath().toString());
-  }
-
-  @After(order = 1, value = "@FILE_SINK_TEST")
-  public static void deleteFileSinkOutputFolder() throws IOException {
-    FileUtils.deleteDirectory(new File(PluginPropertyUtils.pluginProp("filePluginOutputFolder")));
-  }
+  public static String fileSourceBucket1 = StringUtils.EMPTY;
+  public static String fileSourceBucket2 = StringUtils.EMPTY;
+  public static String fileSourceBucket3 = StringUtils.EMPTY;
+  public static String fileSourceBucket4 = StringUtils.EMPTY;
+  public static String fileSourceBucket5 = StringUtils.EMPTY;
+  public static String fileSourceBucket6 = StringUtils.EMPTY;
+  public static String fileSourceBucket7 = StringUtils.EMPTY;
+  public static String fileSourceBucket8 = StringUtils.EMPTY;
+  public static String fileSourceBucket9 = StringUtils.EMPTY;
 
   @Before(order = 1, value = "@GCS_SOURCE_TEST")
   public static void createBucketWithCSVFile() throws IOException, URISyntaxException {
@@ -215,6 +83,320 @@ public class TestSetupHooks {
 
   @After(order = 1, value = "@GCS_SINK_TEST")
   public static void deleteTargetBucketWithFile() {
+    deleteGCSBucket(gcsTargetBucketName);
+    gcsTargetBucketName = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@GCS_DEDUPLICATE_TEST")
+  public static void createBucketWithDeduplicateTestFile() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("deduplicateFileCsvFile"));
+    PluginPropertyUtils.addPluginProp("gcsDeduplicateTest", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("deduplicateFileCsvFile"));
+    BeforeActions.scenario.write("Deduplicate bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@GCS_DEDUPLICATE_TEST")
+  public static void deleteSourceBucketWithDeduplicateTestFile() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@GCS_DISTINCT_TEST1")
+  public static void createBucketWithDistinctTest1File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("distinctCsvAllDataTypeFile"));
+    PluginPropertyUtils.addPluginProp("gcsDistinctTest1", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("distinctCsvAllDataTypeFile"));
+    BeforeActions.scenario.write("Distinct 1st bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@GCS_DISTINCT_TEST1")
+  public static void deleteSourceBucketWithDistinctTest1File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@GCS_DISTINCT_TEST2")
+  public static void createBucketWithDistinctTest2File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("distinctFileCsvFile"));
+    PluginPropertyUtils.addPluginProp("gcsDistinctTest2", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("distinctFileCsvFile"));
+    BeforeActions.scenario.write("Distinct 2nd bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@GCS_DISTINCT_TEST2")
+  public static void deleteSourceBucketWithDistinctTest2File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@ERROR_COLLECTOR_TEST")
+  public static void createBucketWithErrorCollectorTest1File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("csvFile"));
+    PluginPropertyUtils.addPluginProp("errorCollector1", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("csvFile"));
+    BeforeActions.scenario.write("Error Collector bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@ERROR_COLLECTOR_TEST")
+  public static void deleteSourceBucketWithErrorCollectorTest1File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@GROUP_BY_TEST")
+  public static void createBucketWithGroupByTest1File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("groupByGcsCsvFile"));
+    PluginPropertyUtils.addPluginProp("groupByTest", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("groupByGcsCsvFile"));
+    BeforeActions.scenario.write("Group by bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@GROUP_BY_TEST")
+  public static void deleteSourceBucketWithGroupByTest1File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@JOINER_TEST2")
+  public static void createBucketWithJoinerTest2File() throws IOException, URISyntaxException {
+    gcsSourceBucketName2 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp(
+      "joinerCsvFileSecondInput"));
+    PluginPropertyUtils.addPluginProp("joinerInputTest2", "gs://" + gcsSourceBucketName2 + "/"  +
+      PluginPropertyUtils.pluginProp("joinerCsvFileSecondInput"));
+    BeforeActions.scenario.write("Joiner 2nd bucket name - " + gcsSourceBucketName2);
+  }
+
+  @After(order = 1, value = "@JOINER_TEST2")
+  public static void deleteSourceBucketWithJoinerTest2File() {
+    deleteGCSBucket(gcsSourceBucketName2);
+    gcsSourceBucketName2 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@JOINER_TEST1")
+  public static void createBucketWithJoinerTest1File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp(
+      "joinerCsvFileFirstInput"));
+    PluginPropertyUtils.addPluginProp("joinerInputTest1", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("joinerCsvFileFirstInput"));
+    BeforeActions.scenario.write("Joiner 1st bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@JOINER_TEST1")
+  public static void deleteSourceBucketWithJoinerTest1File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@JOINER_TEST3")
+  public static void createBucketWithJoinerTest3File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp(
+      "joinerCsvNullFileFirstInput"));
+    PluginPropertyUtils.addPluginProp("joinerCsvNullFileInputTest1",
+     "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("joinerCsvNullFileFirstInput"));
+    BeforeActions.scenario.write("Joiner 3rd bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@JOINER_TEST3")
+  public static void deleteSourceBucketWithJoinerTest3File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@JOINER_TEST4")
+  public static void createBucketWithJoinerTest4File() throws IOException, URISyntaxException {
+    gcsSourceBucketName2 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp(
+      "joinerCsvNullFileSecondInput"));
+    PluginPropertyUtils.addPluginProp("joinerCsvNullFileInputTest2",
+      "gs://" + gcsSourceBucketName2 + "/"  +
+      PluginPropertyUtils.pluginProp("joinerCsvNullFileSecondInput"));
+    BeforeActions.scenario.write("Joiner 4th bucket name - " + gcsSourceBucketName2);
+  }
+
+  @After(order = 1, value = "@JOINER_TEST4")
+  public static void deleteSourceBucketWithJoinerTest4File() {
+    deleteGCSBucket(gcsSourceBucketName2);
+    gcsSourceBucketName2 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@NORMALIZE_TEST1")
+  public static void createBucketWithNormalizeTest1File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp(
+      "normalizeCsvAllDataTypeFile"));
+    PluginPropertyUtils.addPluginProp("normalizeTest1", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("normalizeCsvAllDataTypeFile"));
+    BeforeActions.scenario.write("Normalize 1st bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@NORMALIZE_TEST1")
+  public static void deleteSourceBucketWithNormalizeTest1File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@NORMALIZE_TEST2")
+  public static void createBucketWithNormalizeTest2File() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("normalizeCsvFile"));
+    PluginPropertyUtils.addPluginProp("normalizeTest2", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("normalizeCsvFile"));
+    BeforeActions.scenario.write("Normalize 2nd bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@NORMALIZE_TEST2")
+  public static void deleteSourceBucketWithNormalizeTest2File() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@CSV_TEST")
+  public static void createBucketWithFileCSVTest() throws IOException, URISyntaxException {
+    gcsSourceBucketName1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("csvFile"));
+    PluginPropertyUtils.addPluginProp("csvTest", "gs://" + gcsSourceBucketName1 + "/"  +
+      PluginPropertyUtils.pluginProp("csvFile"));
+    BeforeActions.scenario.write("CSV Test bucket name - " + gcsSourceBucketName1);
+  }
+
+  @After(order = 1, value = "@CSV_TEST")
+  public static void deleteSourceBucketWithFileCSVTest() {
+    deleteGCSBucket(gcsSourceBucketName1);
+    gcsSourceBucketName1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@CSV_DATATYPE_TEST1")
+  public static void createBucketWithFileCSVDataTypeTest1() throws IOException, URISyntaxException {
+    fileSourceBucket1 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("csvAllDataTypeFile"));
+    PluginPropertyUtils.addPluginProp("csvAllDataTypeTestFile", "gs://" + fileSourceBucket1 + "/"  +
+      PluginPropertyUtils.pluginProp("csvAllDataTypeFile"));
+    BeforeActions.scenario.write("CSV Datatype test bucket name - " + fileSourceBucket1);
+  }
+
+  @After(order = 1, value = "@CSV_DATATYPE_TEST1")
+  public static void deleteSourceBucketWithFileCSVDataTypeTest1() {
+    deleteGCSBucket(fileSourceBucket1);
+    fileSourceBucket1 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@CSV_NO_HEADER_FILE")
+  public static void createBucketWithCSVNoHeaderFile() throws IOException, URISyntaxException {
+    fileSourceBucket2 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("csvNoHeaderFile"));
+    PluginPropertyUtils.addPluginProp("csvNoHeaderTestFile", "gs://" + fileSourceBucket2 + "/"  +
+      PluginPropertyUtils.pluginProp("csvNoHeaderFile"));
+    BeforeActions.scenario.write("CSV No Header bucket name - " + fileSourceBucket2);
+  }
+
+  @After(order = 1, value = "@CSV_NO_HEADER_FILE")
+  public static void deleteSourceBucketWithCSVNoHeaderFile() {
+    deleteGCSBucket(fileSourceBucket2);
+    fileSourceBucket2 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@TSV_FILE")
+  public static void createBucketWithTSVFile() throws IOException, URISyntaxException {
+    fileSourceBucket3 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("tsvFile"));
+    PluginPropertyUtils.addPluginProp("tsvTestFile", "gs://" + fileSourceBucket3 + "/"  +
+      PluginPropertyUtils.pluginProp("tsvFile"));
+    BeforeActions.scenario.write("TSV File bucket name - " + fileSourceBucket3);
+  }
+
+  @After(order = 1, value = "@TSV_FILE")
+  public static void deleteSourceBucketWithTSVFile() {
+    deleteGCSBucket(fileSourceBucket3);
+    fileSourceBucket3 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@TEXT_FILE")
+  public static void createBucketWithTextFile() throws IOException, URISyntaxException {
+    fileSourceBucket4 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("textFile"));
+    PluginPropertyUtils.addPluginProp("textTestFile", "gs://" + fileSourceBucket4 + "/"  +
+      PluginPropertyUtils.pluginProp("textFile"));
+    BeforeActions.scenario.write("Text File bucket name - " + fileSourceBucket4);
+  }
+
+  @After(order = 1, value = "@TEXT_FILE")
+  public static void deleteSourceBucketWithTextFile() {
+    deleteGCSBucket(fileSourceBucket4);
+    fileSourceBucket4 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@PATH_FIELD_FILE")
+  public static void createBucketWithPathFieldFile() throws IOException, URISyntaxException {
+    fileSourceBucket5 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("pathFieldTestFile"));
+    PluginPropertyUtils.addPluginProp("pathFieldTestFiles", "gs://" + fileSourceBucket5 + "/"  +
+      PluginPropertyUtils.pluginProp("pathFieldTestFile"));
+    BeforeActions.scenario.write("Path Field File bucket name - " + fileSourceBucket5);
+  }
+
+  @After(order = 1, value = "@PATH_FIELD_FILE")
+  public static void deleteSourceBucketWithPathFieldFile() {
+    deleteGCSBucket(fileSourceBucket5);
+    fileSourceBucket5 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@DELIMITED_FILE")
+  public static void createBucketWithDelimitedFile() throws IOException, URISyntaxException {
+    fileSourceBucket6 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("delimitedFile"));
+    PluginPropertyUtils.addPluginProp("delimitedTestFile", "gs://" + fileSourceBucket6 + "/"  +
+      PluginPropertyUtils.pluginProp("delimitedFile"));
+    BeforeActions.scenario.write("Delimited File bucket name - " + fileSourceBucket6);
+  }
+
+  @After(order = 1, value = "@DELIMITED_FILE")
+  public static void deleteSourceBucketWithDelimitedFile() {
+    deleteGCSBucket(fileSourceBucket6);
+    fileSourceBucket6 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@QUOTED_VALUE_CSV")
+  public static void createBucketWithQuotedValueCsvFile() throws IOException, URISyntaxException {
+    fileSourceBucket7 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("quotedValueCSVFile"));
+    PluginPropertyUtils.addPluginProp("quotedValueCSVTestFiles", "gs://" + fileSourceBucket7 + "/"  +
+      PluginPropertyUtils.pluginProp("quotedValueCSVFile"));
+    BeforeActions.scenario.write("Quoted Value CSV File bucket name - " + fileSourceBucket7);
+  }
+
+  @After(order = 1, value = "@QUOTED_VALUE_CSV")
+  public static void deleteSourceBucketWithQuotedValueCsvFile() {
+    deleteGCSBucket(fileSourceBucket7);
+    fileSourceBucket7 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@QUOTED_VALUE_TSV")
+  public static void createBucketWithQuotedValueTsvFile() throws IOException, URISyntaxException {
+    fileSourceBucket8 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("quotedValueTSVFile"));
+    PluginPropertyUtils.addPluginProp("quotedValueTSVTestFiles", "gs://" + fileSourceBucket8 + "/"  +
+      PluginPropertyUtils.pluginProp("quotedValueTSVFile"));
+    BeforeActions.scenario.write("Quoted Value TSV File bucket name - " + fileSourceBucket8);
+  }
+
+  @After(order = 1, value = "@QUOTED_VALUE_TSV")
+  public static void deleteSourceBucketWithQuotedValueTsvFile() {
+    deleteGCSBucket(fileSourceBucket8);
+    fileSourceBucket8 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@QUOTED_VALUE_TXT")
+  public static void createBucketWithQuotedValueTxtFile() throws IOException, URISyntaxException {
+    fileSourceBucket9 = createGCSBucketWithFile(PluginPropertyUtils.pluginProp("quotedValueDelimitedFile"));
+    PluginPropertyUtils.addPluginProp("quotedValueDelimitedTestFiles", "gs://" + fileSourceBucket9 + "/"  +
+      PluginPropertyUtils.pluginProp("quotedValueDelimitedFile"));
+    BeforeActions.scenario.write("Quoted Value Text File bucket name - " + fileSourceBucket9);
+  }
+
+  @After(order = 1, value = "@QUOTED_VALUE_TXT")
+  public static void deleteSourceBucketWithQuotedValueTxtFile() {
+    deleteGCSBucket(fileSourceBucket9);
+    fileSourceBucket9 = StringUtils.EMPTY;
+  }
+
+  @Before(order = 1, value = "@FILE_SINK_TEST")
+  public static void setTempTargetFileSinkBucketName() throws IOException {
+    gcsTargetBucketName = createGCSBucket();
+    PluginPropertyUtils.addPluginProp("fileSinkTargetBucket", "gs://" + gcsTargetBucketName);
+    BeforeActions.scenario.write("File Sink target bucket name - " + gcsTargetBucketName);
+  }
+
+  @After(order = 1, value = "@FILE_SINK_TEST")
+  public static void deleteTargetFileSinkBucketWithFile() {
     deleteGCSBucket(gcsTargetBucketName);
     gcsTargetBucketName = StringUtils.EMPTY;
   }

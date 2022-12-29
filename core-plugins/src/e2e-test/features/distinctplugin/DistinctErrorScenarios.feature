@@ -1,7 +1,7 @@
 @Distinct
 Feature: Distinct analytics - Verify Distinct plugin error Scenarios
 
-  @FILE_SOURCE_TEST
+  @GCS_DISTINCT_TEST1
   Scenario:Verify Distinct plugin validation errors for incorrect data in Fields
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -10,7 +10,7 @@ Feature: Distinct analytics - Verify Distinct plugin error Scenarios
     Then Connect plugins: "File" and "Distinct" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "distinctCsvAllDataTypeFile"
+    Then Enter input plugin property: "path" with value: "gcsDistinctTest1"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button

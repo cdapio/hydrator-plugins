@@ -10,7 +10,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Verify mandatory property error for below listed properties:
       | selectedFields |
 
-  @FILE_SOURCE_TEST
+  @JOINER_TEST2
   Scenario:Verify Joiner plugin validation errors for incorrect data in Number of Partitions
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -19,7 +19,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Connect plugins: "File" and "Joiner" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "joinerCsvFileSecondInput"
+    Then Enter input plugin property: "path" with value: "joinerInputTest2"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button
@@ -31,7 +31,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Click on the Validate button
     Then Verify that the Plugin Property: "numPartitions" is displaying an in-line error message: "errorMessageJoinerInvalidNumberOfPartitions"
 
-  @FILE_SOURCE_TEST
+  @JOINER_TEST2
   Scenario:Verify Joiner plugin validation errors for basic join condition
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -40,7 +40,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Connect plugins: "File" and "Joiner" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "joinerCsvFileSecondInput"
+    Then Enter input plugin property: "path" with value: "joinerInputTest2"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button
@@ -51,7 +51,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Click on the Validate button
     Then Verify that the Plugin Property: "joinKeys" is displaying an in-line error message: "errorMessageJoinerBasicJoinCondition"
 
-  @FILE_SOURCE_TEST
+  @JOINER_TEST2
   Scenario:Verify Joiner plugin validation errors for advanced join condition
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -60,7 +60,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Connect plugins: "File" and "Joiner" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "joinerCsvFileSecondInput"
+    Then Enter input plugin property: "path" with value: "joinerInputTest2"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button
@@ -72,7 +72,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Click on the Validate button
     Then Verify that the Plugin Property: "conditionExpression" is displaying an in-line error message: "errorMessageJoinerAdvancedJoinCondition"
 
-  @FILE_SOURCE_TEST
+  @JOINER_TEST2
   Scenario:Verify Joiner plugin validation errors for advanced join condition with single input source
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -81,7 +81,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Connect plugins: "File" and "Joiner" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "joinerCsvFileSecondInput"
+    Then Enter input plugin property: "path" with value: "joinerInputTest2"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button
@@ -94,7 +94,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Click on the Validate button
     Then Verify that the Plugin Property: "conditionType" is displaying an in-line error message: "errorMessageJoinerAdvancedJoinConditionType"
 
-  @FILE_SOURCE_TEST
+  @JOINER_TEST2 @JOINER_TEST1
   Scenario:Verify Joiner plugin validation errors for input load memory field
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -109,7 +109,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Click plugin property: "alignPlugins" button
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "joinerCsvFileFirstInput"
+    Then Enter input plugin property: "path" with value: "joinerInputTest1"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click plugin property: "enableQuotedValues"
@@ -119,7 +119,7 @@ Feature: Joiner - Verify Joiner Plugin Error scenarios
     Then Close the Plugin Properties page
     Then Navigate to the properties page of plugin: "File2"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "joinerCsvFileSecondInput"
+    Then Enter input plugin property: "path" with value: "joinerInputTest2"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click plugin property: "enableQuotedValues"
