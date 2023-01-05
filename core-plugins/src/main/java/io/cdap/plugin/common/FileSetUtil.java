@@ -85,6 +85,7 @@ public class FileSetUtil {
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
     properties
+      .setTableProperty("avro.schema.literal", configuredSchema)
       .add(DatasetProperties.SCHEMA, configuredSchema);
   }
 

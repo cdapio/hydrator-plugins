@@ -250,6 +250,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .setOutputFormat(AvroKeyOutputFormat.class)
       .setInputProperty("schema", avroSchema.toString())
       .setOutputProperty("schema", avroSchema.toString())
+      .setTableProperty("avro.schema.literal", (avroSchema.toString()))
       .build());
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet tpfs = fileSetManager.get();
@@ -341,6 +342,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .setOutputFormat(AvroKeyOutputFormat.class)
       .setInputProperty("schema", avroSchema.toString())
       .setOutputProperty("schema", avroSchema.toString())
+      .setTableProperty("avro.schema.literal", (avroSchema.toString()))
       .build());
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet tpfs = fileSetManager.get();
