@@ -55,8 +55,6 @@ import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -235,25 +233,6 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     // run the pipeline
     runETLOnce(appManager);
 
-    Connection connection = getQueryClient();
-    ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
-    results.next();
-
-    Assert.assertEquals("a", results.getString(1));
-    Assert.assertEquals(3.6f, results.getFloat(2), 0.1);
-    Assert.assertEquals(4.2, results.getDouble(3), 0.1);
-    Assert.assertEquals(true, results.getBoolean(4));
-    Assert.assertEquals(23456789, results.getLong(5));
-    Assert.assertArrayEquals(Bytes.toBytes("abcd"), results.getBytes(6));
-    Assert.assertEquals(12, results.getLong(7));
-    Assert.assertEquals("testUnion", results.getString(8));
-    Assert.assertNull(results.getString(9));
-    Assert.assertEquals(12, results.getLong(10));
-    Assert.assertEquals(0, results.getLong(11));
-    Assert.assertEquals(3.6f, results.getFloat(12), 0.1);
-    Assert.assertEquals(0.0, results.getFloat(13), 0.1);
-    Assert.assertEquals(4.2, results.getDouble(14), 0.1);
-    Assert.assertEquals(0, results.getDouble(15), 0.1);
   }
 
   @Test
@@ -271,11 +250,6 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .setOutputFormat(AvroKeyOutputFormat.class)
       .setInputProperty("schema", avroSchema.toString())
       .setOutputProperty("schema", avroSchema.toString())
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", (avroSchema.toString()))
       .build());
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet tpfs = fileSetManager.get();
@@ -367,11 +341,6 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .setOutputFormat(AvroKeyOutputFormat.class)
       .setInputProperty("schema", avroSchema.toString())
       .setOutputProperty("schema", avroSchema.toString())
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", (avroSchema.toString()))
       .build());
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet tpfs = fileSetManager.get();

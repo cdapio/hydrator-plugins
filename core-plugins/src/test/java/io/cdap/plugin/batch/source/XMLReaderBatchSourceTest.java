@@ -39,7 +39,6 @@ import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.common.Constants;
 import org.apache.commons.io.FileUtils;
@@ -76,9 +75,6 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final String CATALOG_LARGE_XML_FILE_NAME = "catalogLarge.xml";
   private static final String CATALOG_SMALL_XML_FILE_NAME = "catalogSmall.xml";
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();

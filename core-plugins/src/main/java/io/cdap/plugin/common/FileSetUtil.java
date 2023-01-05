@@ -42,9 +42,6 @@ public class FileSetUtil {
     String hiveSchema = parseHiveSchema(configuredSchema, configuredSchema);
 
     properties
-      .setEnableExploreOnCreate(true)
-      .setExploreFormat("parquet")
-      .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
       .add(DatasetProperties.SCHEMA, configuredSchema);
   }
 
@@ -68,12 +65,7 @@ public class FileSetUtil {
     String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
     hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
 
-    properties.setExploreInputFormat("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat")
-      .setSerDe("org.apache.hadoop.hive.ql.io.orc.OrcSerde")
-      .setExploreSchema(hiveSchema)
-      .setEnableExploreOnCreate(true)
-      .add(DatasetProperties.SCHEMA, configuredSchema)
+    properties.add(DatasetProperties.SCHEMA, configuredSchema)
       .build();
   }
 
@@ -93,11 +85,6 @@ public class FileSetUtil {
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
     properties
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", configuredSchema)
       .add(DatasetProperties.SCHEMA, configuredSchema);
   }
 

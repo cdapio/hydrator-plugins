@@ -55,10 +55,7 @@ public class SnapshotFileBatchTextSink extends SnapshotFileBatchSink<SnapshotFil
   protected void addFileProperties(FileSetProperties.Builder propertiesBuilder) {
     propertiesBuilder
       .setInputFormat(TextInputFormat.class)
-      .setOutputFormat(TextOutputFormat.class)
-      .setEnableExploreOnCreate(true)
-      .setExploreFormat("text")
-      .setExploreSchema("text string");
+      .setOutputFormat(TextOutputFormat.class);
   }
 
   /**

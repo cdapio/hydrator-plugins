@@ -42,7 +42,6 @@ import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.batch.sink.BatchCassandraSink;
 import io.cdap.plugin.batch.source.BatchCassandraSource;
@@ -86,9 +85,6 @@ public class ETLCassandraTest extends HydratorTestBase {
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   private static final String VERSION = "3.2.0";
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion(VERSION);

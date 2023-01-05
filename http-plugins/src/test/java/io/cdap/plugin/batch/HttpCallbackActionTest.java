@@ -38,7 +38,6 @@ import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.TestBase;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.http.HttpHandler;
 import io.cdap.http.NettyHttpService;
@@ -47,7 +46,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -67,9 +65,6 @@ import javax.ws.rs.HttpMethod;
 /**
  */
 public class HttpCallbackActionTest extends HydratorTestBase {
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   protected static final ArtifactId BATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary BATCH_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");

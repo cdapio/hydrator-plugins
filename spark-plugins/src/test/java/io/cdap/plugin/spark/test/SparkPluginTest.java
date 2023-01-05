@@ -47,7 +47,6 @@ import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
 import io.cdap.cdap.test.SparkManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.http.HttpHandler;
 import io.cdap.http.NettyHttpService;
 import io.cdap.plugin.common.http.HTTPPollConfig;
@@ -79,9 +78,6 @@ import javax.ws.rs.HttpMethod;
  * Tests for Spark plugins.
  */
 public class SparkPluginTest extends HydratorTestBase {
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
