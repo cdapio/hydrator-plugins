@@ -61,11 +61,6 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
-    <dependency>
-       <groupId>io.cdap.cdap</groupId>
-       <artifactId>hydrator-test</artifactId>
-       <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
     <plugins>

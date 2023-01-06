@@ -45,11 +45,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>io.cdap.cdap</groupId>
-      <artifactId>hydrator-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.cdap.plugin</groupId>
       <artifactId>format-common</artifactId>
       <version>${project.version}</version>

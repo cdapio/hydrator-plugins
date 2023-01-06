@@ -29,10 +29,6 @@
   <name>Hydrator Common</name>
   <packaging>jar</packaging>
 
-  <properties>
-    <spark.version>1.6.1</spark.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
@@ -56,8 +52,8 @@
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_2.10</artifactId>
-      <version>${spark.version}</version>
+      <artifactId>spark-core_2.12</artifactId>
+      <version>${spark3.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -104,8 +100,8 @@
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-mllib_2.10</artifactId>
-      <version>${spark.version}</version>
+      <artifactId>spark-mllib_2.12</artifactId>
+      <version>${spark3.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
