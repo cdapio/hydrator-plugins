@@ -40,7 +40,6 @@ import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.batch.SolrSearchSink;
 import io.cdap.plugin.common.Constants;
@@ -68,8 +67,6 @@ import java.util.concurrent.TimeUnit;
  * Test cases for {@link SolrSearchSink}.
  */
 public class SolrSearchSinkTest extends HydratorTestBase {
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
   private static final Schema inputSchema = Schema.recordOf(
     "input-record",
     Schema.Field.of("id", Schema.of(Schema.Type.STRING)),

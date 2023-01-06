@@ -22,7 +22,6 @@ import io.cdap.cdap.datapipeline.DataPipelineApp;
 import io.cdap.cdap.etl.mock.test.HydratorTestBase;
 import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.plugin.common.KeystoreConf;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.csv.CSVFormat;
@@ -37,9 +36,6 @@ public class TransformPluginsTestBase extends HydratorTestBase {
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 

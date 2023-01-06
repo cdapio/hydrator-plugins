@@ -44,7 +44,6 @@ import io.cdap.cdap.proto.id.ApplicationId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.batch.ETLBatchTestBase;
 import io.cdap.plugin.common.Constants;
@@ -90,8 +89,6 @@ import javax.annotation.Nullable;
  */
 public class FileBatchSourceTest extends ETLBatchTestBase {
 
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
   private static final Schema RECORD_SCHEMA = Schema.recordOf("record",
                                                               Schema.Field.of("i", Schema.of(Schema.Type.INT)),
                                                               Schema.Field.of("l", Schema.of(Schema.Type.LONG)),

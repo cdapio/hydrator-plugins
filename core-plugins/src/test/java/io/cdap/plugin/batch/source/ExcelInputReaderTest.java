@@ -39,7 +39,6 @@ import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.common.Constants;
 import org.apache.commons.io.FileUtils;
@@ -72,9 +71,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();

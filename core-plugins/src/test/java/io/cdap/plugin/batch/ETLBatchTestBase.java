@@ -35,7 +35,6 @@ import io.cdap.cdap.proto.id.ApplicationId;
 import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
-import io.cdap.cdap.test.TestConfiguration;
 import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.alert.TMSAlertPublisher;
 import io.cdap.plugin.batch.action.EmailAction;
@@ -90,7 +89,6 @@ import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
@@ -105,9 +103,6 @@ import java.util.concurrent.TimeoutException;
  * Base test class that sets up plugin and the etl batch app artifacts.
  */
 public class ETLBatchTestBase extends HydratorTestBase {
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
 
   protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
