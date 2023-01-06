@@ -18,7 +18,7 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = ../../data-integrations/wrangler.git
-	branch = remove-explore
+	branch = develop
 [submodule "google-cloud"]
 	path = google-cloud
 	url = ../../data-integrations/google-cloud
@@ -26,7 +26,7 @@
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = ../../data-integrations/kafka-plugins
-	branch = remove-explore
+	branch = develop
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
 	url = ../../data-integrations/amazon-s3-plugins
