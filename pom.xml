@@ -883,7 +883,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.14.1</version>
         <configuration>
-          <argLine>-Xmx3g -Djava.awt.headless=true -XX:MaxPermSize=256m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true</argLine>
+          <argLine>-Xmx4g -Djava.awt.headless=true -XX:MaxPermSize=1g -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true</argLine>
           <redirectTestOutputToFile>${surefire.redirectTestOutputToFile}</redirectTestOutputToFile>
           <reuseForks>false</reuseForks>
           <reportFormat>plain</reportFormat>
