@@ -185,10 +185,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.fetchSize != null) {
       hConf.setInt(DBUtils.FETCH_SIZE, sourceConfig.fetchSize);
     }
+
+    // Create the external dataset before setting context properties
+    emitLineage(context);
     context.setInput(Input.of(sourceConfig.getReferenceName(),
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
-
-    emitLineage(context);
   }
 
   @Override
