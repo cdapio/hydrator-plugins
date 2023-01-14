@@ -124,7 +124,7 @@
     <json.version>20160212</json.version>
     <netty.version>4.1.75.Final</netty.version>
     <netty-http.version>1.3.0</netty-http.version>
-    <spark1.version>1.6.3</spark1.version>
+    <spark.version>3.1.1</spark.version>
     <testSourceLocation>${project.basedir}/src/test/java/</testSourceLocation>
   </properties>
 
@@ -176,7 +176,7 @@
       </dependency>
       <dependency>
         <groupId>io.cdap.cdap</groupId>
-        <artifactId>cdap-api-spark2_2.11</artifactId>
+        <artifactId>cdap-api-spark3_2.12</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
@@ -217,7 +217,19 @@
       </dependency>
       <dependency>
         <groupId>io.cdap.cdap</groupId>
+        <artifactId>cdap-data-pipeline3_2.12</artifactId>
+        <version>${cdap.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-data-streams2_2.11</artifactId>
+        <version>${cdap.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.cdap.cdap</groupId>
+        <artifactId>cdap-data-streams3_2.12</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
@@ -264,6 +276,12 @@
             <artifactId>log4j</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.cdap.cdap</groupId>
+        <artifactId>cdap-unit-test-spark3_2.12</artifactId>
+        <version>${cdap.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
