@@ -180,7 +180,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     nameIdMap.put("john", "3.0");
     nameIdMap.put("romy", "1.0");
     nameIdMap.put("Paulo", "11.0");
-    nameIdMap.put("Ruskin", "10.0");
+    nameIdMap.put("", "10.0");
     nameIdMap.put("Alan", "8.0");
     nameIdMap.put("Bill", "13.0");
     nameIdMap.put("Ada", "14.0");
