@@ -42,6 +42,7 @@ import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
 import io.cdap.cdap.test.WorkflowManager;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -52,6 +53,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test case for {@link ValueMapper}.
  */
+// Ignoring these tests because the ValueMapper plugin uses the Lookup capability that is only available in MapReduce
+// and not Spark. MapReduce engine is deprecated and the mapreduce test dependencies are currently causing
+// failures in some test environments.
+@Ignore
 public class ValueMapperTest extends TransformPluginsTestBase {
 
   private static final Schema SOURCE_SCHEMA =
@@ -88,7 +93,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
     String sinkTable = "output_table_test_Empty_Null";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(transform)
       .addStage(sink)
@@ -161,7 +166,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
     String sinkTable = "output_table_without_defaults";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(transform)
       .addStage(sink)
@@ -249,7 +254,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
     String sinkTable = "output_table_with_multi_mapping";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(transform)
       .addStage(sink)

@@ -22,6 +22,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.validation.CauseAttributes;
@@ -118,12 +119,13 @@ public class NormalizeTest extends TransformPluginsTestBase {
                                       new ETLPlugin("Normalize", Transform.PLUGIN_TYPE, sourceProperties, null));
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(transform)
       .addStage(sink)
       .addConnection(source.getName(), transform.getName())
       .addConnection(transform.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);

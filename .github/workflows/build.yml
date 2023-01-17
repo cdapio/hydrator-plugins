@@ -15,11 +15,9 @@
 name: Build with unit tests
 
 on:
-  workflow_run:
-    workflows:
-      - Trigger build
-    types:
-      - completed
+  push:
+    branches:
+      - http-plugins-test
 
 jobs:
   build:
@@ -29,7 +27,7 @@ jobs:
 
     steps:
       # Pinned 1.0.0 version
-      - uses: haya14busa/action-workflow_run-status@967ed83efa565c257675ed70cfe5231f062ddd94
+      # - uses: haya14busa/action-workflow_run-status@967ed83efa565c257675ed70cfe5231f062ddd94
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -41,7 +39,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-${{ github.workflow }}
       - name: Build with Maven
-        run: mvn clean test -fae -T 2 -B -V -DcloudBuild -Dmaven.wagon.http.retryHandler.count=3 -Dmaven.wagon.httpconnectionManager.ttlSeconds=25
+        run: mvn clean test -pl database-plugins -am -fae -B -V -DcloudBuild -Dmaven.wagon.http.retryHandler.count=3 -Dmaven.wagon.httpconnectionManager.ttlSeconds=25
       - name: Archive build artifacts
         uses: actions/upload-artifact@v3
         if: always()

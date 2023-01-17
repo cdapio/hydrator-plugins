@@ -26,6 +26,7 @@ import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.datapipeline.DataPipelineApp;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.mock.test.HydratorTestBase;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
@@ -270,10 +271,11 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     throws Exception {
     ETLStage source = new ETLStage("source", sourcePlugin);
     ETLStage sink = new ETLStage("sink", sinkPlugin);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);

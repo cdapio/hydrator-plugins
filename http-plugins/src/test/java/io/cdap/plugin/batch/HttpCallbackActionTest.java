@@ -24,6 +24,7 @@ import io.cdap.cdap.api.artifact.ArtifactSummary;
 import io.cdap.cdap.api.artifact.ArtifactVersion;
 import io.cdap.cdap.datapipeline.DataPipelineApp;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.batch.PostAction;
 import io.cdap.cdap.etl.mock.batch.MockSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
@@ -138,6 +139,7 @@ public class HttpCallbackActionTest extends HydratorTestBase {
       .addStage(sink)
       .addPostAction(action)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
