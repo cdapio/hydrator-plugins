@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.mock.batch.MockSink;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
@@ -303,10 +304,10 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
   public void testDbSourceMultipleTables() throws Exception {
     // have the same data in both tables ('\"my_table\"' and '\"your_table\"'), and select the ID and NAME fields from
     // separate tables
-    String importQuery = "SELECT \"my_table\".ID, \"your_table\".NAME FROM \"my_table\", \"your_table\"" +
+    String importQuery = "SELECT \"my_table\".ID, \"your_table\".NAME FROM \"my_table\", \"your_table\" " +
       "WHERE \"my_table\".ID < 3 and \"my_table\".ID = \"your_table\".ID and $CONDITIONS";
-    String boundingQuery = "SELECT MIN(MIN(\"my_table\".ID), MIN(\"your_table\".ID)), " +
-      "MAX(MAX(\"my_table\".ID), MAX(\"your_table\".ID))";
+    String boundingQuery = "SELECT LEAST(MIN(\"my_table\".ID), MIN(\"your_table\".ID)), " +
+      "GREATEST(MAX(\"my_table\".ID), MAX(\"your_table\".ID)) FROM \"my_table\", \"your_table\"";
     String splitBy = "\"my_table\".ID";
     ETLPlugin sourceConfig = new ETLPlugin(
       "Database",
@@ -370,6 +371,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(database)
       .addStage(table)
       .addConnection(database.getName(), table.getName())
+      .setEngine(Engine.SPARK)
       .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
@@ -383,6 +385,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(database)
       .addStage(table)
       .addConnection(database.getName(), table.getName())
+      .setEngine(Engine.SPARK)
       .build();
     assertDeploymentFailure(
       appId, etlConfig, "Deploying DB Source with null username but non-null password should have failed.");
@@ -397,6 +400,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(database)
       .addStage(table)
       .addConnection(database.getName(), table.getName())
+      .setEngine(Engine.SPARK)
       .build();
     appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
@@ -429,6 +433,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(sourceBadName)
       .addStage(sink)
       .addConnection(sourceBadName.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
     ApplicationId appId = NamespaceId.DEFAULT.app("dbSourceNonExistingTest");
     assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
@@ -453,6 +458,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(sourceBadConn)
       .addStage(sink)
       .addConnection(sourceBadConn.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
     assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source database.");
