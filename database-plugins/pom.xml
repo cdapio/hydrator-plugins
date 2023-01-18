@@ -33,6 +33,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
