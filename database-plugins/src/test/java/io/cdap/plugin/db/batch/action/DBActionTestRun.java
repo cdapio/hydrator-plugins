@@ -17,6 +17,7 @@
 package io.cdap.plugin.db.batch.action;
 
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.mock.batch.MockSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
@@ -64,12 +65,13 @@ public class DBActionTestRun extends DatabasePluginTestBase {
         .build(),
       null));
 
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig config = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addStage(action)
       .addConnection(sink.getName(), action.getName())
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
