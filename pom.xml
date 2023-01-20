@@ -787,6 +787,13 @@
     </dependencies>
   </dependencyManagement>
 
+  <dependencies>
+    <dependency>
+      <groupId>io.cdap.cdap</groupId>
+      <artifactId>cdap-unit-test-spark3_2.12</artifactId>
+    </dependency>
+  </dependencies>
+
   <build>
     <testSourceDirectory>${testSourceLocation}</testSourceDirectory>
     <pluginManagement>

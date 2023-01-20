@@ -50,10 +50,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-unit-test-spark3_2.12</artifactId>
-    </dependency>
     <!-- Spark3.1.1 uses constant JavaVersion.JAVA_9 that is only there in newer versions of commons-lang3 -->
     <dependency>
       <groupId>org.apache.commons</groupId>
