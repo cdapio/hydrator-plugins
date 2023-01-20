@@ -26,6 +26,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.datapipeline.DataPipelineApp;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
@@ -120,10 +121,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
                                                            null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
@@ -187,10 +189,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
                                                            null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrCloudSink");
@@ -260,10 +263,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
                                                            null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
@@ -338,10 +342,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
                                                            null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSinkWrongHost");
@@ -380,10 +385,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
                                                            null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
+      .setEngine(Engine.SPARK)
       .build();
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
