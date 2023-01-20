@@ -33,6 +33,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
@@ -61,10 +65,6 @@
           <artifactId>cdap-unit-test</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-unit-test-spark3_2.12</artifactId>
     </dependency>
     <dependency>
       <groupId>io.cdap.cdap</groupId>

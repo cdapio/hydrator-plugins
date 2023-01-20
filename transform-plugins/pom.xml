@@ -64,7 +64,7 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>7.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- needs to be marked as test scope. Otherwise it will be provided and spark in unit test won't see it -->
