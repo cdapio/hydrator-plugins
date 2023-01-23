@@ -90,7 +90,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   private static final String RECORD = "record";
   private static final String EXIT_ON_ERROR = "Exit on error";
   private static final String WRITE_ERROR_DATASET = "Write to error dataset";
-  private static final String NULL = "NULL";
+  private static final String NULL = "";
   private static final String END = "END";
   private static final String SHEET_NO = "Sheet Number";
 
