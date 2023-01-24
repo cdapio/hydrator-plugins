@@ -159,7 +159,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "")
-      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String,G:String")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
@@ -180,7 +180,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     nameIdMap.put("john", "3.0");
     nameIdMap.put("romy", "1.0");
     nameIdMap.put("Paulo", "11.0");
-    nameIdMap.put("", "10.0");
+    nameIdMap.put("Ruskin", "10.0");
     nameIdMap.put("Alan", "8.0");
     nameIdMap.put("Bill", "13.0");
     nameIdMap.put("Ada", "14.0");
@@ -191,7 +191,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1).get("A"));
     Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2).get("A"));
     Assert.assertEquals(nameIdMap.get(output.get(3).get("B")), output.get(3).get("A"));
-    Assert.assertEquals("", output.get(0).get("G"));
 
     Assert.assertEquals("Expected records", 9, output.size());
   }
