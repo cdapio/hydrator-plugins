@@ -119,7 +119,6 @@
     <slf4j.version>1.7.15</slf4j.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
-    <jython.version>2.5.2</jython.version>
     <json-path.version>2.2.0</json-path.version>
     <json.version>20160212</json.version>
     <netty.version>4.1.16.Final</netty.version>
@@ -695,11 +694,6 @@
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
         <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.python</groupId>
-        <artifactId>jython-standalone</artifactId>
-        <version>${jython.version}</version>
       </dependency>
       <dependency>
         <groupId>dumbster</groupId>

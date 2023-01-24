@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.batch.source;
 
+import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.artifact.ArtifactSummary;
 import io.cdap.cdap.api.artifact.ArtifactVersion;
 import io.cdap.cdap.api.common.Bytes;
@@ -51,7 +52,6 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.python.google.common.collect.ImmutableMap;
 
 import java.io.File;
 import java.io.IOException;
