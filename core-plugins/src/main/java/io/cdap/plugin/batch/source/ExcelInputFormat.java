@@ -199,7 +199,6 @@ public class ExcelInputFormat extends TextInputFormat {
       while (cellIterator.hasNext()) {
         Cell cell = cellIterator.next();
         String colName = CellReference.convertNumToColString(cell.getColumnIndex());
-        String colValue = "";
         switch (cell.getCellType()) {
           case Cell.CELL_TYPE_STRING:
             sb.append(colName)
@@ -218,10 +217,6 @@ public class ExcelInputFormat extends TextInputFormat {
               sb.append(colName)
                   .append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
             }
-            break;
-
-          case Cell.CELL_TYPE_BLANK:
-            sb.append(colName).append(COLUMN_SEPERATOR).append(colValue).append(CELL_SEPERATOR);
             break;
         }
       }

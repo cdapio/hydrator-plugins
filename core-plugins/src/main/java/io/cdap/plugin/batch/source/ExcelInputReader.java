@@ -201,12 +201,9 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     for (String column : excelRecord) {
       String[] columnValue = column.split(COLUMN_SEPERATION);
-      if (columnValue.length >= 1) {
+      if (columnValue.length > 1) {
         String name = columnValue[0];
-        String value = "";
-        if (columnValue.length > 1) {
-          value = columnValue[1];
-        }
+        String value = columnValue[1];
         if (columnMapping.containsKey(name)) {
           excelColumnValueMap.put(columnMapping.get(name), value);
         } else {
