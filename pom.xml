@@ -101,6 +101,7 @@
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <commons-lang-version>2.6</commons-lang-version>
     <commons-lang3-version>3.5</commons-lang3-version>
+    <commons-collections.version>3.2.2</commons-collections.version>
     <cdap.version>6.9.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
@@ -285,6 +286,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>${commons-lang3-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${commons-collections.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
