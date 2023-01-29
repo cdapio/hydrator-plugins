@@ -111,12 +111,6 @@
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
     </dependency>
-    <!-- python script transform -->
-    <dependency>
-      <groupId>org.python</groupId>
-      <artifactId>jython-standalone</artifactId>
-      <version>2.5.2</version>
-    </dependency>
     <!-- Windows share copy action -->
     <dependency>
       <groupId>jcifs</groupId>
