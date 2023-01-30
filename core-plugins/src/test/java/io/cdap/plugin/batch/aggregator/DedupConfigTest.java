@@ -16,9 +16,9 @@
 
 package io.cdap.plugin.batch.aggregator;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Test;
-import org.python.google.common.collect.ImmutableList;
 
 /**
  * Tests for parsing and validation done by {@link DedupAggregator}.
