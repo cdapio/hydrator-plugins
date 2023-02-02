@@ -50,15 +50,10 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-unit-test-spark3_2.12</artifactId>
-    </dependency>
     <!-- Spark3.1.1 uses constant JavaVersion.JAVA_9 that is only there in newer versions of commons-lang3 -->
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -115,12 +110,6 @@
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
-    </dependency>
-    <!-- python script transform -->
-    <dependency>
-      <groupId>org.python</groupId>
-      <artifactId>jython-standalone</artifactId>
-      <version>2.5.2</version>
     </dependency>
     <!-- Windows share copy action -->
     <dependency>

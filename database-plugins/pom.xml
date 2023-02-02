@@ -33,6 +33,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
@@ -55,10 +59,23 @@
     <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>hydrator-test</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.cdap.cdap</groupId>
+          <artifactId>cdap-unit-test</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-data-pipeline2_2.11</artifactId>
+      <artifactId>cdap-data-pipeline3_2.12</artifactId>
+    </dependency>
+    <!-- needs to be marked as test scope instead of provided, otherwise spark in unit test won't see it -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+      <version>2.10.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

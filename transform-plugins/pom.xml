@@ -40,10 +40,43 @@
     <dependency>
       <groupId>io.cdap.cdap</groupId>
       <artifactId>hydrator-test</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.cdap.cdap</groupId>
+          <artifactId>cdap-unit-test</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-data-pipeline2_2.11</artifactId>
+      <artifactId>cdap-unit-test-spark3_2.12</artifactId>
+      <exclusions>
+        <!-- Causes issues with Spark's Servlet classes -->
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- directly specify asm version here for tests since cdap-unit-test-spark3_2.12 uses 7.1, but json-path
+         uses 5.0.3. Don't want to exclude it from json-path, as that is a direct compile dependency.
+         Cannot just exclude it from cdap dependencies causes NoClassDef errors in tests -->
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- needs to be marked as test scope. Otherwise it will be provided and spark in unit test won't see it -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+      <version>2.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.cdap.cdap</groupId>
+      <artifactId>cdap-data-pipeline3_2.12</artifactId>
     </dependency>
     <dependency>
       <groupId>io.cdap.plugin</groupId>
@@ -63,14 +96,6 @@
     <dependency>
       <groupId>org.xerial.snappy</groupId>
       <artifactId>snappy-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-unit-test</artifactId>
     </dependency>
     <dependency>
       <groupId>org.json</groupId>

@@ -100,6 +100,8 @@
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <commons-lang-version>2.6</commons-lang-version>
+    <commons-lang3-version>3.5</commons-lang3-version>
+    <commons-collections.version>3.2.2</commons-collections.version>
     <cdap.version>6.9.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
@@ -113,13 +115,11 @@
     <javamail.version>1.4.1</javamail.version>
     <junit.version>4.13.1</junit.version>
     <mockito.version>2.24.0</mockito.version>
-    <kafka.version>0.8.2.2</kafka.version>
     <mockftp.version>2.6</mockftp.version>
     <snappy.version>1.1.2</snappy.version>
     <slf4j.version>1.7.15</slf4j.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
-    <jython.version>2.5.2</jython.version>
     <json-path.version>2.2.0</json-path.version>
     <json.version>20160212</json.version>
     <netty.version>4.1.75.Final</netty.version>
@@ -211,19 +211,7 @@
       </dependency>
       <dependency>
         <groupId>io.cdap.cdap</groupId>
-        <artifactId>cdap-data-pipeline2_2.11</artifactId>
-        <version>${cdap.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-data-pipeline3_2.12</artifactId>
-        <version>${cdap.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.cdap.cdap</groupId>
-        <artifactId>cdap-data-streams2_2.11</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
@@ -294,6 +282,16 @@
         <version>${commons-lang-version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang3-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${commons-collections.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
@@ -330,6 +328,10 @@
           <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
           </exclusion>
           <exclusion>
             <groupId>log4j</groupId>
@@ -402,6 +404,12 @@
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-client</artifactId>
         <version>${hadoop.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -412,6 +420,12 @@
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
         <version>${hadoop.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -419,6 +433,10 @@
         <version>${hadoop.version}</version>
         <scope>provided</scope>
         <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
+          </exclusion>
           <exclusion>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
@@ -701,37 +719,9 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.kafka</groupId>
-        <artifactId>kafka_2.10</artifactId>
-        <version>${kafka.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.sun.jdmk</groupId>
-            <artifactId>jmxtools</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.sun.jmx</groupId>
-            <artifactId>jmxri</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
         <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.python</groupId>
-        <artifactId>jython-standalone</artifactId>
-        <version>${jython.version}</version>
       </dependency>
       <dependency>
         <groupId>dumbster</groupId>
@@ -756,13 +746,13 @@
       </dependency>
       <dependency>
         <groupId>org.apache.spark</groupId>
-        <artifactId>spark-streaming-twitter_2.10</artifactId>
-        <version>${spark1.version}</version>
+        <artifactId>spark-streaming-twitter_2.12</artifactId>
+        <version>${spark.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.spark</groupId>
-        <artifactId>spark-core_2.10</artifactId>
-        <version>${spark1.version}</version>
+        <artifactId>spark-core_2.12</artifactId>
+        <version>${spark.version}</version>
         <exclusions>
           <exclusion>
             <groupId>org.slf4j</groupId>
@@ -801,12 +791,16 @@
             <groupId>asm</groupId>
             <artifactId>asm</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.spark</groupId>
-        <artifactId>spark-streaming_2.10</artifactId>
-        <version>${spark1.version}</version>
+        <artifactId>spark-streaming_2.12</artifactId>
+        <version>${spark.version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -820,8 +814,22 @@
         <version>${netty-http.version}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <!-- Overwrite Apache Ivy version to 2.5.1 for remediating CVE-2022-37866 -->
+        <groupId>org.apache.ivy</groupId>
+        <artifactId>ivy</artifactId>
+        <version>2.5.1</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.cdap.cdap</groupId>
+      <artifactId>cdap-unit-test-spark3_2.12</artifactId>
+    </dependency>
+  </dependencies>
 
   <build>
     <testSourceDirectory>${testSourceLocation}</testSourceDirectory>
