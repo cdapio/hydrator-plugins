@@ -102,7 +102,7 @@
     <commons-lang-version>2.6</commons-lang-version>
     <commons-lang3-version>3.5</commons-lang3-version>
     <commons-collections.version>3.2.2</commons-collections.version>
-    <cdap.version>6.9.0-SNAPSHOT</cdap.version>
+    <cdap.version>6.8.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
@@ -248,7 +248,7 @@
       <dependency>
         <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-unit-test</artifactId>
-        <version>${cdap.version}</version>
+        <version>6.8.0</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1246,6 +1246,12 @@
           <artifactId>logback-classic</artifactId>
           <version>1.2.8</version>
           <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>1.7.15</version>
         </dependency>
       </dependencies>
 
