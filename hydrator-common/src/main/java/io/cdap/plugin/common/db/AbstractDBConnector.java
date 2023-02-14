@@ -19,6 +19,7 @@ package io.cdap.plugin.common.db;
 
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.connector.BrowseDetail;
 import io.cdap.cdap.etl.api.connector.BrowseEntity;
 import io.cdap.cdap.etl.api.connector.BrowseRequest;
@@ -166,7 +167,10 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       int precision = columns.getInt(RESULTSET_COLUMN_COLUMN_SIZE);
       String columnName = columns.getString(RESULTSET_COLUMN_COLUMN_NAME);
       boolean isSigned = typeName.toLowerCase().indexOf("unsigned") < 0;
-      Schema columnSchema = getSchema(sqlType, typeName, scale, precision, columnName, isSigned, true);
+      Schema columnSchema =
+              DBUtils.getSchemaReader(connection.getMetaData().getDatabaseProductName(),
+                                      BatchSource.PLUGIN_TYPE, null).
+                      getSchema(columnName, sqlType, typeName, "", precision, scale, isSigned);
       String isNullable = columns.getString(RESULTSET_COLUMN_IS_NULLABLE);
       if ("YES".equals(isNullable)) {
         columnSchema = Schema.nullableOf(columnSchema);
@@ -175,11 +179,6 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     }
     Schema outputSchema = Schema.recordOf("output", fields);
     return outputSchema;
-  }
-
-  protected Schema getSchema(int sqlType, String typeName, int scale, int precision, String columnName,
-                             boolean isSigned, boolean handleAsDecimal) throws SQLException {
-    return DBUtils.getSchema(typeName, sqlType, precision, scale, columnName, isSigned, handleAsDecimal);
   }
 
   /**

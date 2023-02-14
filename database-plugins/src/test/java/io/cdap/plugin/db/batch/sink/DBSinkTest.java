@@ -24,7 +24,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
-import io.cdap.plugin.DBRecord;
+import io.cdap.plugin.common.db.DBRecord;
 import org.apache.hadoop.io.NullWritable;
 import org.junit.Assert;
 import org.junit.Test;

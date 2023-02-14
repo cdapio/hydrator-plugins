@@ -19,7 +19,9 @@ package io.cdap.plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,6 +29,8 @@ import org.mockito.Mockito;
 
 import java.math.BigDecimal;
 import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -41,6 +45,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import javax.sql.rowset.serial.SerialBlob;
 
 public class DBRecordTest {
@@ -112,11 +118,29 @@ public class DBRecordTest {
       .set("null", null)
       .setDateTime("datetime", localDateTime)
       .build();
-    int[] columnTypes = {Types.BIGINT, Types.FLOAT, Types.DOUBLE, Types.VARCHAR, Types.BIGINT, Types.BIGINT,
-      Types.INTEGER, Types.BIGINT, Types.INTEGER, Types.BLOB, Types.BINARY, Types.INTEGER, Types.VARCHAR,
-      Types.VARCHAR};
+    List<ColumnType> columnTypes = new ArrayList<ColumnType>();
+    columnTypes.add(new ColumnType("long", "long", Types.BIGINT));
+    columnTypes.add(new ColumnType("float", "float", Types.FLOAT));
+    columnTypes.add(new ColumnType("double", "double", Types.DOUBLE));
+    columnTypes.add(new ColumnType("string", "string", Types.VARCHAR));
+    columnTypes.add(new ColumnType("timestamp_millis", "timestamp_millis", Types.BIGINT));
+    columnTypes.add(new ColumnType("timestamp_micros", "timestamp_micros", Types.BIGINT));
+    columnTypes.add(new ColumnType("time_millis", "time_millis", Types.INTEGER));
+    columnTypes.add(new ColumnType("time_micros", "time_micros", Types.BIGINT));
+    columnTypes.add(new ColumnType("int", "int", Types.INTEGER));
+    columnTypes.add(new ColumnType("blob", "blob", Types.BLOB));
+    columnTypes.add(new ColumnType("binary", "binary", Types.BINARY));
+    columnTypes.add(new ColumnType("boolean", "boolean", Types.INTEGER));
+    columnTypes.add(new ColumnType("null", "null", Types.VARCHAR));
+    columnTypes.add(new ColumnType("datetime", "datetime", Types.VARCHAR));
+
     DBRecord record = new DBRecord(input, columnTypes);
     PreparedStatement statement = Mockito.mock(PreparedStatement.class);
+    Connection connection = Mockito.mock(Connection.class);
+    DatabaseMetaData metaData = Mockito.mock(DatabaseMetaData.class);
+    Mockito.when(metaData.getDatabaseProductName()).thenReturn("");
+    Mockito.when(connection.getMetaData()).thenReturn(metaData);
+    Mockito.when(statement.getConnection()).thenReturn(connection);
     record.write(statement);
 
     Assert.assertEquals(expectedBytesWritten, record.getBytesWritten());

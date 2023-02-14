@@ -41,13 +41,14 @@ import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.DBManager;
-import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.FieldCase;
 import io.cdap.plugin.common.Asset;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSink;
 import io.cdap.plugin.common.ReferencePluginConfig;
+import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.common.FQNGenerator;
@@ -63,12 +64,13 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -87,7 +89,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   private final DBSinkConfig dbSinkConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
-  private int [] columnTypes;
+  private List<ColumnType> columnTypes;
   private List<String> columns;
 
   public DBSink(DBSinkConfig dbSinkConfig) {
@@ -181,7 +183,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   }
 
   private void setResultSetMetadata() throws Exception {
-    Map<String, Integer> columnToType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    List<ColumnType> columnTypes = new ArrayList<>(columns.size());
     dbManager.ensureJDBCDriverIsAvailable(driverClass);
 
     try (Connection connection = DriverManager.getConnection(dbSinkConfig.getConnectionString(),
@@ -193,28 +195,41 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
                                                                dbSinkConfig.columns, dbSinkConfig.tableName))
       ) {
         ResultSetMetaData resultSetMetadata = rs.getMetaData();
-        FieldCase fieldCase = FieldCase.toFieldCase(dbSinkConfig.getColumnNameCase());
-        // JDBC driver column indices start with 1
-        for (int i = 0; i < rs.getMetaData().getColumnCount(); i++) {
-          String name = resultSetMetadata.getColumnName(i + 1);
-          int type = resultSetMetadata.getColumnType(i + 1);
-          if (fieldCase == FieldCase.LOWER) {
-            name = name.toLowerCase();
-          } else if (fieldCase == FieldCase.UPPER) {
-            name = name.toUpperCase();
-          }
-          columnToType.put(name, type);
-        }
+        columns = ImmutableList.copyOf(Splitter.on(",").omitEmptyStrings().trimResults().split(dbSinkConfig.columns));
+        columnTypes.addAll(getMatchedColumnTypeList(resultSetMetadata, columns));
       }
     }
 
-    columns = ImmutableList.copyOf(Splitter.on(",").omitEmptyStrings().trimResults().split(dbSinkConfig.columns));
-    columnTypes = new int[columns.size()];
-    for (int i = 0; i < columnTypes.length; i++) {
-      String name = columns.get(i);
-      Preconditions.checkArgument(columnToType.containsKey(name), "Missing column '%s' in SQL table", name);
-      columnTypes[i] = columnToType.get(name);
+    this.columnTypes = Collections.unmodifiableList(columnTypes);
+  }
+
+  /**
+   * Compare columns from schema with columns in table and returns list of matched columns in {@link ColumnType} format.
+   *
+   * @param resultSetMetadata result set metadata from table.
+   * @param columns           list of columns from schema.
+   * @return list of matched columns.
+   */
+  private List<ColumnType> getMatchedColumnTypeList(ResultSetMetaData resultSetMetadata, List<String> columns)
+          throws SQLException {
+    List<ColumnType> columnTypes = new ArrayList<>(columns.size());
+    FieldCase fieldCase = FieldCase.toFieldCase(dbSinkConfig.getColumnNameCase());
+    // JDBC driver column indices start with 1
+    for (int i = 0; i < resultSetMetadata.getColumnCount(); i++) {
+      String name = resultSetMetadata.getColumnName(i + 1);
+      if (fieldCase == FieldCase.LOWER) {
+        name = name.toLowerCase();
+      } else if (fieldCase == FieldCase.UPPER) {
+        name = name.toUpperCase();
+      }
+      String columnTypeName = resultSetMetadata.getColumnTypeName(i + 1);
+      int type = resultSetMetadata.getColumnType(i + 1);
+      String schemaColumnName = columns.get(i);
+      Preconditions.checkArgument(schemaColumnName.toLowerCase().equals(name.toLowerCase()),
+              "Missing column '%s' in SQL table", schemaColumnName);
+      columnTypes.add(new ColumnType(schemaColumnName, columnTypeName, type));
     }
+    return columnTypes;
   }
 
   private void recordLineage(BatchSinkContext context, Schema tableSchema, List<String> fieldNames) {

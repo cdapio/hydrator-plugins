@@ -38,6 +38,7 @@ import io.cdap.cdap.proto.id.ArtifactId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.WorkflowManager;
+import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.db.batch.action.DBAction;
 import io.cdap.plugin.db.batch.action.QueryAction;
 import io.cdap.plugin.db.batch.sink.DBSink;

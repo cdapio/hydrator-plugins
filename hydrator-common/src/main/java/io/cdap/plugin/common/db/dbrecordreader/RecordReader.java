@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Cask Data, Inc.
+ * Copyright © 2019 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,23 +14,20 @@
  * the License.
  */
 
+package io.cdap.plugin.common.db.dbrecordreader;
 
-package io.cdap.plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
- * Reports data size.
- *
+ * Record Reader methods which create StructuredRecord from a given ResultSet and Schema.
  */
-public interface DataSizeReporter {
-  /**
-   * Get the total size in bytes of data written.
-   * @returns number of bytes written.
-   */
-  long getBytesWritten();
+public interface RecordReader {
 
-  /**
-   * Get the total size in bytes of data read.
-   * @returns number of bytes read.
-   */
-  long getBytesRead();
+    StructuredRecord.Builder getRecordBuilder(ResultSet resultSet, Schema schema) throws SQLException;
+
+    long getBytesRead();
 }

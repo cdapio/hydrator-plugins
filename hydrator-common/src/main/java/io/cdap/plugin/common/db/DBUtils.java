@@ -17,12 +17,33 @@
 package io.cdap.plugin.common.db;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import io.cdap.cdap.api.plugin.PluginConfigurer;
 import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.batch.BatchSink;
+import io.cdap.plugin.common.db.dbrecordreader.CommonRecordReaderHelper;
+import io.cdap.plugin.common.db.dbrecordreader.OracleSourceRecordReaderHelper;
+import io.cdap.plugin.common.db.dbrecordreader.PostgresRecordReaderHelper;
+import io.cdap.plugin.common.db.dbrecordreader.RecordReader;
+import io.cdap.plugin.common.db.dbrecordreader.SqlServerSourceRecordReaderHelper;
+import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
+import io.cdap.plugin.common.db.dbrecordwriter.CommonRecordWriterHelper;
+import io.cdap.plugin.common.db.dbrecordwriter.OracleRecordWriterHelper;
+import io.cdap.plugin.common.db.dbrecordwriter.PostgresRecordWriterHelper;
+import io.cdap.plugin.common.db.dbrecordwriter.RecordWriter;
+import io.cdap.plugin.common.db.dbrecordwriter.SqlServerRecordWriterHelper;
+import io.cdap.plugin.common.db.schemareader.CommonSchemaReader;
+import io.cdap.plugin.common.db.schemareader.MysqlSchemaReader;
+import io.cdap.plugin.common.db.schemareader.OracleSinkSchemaReader;
+import io.cdap.plugin.common.db.schemareader.OracleSourceSchemaReader;
+import io.cdap.plugin.common.db.schemareader.PostgresSchemaReader;
+import io.cdap.plugin.common.db.schemareader.SchemaReader;
+import io.cdap.plugin.common.db.schemareader.SqlServerSinkSchemaReader;
+import io.cdap.plugin.common.db.schemareader.SqlServerSourceSchemaReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +52,22 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Blob;
 import java.sql.Clob;
+import java.sql.Date;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.Hashtable;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -63,6 +92,12 @@ public final class DBUtils {
   public static final String FETCH_SIZE = "io.cdap.hydrator.db.fetch.size";
   public static final String POSTGRESQL_TAG = "postgresql";
   public static final String POSTGRESQL_DEFAULT_SCHEMA = "public";
+
+  public static final String DB_PRODUCTNAME_TAG = "io.cdap.plugin.db.connection.dbproductname";
+  public static final String ORACLE_DB_PRODUCT_NAME = "Oracle";
+  public static final String MYSQL_DB_PRODUCT_NAME = "MySQL";
+  public static final String POSTGRES_DB_PRODUCT_NAME = "PostgreSQL";
+  public static final String SQL_SERVER_DB_PRODUCT_NAME = "Microsoft SQL Server";
 
   /**
    * Performs any Database related cleanup
@@ -110,8 +145,7 @@ public final class DBUtils {
 
   /**
    * Given the result set, get the metadata of the result set and return list of {@link
-   * io.cdap.cdap.api.data.schema.Schema.Field}, where name of the field is same as column name and type of the field is
-   * obtained using {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
+   * io.cdap.cdap.api.data.schema.Schema.Field}, using the schemaStr
    *
    * @param resultsetSchema the schema from the db
    * @param schemaStr       schema string to override resultant schema
@@ -158,70 +192,14 @@ public final class DBUtils {
       mappedSchema.getLogicalType() == Schema.LogicalType.DATETIME) {
       return true;
     }
-    return false;
-  }
 
-  /**
-   * Given the result set, get the metadata of the result set and return list of {@link
-   * io.cdap.cdap.api.data.schema.Schema.Field}, where name of the field is same as column name and type of the field is
-   * obtained using {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
-   *
-   * @param resultSet result set of executed query
-   * @return list of schema fields
-   * @throws SQLException
-   */
-  public static List<Schema.Field> getOriginalSchema(ResultSet resultSet, Schema outputSchema) throws SQLException {
-    return getSchemaFields(resultSet, null, null, outputSchema);
-  }
-
-  /**
-   * Given the result set, get the metadata of the result set and return list of {@link
-   * io.cdap.cdap.api.data.schema.Schema.Field}, where name of the field is same as column name and type of the field is
-   * obtained using {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
-   *
-   * @param resultSet        result set of executed query
-   * @param patternToReplace the pattern to replace in the field name
-   * @param replaceWith      the replacement value, if it is null, the pattern will be removed
-   * @return list of schema fields
-   * @throws SQLException
-   */
-  public static List<Schema.Field> getSchemaFields(ResultSet resultSet, @Nullable String patternToReplace,
-    @Nullable String replaceWith, @Nullable Schema outputSchema) throws SQLException {
-    List<Schema.Field> schemaFields = Lists.newArrayList();
-    ResultSetMetaData metadata = resultSet.getMetaData();
-    // ResultSetMetadata columns are numbered starting with 1
-    for (int i = 1; i <= metadata.getColumnCount(); i++) {
-      String columnName = metadata.getColumnName(i);
-      if (patternToReplace != null) {
-        columnName = columnName.replaceAll(patternToReplace, replaceWith == null ? "" : replaceWith);
-      }
-      int columnSqlType = metadata.getColumnType(i);
-      int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
-      int columnSqlScale = metadata.getScale(i); // digits after the decimal point
-      String columnTypeName = metadata.getColumnTypeName(i);
-      boolean isSigned = metadata.isSigned(i);
-      boolean handleAsDecimal = false;
-      if (columnSqlType == Types.DECIMAL || columnSqlType == Types.NUMERIC) {
-        if (outputSchema == null) {
-          handleAsDecimal = true;
-        } else {
-          Schema.Field field = outputSchema.getField(columnName);
-          if (field != null) {
-            Schema schema = field.getSchema();
-            schema = schema.isNullable() ? schema.getNonNullable() : schema;
-            handleAsDecimal = Schema.LogicalType.DECIMAL == schema.getLogicalType();
-          }
-        }
-      }
-      Schema columnSchema = getSchema(
-        columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName, isSigned, handleAsDecimal);
-      if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
-        columnSchema = Schema.nullableOf(columnSchema);
-      }
-      Schema.Field field = Schema.Field.of(columnName, columnSchema);
-      schemaFields.add(field);
+    // Allow mapping from Double to String type
+    if (mappedSchema.getType() == Schema.Type.STRING
+        && resultSetSchema.getType() == Schema.Type.DOUBLE) {
+      return true;
     }
-    return schemaFields;
+
+    return false;
   }
 
   /**
@@ -253,175 +231,52 @@ public final class DBUtils {
     return jdbcDriverClass;
   }
 
-  /**
-   * Get a CDAP schema from a given database column definition
-   *
-   * @param typeName        data source dependent type name, for a UDT the type name is fully qualified
-   * @param sqlType         SQL type from java.sql.Types
-   * @param precision       the number of total digits for numeric types
-   * @param scale           the number of fractional digits for numeric types
-   * @param columnName      the column name
-   * @param handleAsDecimal whether to convert numeric types to decimal logical type
-   * @return the converted CDAP schema
-   */
-  public static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName,
-                                 boolean handleAsDecimal) throws SQLException {
-    return getSchema(typeName, sqlType, precision, scale, columnName, true, handleAsDecimal);
+  public static SchemaReader getSchemaReader(String dbProductName,
+                                             String pluginType,
+                                             String sessionId) {
+    switch (dbProductName) {
+      case DBUtils.ORACLE_DB_PRODUCT_NAME:
+        if (BatchSink.PLUGIN_TYPE.equalsIgnoreCase(pluginType)) {
+          return new OracleSinkSchemaReader();
+        }
+        return new OracleSourceSchemaReader(sessionId);
+      case DBUtils.MYSQL_DB_PRODUCT_NAME:
+        return new MysqlSchemaReader(sessionId);
+      case DBUtils.POSTGRES_DB_PRODUCT_NAME:
+        return new PostgresSchemaReader(sessionId);
+      case DBUtils.SQL_SERVER_DB_PRODUCT_NAME:
+        if (BatchSink.PLUGIN_TYPE.equalsIgnoreCase(pluginType)) {
+          return new SqlServerSinkSchemaReader();
+        }
+        return new SqlServerSourceSchemaReader(sessionId);
+      default:
+        return new CommonSchemaReader();
+    }
+  }
+  public static RecordReader getRecordReaderHelper(String dbProductName) {
+    switch (dbProductName) {
+      case DBUtils.ORACLE_DB_PRODUCT_NAME:
+        return new OracleSourceRecordReaderHelper();
+      case DBUtils.POSTGRES_DB_PRODUCT_NAME:
+        return new PostgresRecordReaderHelper();
+      case DBUtils.SQL_SERVER_DB_PRODUCT_NAME:
+        return new SqlServerSourceRecordReaderHelper();
+      default:
+        return new CommonRecordReaderHelper();
+    }
   }
 
-  /**
-   * Get a CDAP schema from a given database column definition
-   * @param typeName  data source dependent type name, for a UDT the type name is fully qualified
-   * @param sqlType   SQL type from java.sql.Types
-   * @param precision the number of total digits for numeric types
-   * @param scale     the number of fractional digits for numeric types
-   * @param columnName the column name
-   * @param isSigned whether the data type is signed or unsigned
-   * @param handleAsDecimal whether to convert numeric types to decimal logical type
-   * @return the converted CDAP schema
-   */
-  public static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName,
-                                 boolean isSigned, boolean handleAsDecimal) throws SQLException {
-    // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
-    Schema.Type type = Schema.Type.STRING;
-    switch (sqlType) {
-      case Types.NULL:
-        type = Schema.Type.NULL;
-        break;
-
-      case Types.ROWID:
-        break;
-
-      case Types.BOOLEAN:
-      case Types.BIT:
-        type = Schema.Type.BOOLEAN;
-        break;
-
-      case Types.TINYINT:
-      case Types.SMALLINT:
-        type = Schema.Type.INT;
-        break;
-      case Types.INTEGER:
-        // SQL INT is 32 bit, thus only signed can be stored in int
-        type = isSigned ? Schema.Type.INT : Schema.Type.LONG;
-        break;
-
-      case Types.BIGINT:
-        //SQL BIGINT is 64 bit, thus signed can be stored in long without losing precision
-        //or unsigned BIGINT is within the scope of signed long
-        if (isSigned || precision < 19) {
-          type = Schema.Type.LONG;
-          break;
-        } else {
-          // by default scale is 0, big integer won't have any fraction part
-          return Schema.decimalOf(precision);
-        }
-
-      case Types.REAL:
-      case Types.FLOAT:
-        type = Schema.Type.FLOAT;
-        break;
-
-      case Types.NUMERIC:
-      case Types.DECIMAL:
-        if (handleAsDecimal) {
-          return Schema.decimalOf(precision, scale);
-        } else {
-
-          // if there are no digits after the point, use integer types
-          //SQL DECIMAL can be 5 - 17 bytes, not all can be held in a long
-          type = scale != 0 || precision >= 19 ? Schema.Type.DOUBLE :
-            // with 10 digits we can represent 2^32 and LONG is required
-            precision > 9 ? Schema.Type.LONG : Schema.Type.INT;
-          break;
-        }
-      case Types.DOUBLE:
-        type = Schema.Type.DOUBLE;
-        break;
-
-      case Types.DATE:
-        return Schema.of(Schema.LogicalType.DATE);
-      case Types.TIME:
-        return Schema.of(Schema.LogicalType.TIME_MICROS);
-      case Types.TIMESTAMP:
-        return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
-
-      case Types.BINARY:
-      case Types.VARBINARY:
-      case Types.LONGVARBINARY:
-      case Types.BLOB:
-        type = Schema.Type.BYTES;
-        break;
-
-      case Types.ARRAY:
-      case Types.DATALINK:
-      case Types.DISTINCT:
-      case Types.JAVA_OBJECT:
-      case Types.OTHER:
-      case Types.REF:
-      case Types.SQLXML:
-      case Types.STRUCT:
-        throw new SQLException(new UnsupportedTypeException(
-          String.format("Column %s has unsupported SQL type of %s.", columnName, sqlType)));
+  public static RecordWriter getRecordWriterHelper(String dbProductName) {
+    switch (dbProductName) {
+      case DBUtils.ORACLE_DB_PRODUCT_NAME:
+        return new OracleRecordWriterHelper();
+      case DBUtils.POSTGRES_DB_PRODUCT_NAME:
+        return new PostgresRecordWriterHelper();
+      case DBUtils.SQL_SERVER_DB_PRODUCT_NAME:
+        return new SqlServerRecordWriterHelper();
+      default:
+        return new CommonRecordWriterHelper();
     }
-
-    return Schema.of(type);
-  }
-
-  @Nullable
-  public static Object transformValue(int sqlType, int precision, int scale, ResultSet resultSet, String fieldName,
-    Schema outputFieldSchema) throws SQLException {
-    Object original = resultSet.getObject(fieldName);
-    if (original != null) {
-      switch (sqlType) {
-        case Types.SMALLINT:
-        case Types.TINYINT:
-          return ((Number) original).intValue();
-        case Types.NUMERIC:
-        case Types.DECIMAL: {
-          if (Schema.LogicalType.DECIMAL == outputFieldSchema.getLogicalType()) {
-            // It's required to pass 'scale' parameter since in the case of some dbs like Oracle, scale of 'BigDecimal'
-            // depends on the scale of actual value. For example for value '77.12'
-            // scale will be '2' even if sql scale is '6'
-            return resultSet.getBigDecimal(fieldName, scale);
-          } else {
-            BigDecimal decimal = (BigDecimal) original;
-            if (scale != 0) {
-              // if there are digits after the point, use double types
-              return decimal.doubleValue();
-            } else if (precision > 9) {
-              // with 10 digits we can represent 2^32 and LONG is required
-              return decimal.longValue();
-            } else {
-              return decimal.intValue();
-            }
-          }
-        }
-        case Types.DATE:
-          return resultSet.getDate(fieldName);
-        case Types.TIME:
-          return resultSet.getTime(fieldName);
-        case Types.TIMESTAMP:
-          return resultSet.getTimestamp(fieldName);
-        case Types.ROWID:
-          return resultSet.getString(fieldName);
-        case Types.BLOB:
-          Blob blob = (Blob) original;
-          try {
-            return blob.getBytes(1, (int) blob.length());
-          } finally {
-            blob.free();
-          }
-        case Types.CLOB:
-          Clob clob = (Clob) original;
-          try {
-            return clob.getSubString(1, (int) clob.length());
-          } finally {
-            clob.free();
-          }
-      }
-    }
-    return original;
   }
 
   /**

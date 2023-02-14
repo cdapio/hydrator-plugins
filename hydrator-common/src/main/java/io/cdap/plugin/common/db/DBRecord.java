@@ -14,15 +14,17 @@
  * the License.
  */
 
-package io.cdap.plugin;
+package io.cdap.plugin.common.db;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
-import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.plugin.common.db.dbrecordreader.RecordReader;
+import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
+import io.cdap.plugin.common.db.dbrecordwriter.RecordWriter;
+import io.cdap.plugin.common.db.schemareader.SchemaReader;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
@@ -32,7 +34,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -42,15 +43,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
@@ -71,14 +64,14 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
    * This is because we cannot rely on JDBC drivers to properly set metadata in the {@link PreparedStatement}
    * passed to the #write method in this class.
    */
-  private int [] columnTypes;
+  private List<ColumnType> columnTypes;
 
   /**
    * Used to construct a DBRecord from a StructuredRecord in the ETL Pipeline
    *
    * @param record the {@link StructuredRecord} to construct the {@link DBRecord} from
    */
-  public DBRecord(StructuredRecord record, int [] columnTypes) {
+  public DBRecord(StructuredRecord record, List<ColumnType> columnTypes) {
     this.record = record;
     this.columnTypes = columnTypes;
   }
@@ -122,129 +115,58 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
    */
   public void readFields(ResultSet resultSet) throws SQLException {
     bytesRead = 0;
-    ResultSetMetaData metadata = resultSet.getMetaData();
-    String outputSchemaString = conf.get(DBUtils.OVERRIDE_SCHEMA, null);
-    Schema outputSchema = null;
 
-    if (!Strings.isNullOrEmpty(outputSchemaString)) {
-      try {
-        outputSchema = Schema.parseJson(outputSchemaString);
-      } catch (IOException e) {
-        throw new IllegalArgumentException(String.format("Unable to parse schema string '%s'.", outputSchemaString), e);
-      }
+    SchemaReader schemaReader = getSchemaReader(resultSet);
+    if (schemaReader == null) {
+      throw new IllegalStateException("No Schema Reader found for extracting field schema from ResultSet.");
     }
 
-    List<Schema.Field> originalSchema = DBUtils.getOriginalSchema(resultSet, outputSchema);
     String patternToReplace = conf.get(DBUtils.PATTERN_TO_REPLACE);
     String replaceWith = conf.get(DBUtils.REPLACE_WITH);
+    List<Schema.Field> newSchemaFields = schemaReader.getSchemaFields(resultSet, patternToReplace, replaceWith);
 
-    // map of new name -> original name
-    Map<String, String> nameMap = new HashMap<>();
-    List<Schema.Field> newSchema = new ArrayList<>();
-    for (Schema.Field field : originalSchema) {
-      String newName = field.getName();
-      if (patternToReplace != null) {
-        newName = newName.replaceAll(patternToReplace, replaceWith == null ? "" : replaceWith);
-      }
-      nameMap.put(newName, field.getName());
-      newSchema.add(Schema.Field.of(newName, field.getSchema()));
+    RecordReader recordReader = getRecordReaderHelper(resultSet);
+    if (recordReader == null) {
+      throw new IllegalStateException("No Record Reader found for creating Records from ResultSet.");
     }
 
-    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(Schema.recordOf("resultSet", newSchema),
+    // Filter the schema fields based on the fields which are present in the override schema
+    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(Schema.recordOf("resultSet", newSchemaFields),
                                                               conf.get(DBUtils.OVERRIDE_SCHEMA));
-    Schema schema = Schema.recordOf("dbRecord", schemaFields);
-    StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
-    for (int i = 0; i < schemaFields.size(); i++) {
-      Schema.Field field = schemaFields.get(i);
-      int sqlType = metadata.getColumnType(i + 1);
-      int sqlPrecision = metadata.getPrecision(i + 1);
-      int sqlScale = metadata.getScale(i + 1);
 
-      Schema outputFieldSchema = field.getSchema();
-      outputFieldSchema = outputFieldSchema.isNullable() ? outputFieldSchema.getNonNullable() : outputFieldSchema;
-      setField(resultSet, recordBuilder, field, sqlType, sqlPrecision, sqlScale, nameMap.getOrDefault(field.getName(),
-                                                                                                      field.getName()),
-               outputFieldSchema);
-    }
-    record = recordBuilder.build();
+    Schema schema = Schema.recordOf("dbRecord", schemaFields);
+    record = recordReader.getRecordBuilder(resultSet, schema).build();
+    bytesRead += recordReader.getBytesRead();
   }
 
-  private void setField(ResultSet resultSet, StructuredRecord.Builder recordBuilder, Schema.Field field, int sqlType,
-                        int sqlPrecision, int sqlScale, String originalName, Schema outputFieldSchema)
-    throws SQLException {
-    // original name has to be used to get result from result set
-    Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName,
-                                      outputFieldSchema);
-    if (o instanceof Date) {
-      bytesRead += Long.BYTES;
-      recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
-    } else if (o instanceof Time) {
-      bytesRead += Integer.BYTES;
-      recordBuilder.setTime(field.getName(), ((Time) o).toLocalTime());
-    } else if (o instanceof Timestamp) {
-      bytesRead += Long.BYTES;
-      Instant instant = ((Timestamp) o).toInstant();
-      recordBuilder.setTimestamp(field.getName(), instant.atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
-    } else if (o instanceof BigDecimal) {
-      BigDecimal decimal = ((BigDecimal) o);
-      bytesRead += decimal.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
-      recordBuilder.setDecimal(field.getName(), decimal);
-    } else if (o instanceof BigInteger) {
-      Schema schema = field.getSchema();
-      BigInteger bigint = ((BigInteger) o);
-      if (schema.isNullable()) {
-        schema = schema.getNonNullable();
-      }
-      if (schema.getType() == Schema.Type.LONG) {
-        Long int2long = bigint.longValueExact();
-        bytesRead += Long.BYTES;
-        recordBuilder.set(field.getName(), int2long);
-      } else {
-        BigDecimal int2dec = new BigDecimal(bigint, 0);
-        bytesRead += int2dec.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
-        recordBuilder.setDecimal(field.getName(), int2dec);
-      }
-    } else {
-      if (o != null) {
-        Schema schema = field.getSchema();
-        if (schema.isNullable()) {
-          schema = schema.getNonNullable();
-        }
-        switch (schema.getType()) {
-          case INT:
-          case BOOLEAN:
-            bytesRead += Integer.BYTES;
-            break;
-          case LONG:
-            bytesRead += Long.BYTES;
-            break;
-          case DOUBLE:
-            bytesRead += Double.BYTES;
-            break;
-          case FLOAT:
-            bytesRead += Float.BYTES;
-            break;
-          case STRING:
-            String value = (String) o;
-            //make sure value is in the right format for datetime
-            if (schema.getLogicalType() == Schema.LogicalType.DATETIME) {
-              try {
-                LocalDateTime.parse(value);
-              } catch (DateTimeParseException exception) {
-                throw new UnexpectedFormatException(
-                  String.format("Datetime field '%s' with value '%s' is not in ISO-8601 format.", field.getName(),
-                                value), exception);
-              }
-            }
-            bytesRead += value.length();
-            break;
-          case BYTES:
-            bytesRead += ((byte[]) o).length;
-            break;
-        }
-      }
-      recordBuilder.set(field.getName(), o);
-    }
+  private String getDBProductName(ResultSet resultSet) throws SQLException {
+    return resultSet.getStatement().getConnection().getMetaData().getDatabaseProductName();
+  }
+
+  /**
+   * Returns the Schema Reader to use to read schema from the ResultSet.
+   * Internally, it uses {@link DBUtils#getSchemaReader(String, String, String)} method to get the SchemaReader.
+   * For specific DBRecord types which require special handling during the Schema parsing should override this method.
+   * @param resultSet
+   * @return Schema Reader to use
+   * @throws SQLException
+   */
+  protected SchemaReader getSchemaReader(ResultSet resultSet) throws SQLException {
+    String dbProductName = getDBProductName(resultSet);
+    return DBUtils.getSchemaReader(dbProductName, BatchSource.PLUGIN_TYPE, null);
+  }
+
+  /**
+   * Returns the Record Reader Helper to use to read schema from the ResultSet.
+   * Internally, it uses {@link DBUtils#getRecordReaderHelper(String)} method to get the RecordReaderHelper.
+   * For specific DBRecord types which require special handling during the Record parsing should override this method.
+   * @param resultSet
+   * @return Record Reader Helper to use
+   * @throws SQLException
+   */
+  protected RecordReader getRecordReaderHelper(ResultSet resultSet) throws SQLException {
+    String dbProductName = getDBProductName(resultSet);
+    return DBUtils.getRecordReaderHelper(dbProductName);
   }
 
   public void write(DataOutput out) throws IOException {
@@ -262,11 +184,10 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
    */
   public void write(PreparedStatement stmt) throws SQLException {
     bytesWritten = 0;
-    Schema recordSchema = record.getSchema();
-    List<Schema.Field> schemaFields = recordSchema.getFields();
-    for (int i = 0; i < schemaFields.size(); i++) {
-      writeToDB(stmt, schemaFields.get(i), i);
-    }
+    String dbProductName = stmt.getConnection().getMetaData().getDatabaseProductName();
+    RecordWriter recordWriterHelper = DBUtils.getRecordWriterHelper(dbProductName);
+    recordWriterHelper.write(stmt, record, columnTypes);
+    bytesWritten += recordWriterHelper.getBytesWritten();
   }
 
   private Schema getNonNullableSchema(Schema.Field field) {
@@ -334,7 +255,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
     int sqlIndex = fieldIndex + 1;
 
     if (fieldValue == null) {
-      stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
+      stmt.setNull(sqlIndex, columnTypes.get(fieldIndex).getType());
       return;
     }
 
@@ -372,7 +293,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
 
     switch (fieldType) {
       case NULL:
-        stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
+        stmt.setNull(sqlIndex, columnTypes.get(fieldIndex).getType());
         break;
       case STRING:
         // clob can also be written to as setString
@@ -412,7 +333,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
 
   private int writeBytes(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
     byte[] byteValue = fieldValue instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) fieldValue) : (byte[]) fieldValue;
-    int parameterType = columnTypes[fieldIndex];
+    int parameterType = columnTypes.get(fieldIndex).getType();
     if (Types.BLOB == parameterType) {
       stmt.setBlob(sqlIndex, new SerialBlob(byteValue));
       return byteValue.length;
@@ -424,7 +345,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
 
   private void writeInt(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
     Integer intValue = (Integer) fieldValue;
-    int parameterType = columnTypes[fieldIndex];
+    int parameterType = columnTypes.get(fieldIndex).getType();
     if (Types.TINYINT == parameterType || Types.SMALLINT == parameterType) {
       stmt.setShort(sqlIndex, intValue.shortValue());
       return;

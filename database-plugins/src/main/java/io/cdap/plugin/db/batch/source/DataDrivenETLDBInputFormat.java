@@ -18,8 +18,8 @@ package io.cdap.plugin.db.batch.source;
 
 import com.google.common.base.Throwables;
 import io.cdap.plugin.ConnectionConfig;
-import io.cdap.plugin.DataSizeReporter;
 import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.DataSizeReporter;
 import io.cdap.plugin.common.db.JDBCDriverShim;
 import io.cdap.plugin.db.batch.NoOpCommitConnection;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
@@ -112,6 +112,10 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
         String level = conf.get(TransactionIsolationLevel.CONF_KEY);
         LOG.debug("Transaction isolation level: {}", level);
         connection.setTransactionIsolation(TransactionIsolationLevel.getLevel(level));
+
+        // Setting the DBProductName into the Configuration
+        LOG.debug(String.format("DBProductName : '%s'", this.getDBProductName()));
+        conf.set(DBUtils.DB_PRODUCTNAME_TAG, this.getDBProductName());
       } catch (Exception e) {
         throw Throwables.propagate(e);
       }

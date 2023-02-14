@@ -38,7 +38,6 @@ import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBManager;
-import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.FieldCase;
 import io.cdap.plugin.StructuredRecordUtils;
 import io.cdap.plugin.common.Asset;
@@ -46,6 +45,7 @@ import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.SourceInputFormatProvider;
+import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
@@ -67,7 +67,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -232,8 +231,10 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         query = removeConditionsClause(query);
       }
       ResultSet resultSet = statement.executeQuery(query);
-      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet, patternToReplace, replaceWith,
-                                                                     null));
+      String dbProductName = connection.getMetaData().getDatabaseProductName();
+      return Schema.recordOf("outputSchema",
+              DBUtils.getSchemaReader(dbProductName, BatchSource.PLUGIN_TYPE, null)
+                      .getSchemaFields(resultSet, patternToReplace, replaceWith));
     } finally {
       driverCleanup.destroy();
     }

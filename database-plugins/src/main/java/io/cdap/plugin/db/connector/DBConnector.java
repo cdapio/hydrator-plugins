@@ -21,7 +21,6 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
-import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
@@ -37,25 +36,18 @@ import io.cdap.plugin.common.db.AbstractDBConnector;
 import io.cdap.plugin.common.db.DBConnectorPath;
 import io.cdap.plugin.common.db.DBPath;
 import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.dbrecordreader.RecordReader;
 import io.cdap.plugin.db.batch.sink.DBSink;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -138,49 +130,24 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
     try (Statement statement = connection.createStatement()) {
       statement.setFetchSize(limit);
       try (ResultSet resultSet = statement.executeQuery(query)) {
-        return parseResultSet(resultSet, limit);
+        String dbProductName = connection.getMetaData().getDatabaseProductName();
+        return parseResultSet(dbProductName, resultSet, limit);
       }
     }
   }
 
-  private static List<StructuredRecord> parseResultSet(ResultSet resultSet, int limit) throws SQLException {
+  private static List<StructuredRecord> parseResultSet(String dbProductName,
+                                                       ResultSet resultSet, int limit) throws SQLException {
     List<StructuredRecord> result = new ArrayList<>();
-    Schema schema = Schema.recordOf("output", DBUtils.getSchemaFields(resultSet, null, null, null));
+    Schema schema = Schema.recordOf("output",
+            DBUtils.getSchemaReader(dbProductName, BatchSource.PLUGIN_TYPE, null)
+                    .getSchemaFields(resultSet, null, null));
     ResultSetMetaData meta = resultSet.getMetaData();
     int count = 0;
+
+    RecordReader recordReader = DBUtils.getRecordReaderHelper(dbProductName);
     while (resultSet.next() && count < limit) {
-      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
-      for (int i = 1; i <= meta.getColumnCount(); ++i) {
-        String fieldName = meta.getColumnName(i);
-        int sqlType = meta.getColumnType(i);
-        int sqlPrecision = meta.getPrecision(i);
-        int sqlScale = meta.getScale(i);
-        Schema fieldSchema = schema.getField(fieldName).getSchema();
-        fieldSchema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
-        Object value = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, fieldName, fieldSchema);
-        if (value instanceof Date) {
-          recordBuilder.setDate(fieldName, ((Date) value).toLocalDate());
-        } else if (value instanceof Time) {
-          recordBuilder.setTime(fieldName, ((Time) value).toLocalTime());
-        } else if (value instanceof Timestamp) {
-          recordBuilder
-            .setTimestamp(fieldName, ((Timestamp) value).toInstant().atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
-        } else if (value instanceof BigDecimal) {
-          recordBuilder.setDecimal(fieldName, (BigDecimal) value);
-        } else if (value instanceof String && fieldSchema.getLogicalType() == Schema.LogicalType.DATETIME) {
-          //make sure value is in the right format for datetime
-          try {
-            recordBuilder.setDateTime(fieldName, LocalDateTime.parse((String) value));
-          } catch (DateTimeParseException exception) {
-            throw new UnexpectedFormatException(
-              String.format("Datetime field '%s' with value '%s' is not in ISO-8601 format.", fieldName, value),
-              exception);
-          }
-        } else {
-          recordBuilder.set(fieldName, value);
-        }
-      }
-      result.add(recordBuilder.build());
+      result.add(recordReader.getRecordBuilder(resultSet, schema).build());
       count++;
     }
     return result;
