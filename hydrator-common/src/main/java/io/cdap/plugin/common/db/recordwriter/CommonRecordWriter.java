@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.common.db.dbrecordwriter;
+package io.cdap.plugin.common.db.recordwriter;
 
 import com.google.common.base.Preconditions;
 import io.cdap.cdap.api.common.Bytes;
@@ -39,7 +39,7 @@ import javax.sql.rowset.serial.SerialBlob;
 /**
  * Record Writer Helper class which provides the methods to write the StructuredRecord.
  */
-public class CommonRecordWriterHelper implements RecordWriter {
+public class CommonRecordWriter implements RecordWriter {
 
     protected long bytesWritten;
 
@@ -69,7 +69,7 @@ public class CommonRecordWriterHelper implements RecordWriter {
 
     @Override
     public long getBytesWritten() {
-        return 0;
+        return bytesWritten;
     }
 
     private Schema getNonNullableSchema(Schema.Field field) {

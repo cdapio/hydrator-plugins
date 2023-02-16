@@ -112,10 +112,6 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
         String level = conf.get(TransactionIsolationLevel.CONF_KEY);
         LOG.debug("Transaction isolation level: {}", level);
         connection.setTransactionIsolation(TransactionIsolationLevel.getLevel(level));
-
-        // Setting the DBProductName into the Configuration
-        LOG.debug(String.format("DBProductName : '%s'", this.getDBProductName()));
-        conf.set(DBUtils.DB_PRODUCTNAME_TAG, this.getDBProductName());
       } catch (Exception e) {
         throw Throwables.propagate(e);
       }

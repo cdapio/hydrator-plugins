@@ -21,7 +21,7 @@ import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.common.db.DBUtils;
-import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
+import io.cdap.plugin.common.db.recordwriter.ColumnType;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Test;

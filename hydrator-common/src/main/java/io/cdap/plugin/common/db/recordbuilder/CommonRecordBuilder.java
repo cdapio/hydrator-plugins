@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.common.db.dbrecordreader;
+package io.cdap.plugin.common.db.recordbuilder;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
@@ -44,13 +44,9 @@ import java.util.TimeZone;
 import javax.annotation.Nullable;
 
 /**
- * Writable class for DB Source/Sink
- *
- * @see org.apache.hadoop.mapreduce.lib.db.DBInputFormat DBInputFormat
- * @see org.apache.hadoop.mapreduce.lib.db.DBOutputFormat DBOutputFormat
- * @see DBWritable DBWritable
+ * Common Record Builder class which contains the common JDBC to CDAP type conversion logic.
  */
-public class CommonRecordReaderHelper implements RecordReader {
+public class CommonRecordBuilder implements RecordBuilder {
 
   protected long bytesRead;
 

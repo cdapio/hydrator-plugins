@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.common.db.dbrecordwriter;
+package io.cdap.plugin.common.db.recordwriter;
 
 import java.util.Objects;
 

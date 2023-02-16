@@ -48,7 +48,7 @@ import io.cdap.plugin.common.ReferenceBatchSink;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.common.db.DBUtils;
-import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
+import io.cdap.plugin.common.db.recordwriter.ColumnType;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.common.FQNGenerator;

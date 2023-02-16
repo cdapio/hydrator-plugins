@@ -36,7 +36,9 @@ import io.cdap.plugin.common.db.AbstractDBConnector;
 import io.cdap.plugin.common.db.DBConnectorPath;
 import io.cdap.plugin.common.db.DBPath;
 import io.cdap.plugin.common.db.DBUtils;
-import io.cdap.plugin.common.db.dbrecordreader.RecordReader;
+import io.cdap.plugin.common.db.recordbuilder.CommonRecordBuilder;
+import io.cdap.plugin.common.db.recordbuilder.RecordBuilder;
+import io.cdap.plugin.common.db.schemareader.CommonSchemaReader;
 import io.cdap.plugin.db.batch.sink.DBSink;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
@@ -130,24 +132,20 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
     try (Statement statement = connection.createStatement()) {
       statement.setFetchSize(limit);
       try (ResultSet resultSet = statement.executeQuery(query)) {
-        String dbProductName = connection.getMetaData().getDatabaseProductName();
-        return parseResultSet(dbProductName, resultSet, limit);
+        return parseResultSet(resultSet, limit);
       }
     }
   }
 
-  private static List<StructuredRecord> parseResultSet(String dbProductName,
-                                                       ResultSet resultSet, int limit) throws SQLException {
+  private static List<StructuredRecord> parseResultSet(ResultSet resultSet, int limit) throws SQLException {
     List<StructuredRecord> result = new ArrayList<>();
     Schema schema = Schema.recordOf("output",
-            DBUtils.getSchemaReader(dbProductName, BatchSource.PLUGIN_TYPE, null)
-                    .getSchemaFields(resultSet, null, null));
-    ResultSetMetaData meta = resultSet.getMetaData();
+            new CommonSchemaReader().getSchemaFields(resultSet, null, null));
     int count = 0;
 
-    RecordReader recordReader = DBUtils.getRecordReaderHelper(dbProductName);
+    RecordBuilder recordBuilder = new CommonRecordBuilder();
     while (resultSet.next() && count < limit) {
-      result.add(recordReader.getRecordBuilder(resultSet, schema).build());
+      result.add(recordBuilder.getRecordBuilder(resultSet, schema).build());
       count++;
     }
     return result;

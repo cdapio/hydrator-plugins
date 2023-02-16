@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.plugin.common.db.schemareader.CommonSchemaReader;
 import io.cdap.plugin.common.util.ExceptionUtils;
 
 import java.io.IOException;
@@ -168,8 +169,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       String columnName = columns.getString(RESULTSET_COLUMN_COLUMN_NAME);
       boolean isSigned = typeName.toLowerCase().indexOf("unsigned") < 0;
       Schema columnSchema =
-              DBUtils.getSchemaReader(connection.getMetaData().getDatabaseProductName(),
-                                      BatchSource.PLUGIN_TYPE, null).
+              new CommonSchemaReader().
                       getSchema(columnName, sqlType, typeName, "", precision, scale, isSigned);
       String isNullable = columns.getString(RESULTSET_COLUMN_IS_NULLABLE);
       if ("YES".equals(isNullable)) {

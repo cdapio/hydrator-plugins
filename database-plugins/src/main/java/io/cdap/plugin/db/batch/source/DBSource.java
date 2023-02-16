@@ -48,6 +48,7 @@ import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.db.DBRecord;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.DriverCleanup;
+import io.cdap.plugin.common.db.schemareader.CommonSchemaReader;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.common.FQNGenerator;
@@ -231,10 +232,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         query = removeConditionsClause(query);
       }
       ResultSet resultSet = statement.executeQuery(query);
-      String dbProductName = connection.getMetaData().getDatabaseProductName();
       return Schema.recordOf("outputSchema",
-              DBUtils.getSchemaReader(dbProductName, BatchSource.PLUGIN_TYPE, null)
-                      .getSchemaFields(resultSet, patternToReplace, replaceWith));
+              new CommonSchemaReader().getSchemaFields(resultSet, patternToReplace, replaceWith));
     } finally {
       driverCleanup.destroy();
     }

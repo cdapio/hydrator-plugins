@@ -24,7 +24,8 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Main Interface to read db specific types.
+ * Main Interface to read db specific types from any Database.
+ * This interface can be used for schema read operations for both Source and Sink plugins.
  */
 public interface SchemaReader {
 
@@ -54,7 +55,7 @@ public interface SchemaReader {
     Schema getSchema(ResultSetMetaData metadata, int index) throws SQLException;
 
     /**
-     * Given a sql metadata return schema type
+     * Given the field specific details, this method creates a Schema object for a single field.
      *
      * @param columnName      Name of the column in the ResultSet
      * @param sqlType         SQL type in the database

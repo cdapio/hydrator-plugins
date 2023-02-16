@@ -17,33 +17,10 @@
 package io.cdap.plugin.common.db;
 
 import com.google.common.base.Strings;
-import io.cdap.cdap.api.data.format.StructuredRecord;
-import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import io.cdap.cdap.api.plugin.PluginConfigurer;
 import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.FailureCollector;
-import io.cdap.cdap.etl.api.batch.BatchSink;
-import io.cdap.plugin.common.db.dbrecordreader.CommonRecordReaderHelper;
-import io.cdap.plugin.common.db.dbrecordreader.OracleSourceRecordReaderHelper;
-import io.cdap.plugin.common.db.dbrecordreader.PostgresRecordReaderHelper;
-import io.cdap.plugin.common.db.dbrecordreader.RecordReader;
-import io.cdap.plugin.common.db.dbrecordreader.SqlServerSourceRecordReaderHelper;
-import io.cdap.plugin.common.db.dbrecordwriter.ColumnType;
-import io.cdap.plugin.common.db.dbrecordwriter.CommonRecordWriterHelper;
-import io.cdap.plugin.common.db.dbrecordwriter.OracleRecordWriterHelper;
-import io.cdap.plugin.common.db.dbrecordwriter.PostgresRecordWriterHelper;
-import io.cdap.plugin.common.db.dbrecordwriter.RecordWriter;
-import io.cdap.plugin.common.db.dbrecordwriter.SqlServerRecordWriterHelper;
-import io.cdap.plugin.common.db.schemareader.CommonSchemaReader;
-import io.cdap.plugin.common.db.schemareader.MysqlSchemaReader;
-import io.cdap.plugin.common.db.schemareader.OracleSinkSchemaReader;
-import io.cdap.plugin.common.db.schemareader.OracleSourceSchemaReader;
-import io.cdap.plugin.common.db.schemareader.PostgresSchemaReader;
-import io.cdap.plugin.common.db.schemareader.SchemaReader;
-import io.cdap.plugin.common.db.schemareader.SqlServerSinkSchemaReader;
-import io.cdap.plugin.common.db.schemareader.SqlServerSourceSchemaReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,23 +28,9 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
 import java.sql.Driver;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.util.Hashtable;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -92,12 +55,6 @@ public final class DBUtils {
   public static final String FETCH_SIZE = "io.cdap.hydrator.db.fetch.size";
   public static final String POSTGRESQL_TAG = "postgresql";
   public static final String POSTGRESQL_DEFAULT_SCHEMA = "public";
-
-  public static final String DB_PRODUCTNAME_TAG = "io.cdap.plugin.db.connection.dbproductname";
-  public static final String ORACLE_DB_PRODUCT_NAME = "Oracle";
-  public static final String MYSQL_DB_PRODUCT_NAME = "MySQL";
-  public static final String POSTGRES_DB_PRODUCT_NAME = "PostgreSQL";
-  public static final String SQL_SERVER_DB_PRODUCT_NAME = "Microsoft SQL Server";
 
   /**
    * Performs any Database related cleanup
@@ -148,18 +105,11 @@ public final class DBUtils {
    * io.cdap.cdap.api.data.schema.Schema.Field}, using the schemaStr
    *
    * @param resultsetSchema the schema from the db
-   * @param schemaStr       schema string to override resultant schema
-   * @return list of schema fields
+   * @param schema       Overriden Schema if it is compatible with the resultsetSchema
+   * @return list of schema fields only if all the fields are compatible with overridden schemas
    */
-  public static List<Schema.Field> getSchemaFields(Schema resultsetSchema, @Nullable String schemaStr) {
-    Schema schema;
-
-    if (!Strings.isNullOrEmpty(schemaStr)) {
-      try {
-        schema = Schema.parseJson(schemaStr);
-      } catch (IOException e) {
-        throw new IllegalArgumentException(String.format("Unable to parse schema string '%s'.", schemaStr), e);
-      }
+  public static List<Schema.Field> getSchemaFields(Schema resultsetSchema, @Nullable Schema schema) {
+    if (schema != null) {
       for (Schema.Field field : schema.getFields()) {
         Schema.Field resultsetField = resultsetSchema.getField(field.getName());
         if (resultsetField == null) {
@@ -178,7 +128,6 @@ public final class DBUtils {
         }
       }
       return schema.getFields();
-
     }
     return resultsetSchema.getFields();
   }
@@ -229,54 +178,6 @@ public final class DBUtils {
       }
     }
     return jdbcDriverClass;
-  }
-
-  public static SchemaReader getSchemaReader(String dbProductName,
-                                             String pluginType,
-                                             String sessionId) {
-    switch (dbProductName) {
-      case DBUtils.ORACLE_DB_PRODUCT_NAME:
-        if (BatchSink.PLUGIN_TYPE.equalsIgnoreCase(pluginType)) {
-          return new OracleSinkSchemaReader();
-        }
-        return new OracleSourceSchemaReader(sessionId);
-      case DBUtils.MYSQL_DB_PRODUCT_NAME:
-        return new MysqlSchemaReader(sessionId);
-      case DBUtils.POSTGRES_DB_PRODUCT_NAME:
-        return new PostgresSchemaReader(sessionId);
-      case DBUtils.SQL_SERVER_DB_PRODUCT_NAME:
-        if (BatchSink.PLUGIN_TYPE.equalsIgnoreCase(pluginType)) {
-          return new SqlServerSinkSchemaReader();
-        }
-        return new SqlServerSourceSchemaReader(sessionId);
-      default:
-        return new CommonSchemaReader();
-    }
-  }
-  public static RecordReader getRecordReaderHelper(String dbProductName) {
-    switch (dbProductName) {
-      case DBUtils.ORACLE_DB_PRODUCT_NAME:
-        return new OracleSourceRecordReaderHelper();
-      case DBUtils.POSTGRES_DB_PRODUCT_NAME:
-        return new PostgresRecordReaderHelper();
-      case DBUtils.SQL_SERVER_DB_PRODUCT_NAME:
-        return new SqlServerSourceRecordReaderHelper();
-      default:
-        return new CommonRecordReaderHelper();
-    }
-  }
-
-  public static RecordWriter getRecordWriterHelper(String dbProductName) {
-    switch (dbProductName) {
-      case DBUtils.ORACLE_DB_PRODUCT_NAME:
-        return new OracleRecordWriterHelper();
-      case DBUtils.POSTGRES_DB_PRODUCT_NAME:
-        return new PostgresRecordWriterHelper();
-      case DBUtils.SQL_SERVER_DB_PRODUCT_NAME:
-        return new SqlServerRecordWriterHelper();
-      default:
-        return new CommonRecordWriterHelper();
-    }
   }
 
   /**

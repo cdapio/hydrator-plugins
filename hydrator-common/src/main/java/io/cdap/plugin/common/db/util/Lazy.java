@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.common.db.dbrecordreader;
+package io.cdap.plugin.common.db.util;
 
 import java.util.function.Supplier;
 
