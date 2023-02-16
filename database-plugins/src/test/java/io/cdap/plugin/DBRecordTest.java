@@ -25,6 +25,7 @@ import io.cdap.plugin.common.db.recordwriter.ColumnType;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
@@ -46,6 +47,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import javax.sql.rowset.serial.SerialBlob;
 
@@ -260,23 +262,23 @@ public class DBRecordTest {
     ResultSet resultSetMock = Mockito.mock(ResultSet.class);
     Mockito.when(resultSetMock.getMetaData()).thenReturn(rsMetaMock);
     Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
-    Mockito.when(resultSetMock.getObject("integer")).thenReturn(expectedInt);
-    Mockito.when(resultSetMock.getObject("double")).thenReturn(expectedDouble);
-    Mockito.when(resultSetMock.getObject("smallint")).thenReturn(expectedSmallInt);
-    Mockito.when(resultSetMock.getObject("tinyint")).thenReturn(expectedTinyInt);
-    Mockito.when(resultSetMock.getObject("date")).thenReturn(expectedDate);
-    Mockito.when(resultSetMock.getDate("date")).thenReturn(expectedDate);
-    Mockito.when(resultSetMock.getObject("time")).thenReturn(expectedTime);
-    Mockito.when(resultSetMock.getTime("time")).thenReturn(expectedTime);
-    Mockito.when(resultSetMock.getObject("timestamp")).thenReturn(expectedTimestamp);
-    Mockito.when(resultSetMock.getTimestamp("timestamp")).thenReturn(expectedTimestamp);
-    Mockito.when(resultSetMock.getObject("decimal")).thenReturn(expectedDecimal);
-    Mockito.when(resultSetMock.getBigDecimal("decimal", 3)).thenReturn(expectedDecimal);
-    Mockito.when(resultSetMock.getObject("blob")).thenReturn(expectedBlob);
-    Mockito.when(resultSetMock.getObject("boolean")).thenReturn(expectedBoolean);
-    Mockito.when(resultSetMock.getObject("string")).thenReturn(expectedString);
-    Mockito.when(resultSetMock.getObject("float")).thenReturn(expectedFloat);
-    Mockito.when(resultSetMock.getObject("nullnumeric")).thenReturn(expectedNullNumeric);
+    Mockito.when(resultSetMock.getObject(1)).thenReturn(expectedInt);
+    Mockito.when(resultSetMock.getObject(2)).thenReturn(expectedDouble);
+    Mockito.when(resultSetMock.getObject(3)).thenReturn(expectedSmallInt);
+    Mockito.when(resultSetMock.getObject(4)).thenReturn(expectedTinyInt);
+    Mockito.when(resultSetMock.getObject(5)).thenReturn(expectedDate);
+    Mockito.when(resultSetMock.getDate(5)).thenReturn(expectedDate);
+    Mockito.when(resultSetMock.getObject(6)).thenReturn(expectedTime);
+    Mockito.when(resultSetMock.getTime(6)).thenReturn(expectedTime);
+    Mockito.when(resultSetMock.getObject(7)).thenReturn(expectedTimestamp);
+    Mockito.when(resultSetMock.getTimestamp(Mockito.eq(7), Mockito.any(Calendar.class))).thenReturn(expectedTimestamp);
+    Mockito.when(resultSetMock.getObject(8)).thenReturn(expectedDecimal);
+    Mockito.when(resultSetMock.getBigDecimal(8, 3)).thenReturn(expectedDecimal);
+    Mockito.when(resultSetMock.getObject(9)).thenReturn(expectedBlob);
+    Mockito.when(resultSetMock.getObject(10)).thenReturn(expectedBoolean);
+    Mockito.when(resultSetMock.getObject(11)).thenReturn(expectedString);
+    Mockito.when(resultSetMock.getObject(12)).thenReturn(expectedFloat);
+    Mockito.when(resultSetMock.getObject(13)).thenReturn(expectedNullNumeric);
 
     StructuredRecord expectedRecord = StructuredRecord
       .builder(Schema.recordOf("dbRecord",
@@ -349,8 +351,8 @@ public class DBRecordTest {
     ResultSet resultSetMock = Mockito.mock(ResultSet.class);
     Mockito.when(resultSetMock.getMetaData()).thenReturn(rsMetaMock);
     Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
-    Mockito.when(resultSetMock.getObject("string")).thenReturn(testString);
-    Mockito.when(resultSetMock.getObject("datetimestring")).thenReturn(formattedDateTime);
+    Mockito.when(resultSetMock.getObject(1)).thenReturn(testString);
+    Mockito.when(resultSetMock.getObject(2)).thenReturn(formattedDateTime);
 
     Schema outputSchema = Schema.recordOf("dbRecord",
                                           Schema.Field.of("string", Schema.of(Schema.Type.STRING)),
@@ -382,7 +384,7 @@ public class DBRecordTest {
     ResultSet resultSetMock = Mockito.mock(ResultSet.class);
     Mockito.when(resultSetMock.getMetaData()).thenReturn(rsMetaMock);
     Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
-    Mockito.when(resultSetMock.getObject("datetimestring")).thenReturn(testDateTime);
+    Mockito.when(resultSetMock.getObject(1)).thenReturn(testDateTime);
 
     Schema outputSchema = Schema.recordOf("dbRecord",
                                           Schema.Field.of("datetimestring",

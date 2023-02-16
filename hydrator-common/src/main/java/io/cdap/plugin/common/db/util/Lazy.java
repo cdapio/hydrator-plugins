@@ -40,7 +40,7 @@ public final class Lazy<T> {
 
   private synchronized T compute() {
     if (value == null) {
-      value = requireNonNull(supplier.get());
+      value = supplier.get();
     }
     return value;
   }
