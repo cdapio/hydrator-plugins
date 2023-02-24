@@ -254,6 +254,20 @@ public class DBRecordTest {
     Mockito.when(resultSetMock.getObject("float")).thenReturn(expectedFloat);
     Mockito.when(resultSetMock.getObject("nullnumeric")).thenReturn(expectedNullNumeric);
 
+    Mockito.when(resultSetMock.findColumn("integer")).thenReturn(1);
+    Mockito.when(resultSetMock.findColumn("double")).thenReturn(2);
+    Mockito.when(resultSetMock.findColumn("smallint")).thenReturn(3);
+    Mockito.when(resultSetMock.findColumn("tinyint")).thenReturn(4);
+    Mockito.when(resultSetMock.findColumn("date")).thenReturn(5);
+    Mockito.when(resultSetMock.findColumn("time")).thenReturn(6);
+    Mockito.when(resultSetMock.findColumn("timestamp")).thenReturn(7);
+    Mockito.when(resultSetMock.findColumn("decimal")).thenReturn(8);
+    Mockito.when(resultSetMock.findColumn("blob")).thenReturn(9);
+    Mockito.when(resultSetMock.findColumn("boolean")).thenReturn(10);
+    Mockito.when(resultSetMock.findColumn("string")).thenReturn(11);
+    Mockito.when(resultSetMock.findColumn("float")).thenReturn(12);
+    Mockito.when(resultSetMock.findColumn("nullnumeric")).thenReturn(13);
+
     StructuredRecord expectedRecord = StructuredRecord
       .builder(Schema.recordOf("dbRecord",
                                Schema.Field.of("integer", Schema.of(Schema.Type.INT)),
@@ -305,6 +319,117 @@ public class DBRecordTest {
     Assert.assertSame(expectedRecord.get("string"), dbRecord.getRecord().get("string"));
     Assert.assertEquals(0, Float.compare(expectedRecord.get("float"), dbRecord.getRecord().get("float")));
     Assert.assertNull(expectedRecord.getDecimal("nullnumeric"));
+  }
+
+  @Test
+  public void testDBRecordWithMissingFieldsInOutputSchemaRead() throws Exception {
+    ResultSetMetaData rsMetaMock = Mockito.mock(ResultSetMetaData.class);
+    Mockito.when(rsMetaMock.getColumnCount()).thenReturn(13);
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(1))).thenReturn("integer");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(1))).thenReturn(Types.INTEGER);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(1))).thenReturn(ResultSetMetaData.columnNoNulls);
+    Mockito.when(rsMetaMock.isSigned(Mockito.eq(1))).thenReturn(true);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(2))).thenReturn("double");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(2))).thenReturn(Types.DOUBLE);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(2))).thenReturn(ResultSetMetaData.columnNullable);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(3))).thenReturn("smallint");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(3))).thenReturn(Types.SMALLINT);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(3))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(4))).thenReturn("tinyint");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(4))).thenReturn(Types.TINYINT);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(4))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(5))).thenReturn("date");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(5))).thenReturn(Types.DATE);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(5))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(6))).thenReturn("time");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(6))).thenReturn(Types.TIME);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(6))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(7))).thenReturn("timestamp");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(7))).thenReturn(Types.TIMESTAMP);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(7))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(8))).thenReturn("decimal");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(8))).thenReturn(Types.DECIMAL);
+    Mockito.when(rsMetaMock.getPrecision(Mockito.eq(8))).thenReturn(10);
+    Mockito.when(rsMetaMock.getScale(Mockito.eq(8))).thenReturn(3);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(8))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(9))).thenReturn("blob");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(9))).thenReturn(Types.BLOB);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(9))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(10))).thenReturn("boolean");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(10))).thenReturn(Types.BOOLEAN);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(10))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(11))).thenReturn("string");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(11))).thenReturn(Types.VARCHAR);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(11))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(12))).thenReturn("float");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(12))).thenReturn(Types.FLOAT);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(12))).thenReturn(ResultSetMetaData.columnNoNulls);
+
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(13))).thenReturn("nullnumeric");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(13))).thenReturn(Types.NUMERIC);
+    Mockito.when(rsMetaMock.getPrecision(Mockito.eq(13))).thenReturn(8);
+    Mockito.when(rsMetaMock.getScale(Mockito.eq(13))).thenReturn(2);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(13))).thenReturn(ResultSetMetaData.columnNullable);
+
+    Integer expectedInt = 123;
+    long intSize = Integer.BYTES;
+    byte[] buff = {10, 20, 30, 40};
+    Blob expectedBlob = new SerialBlob(buff);
+    long blobSize = expectedBlob.length();
+
+    long expectedBytesRead = intSize + blobSize;
+
+    ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+    Mockito.when(resultSetMock.getMetaData()).thenReturn(rsMetaMock);
+    Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
+    Mockito.when(resultSetMock.getObject("integer")).thenReturn(expectedInt);
+    Mockito.when(resultSetMock.getObject("blob")).thenReturn(expectedBlob);
+
+    Mockito.when(resultSetMock.findColumn("integer")).thenReturn(1);
+    Mockito.when(resultSetMock.findColumn("double")).thenReturn(2);
+    Mockito.when(resultSetMock.findColumn("smallint")).thenReturn(3);
+    Mockito.when(resultSetMock.findColumn("tinyint")).thenReturn(4);
+    Mockito.when(resultSetMock.findColumn("date")).thenReturn(5);
+    Mockito.when(resultSetMock.findColumn("time")).thenReturn(6);
+    Mockito.when(resultSetMock.findColumn("timestamp")).thenReturn(7);
+    Mockito.when(resultSetMock.findColumn("decimal")).thenReturn(8);
+    Mockito.when(resultSetMock.findColumn("blob")).thenReturn(9);
+    Mockito.when(resultSetMock.findColumn("boolean")).thenReturn(10);
+    Mockito.when(resultSetMock.findColumn("string")).thenReturn(11);
+    Mockito.when(resultSetMock.findColumn("float")).thenReturn(12);
+    Mockito.when(resultSetMock.findColumn("nullnumeric")).thenReturn(13);
+
+    StructuredRecord expectedRecord = StructuredRecord
+            .builder(Schema.recordOf("dbRecord",
+                    Schema.Field.of("integer", Schema.of(Schema.Type.INT)),
+                    Schema.Field.of("blob", Schema.of(Schema.Type.BYTES))))
+            .set("integer", expectedInt)
+            .set("blob", expectedBlob.getBytes(1, (int) expectedBlob.length()))
+            .build();
+
+    Configuration conf = Mockito.mock(Configuration.class);
+    String expectedSchemaStr = "{\"type\":\"record\",\"name\":\"dbRecord\",\"fields\":[{\"name\":\"integer\"," +
+            "\"type\":\"int\"},{\"name\":\"blob\",\"type\":\"bytes\"}]}";
+    Mockito.when(conf.get(DBUtils.OVERRIDE_SCHEMA)).thenReturn(expectedSchemaStr);
+
+    DBRecord dbRecord = new DBRecord();
+    dbRecord.setConf(conf);
+    dbRecord.readFields(resultSetMock);
+    Assert.assertEquals(expectedBytesRead, dbRecord.getBytesRead());
+    Assert.assertEquals(expectedRecord.getSchema(), dbRecord.getRecord().getSchema());
+    Assert.assertSame(expectedRecord.get("integer"), dbRecord.getRecord().get("integer"));
+    Assert.assertArrayEquals((byte[]) expectedRecord.get("blob"), (byte[]) dbRecord.getRecord().get("blob"));
   }
 
   @Test

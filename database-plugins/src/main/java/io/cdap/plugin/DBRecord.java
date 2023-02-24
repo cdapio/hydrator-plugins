@@ -156,9 +156,10 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
     for (int i = 0; i < schemaFields.size(); i++) {
       Schema.Field field = schemaFields.get(i);
-      int sqlType = metadata.getColumnType(i + 1);
-      int sqlPrecision = metadata.getPrecision(i + 1);
-      int sqlScale = metadata.getScale(i + 1);
+      int columnIndex = resultSet.findColumn(nameMap.get(field.getName()));
+      int sqlType = metadata.getColumnType(columnIndex);
+      int sqlPrecision = metadata.getPrecision(columnIndex);
+      int sqlScale = metadata.getScale(columnIndex);
 
       Schema outputFieldSchema = field.getSchema();
       outputFieldSchema = outputFieldSchema.isNullable() ? outputFieldSchema.getNonNullable() : outputFieldSchema;
