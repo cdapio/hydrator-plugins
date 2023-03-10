@@ -29,7 +29,6 @@ import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -106,10 +105,12 @@ public class LineageRecorder {
   }
 
   private EndPoint getEndPoint() {
-    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+    ImmutableMap.Builder<String, String> propertiesBuilder = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.FQN, asset.getFqn())
-      .put(Constants.Reference.LOCATION, asset.getLocation())
-      .build();
-    return EndPoint.of(context.getNamespace(), asset.getReferenceName(), properties);
+      .put(Constants.Reference.LOCATION, asset.getLocation());
+    if (asset.getMarker() != null) {
+      propertiesBuilder.put(Constants.MARKER, asset.getMarker());
+    }
+    return EndPoint.of(context.getNamespace(), asset.getReferenceName(), propertiesBuilder.build());
   }
 }
