@@ -30,12 +30,17 @@ public class Asset {
   private final String fqn;
   private final String location;
   private final String projectId;
+  // may hold information about the source/sink asset
+  // only used in the case of multi-source/multi-sink
+  private final String marker;
 
-  private Asset(String referenceName, @Nullable String fqn, @Nullable String location, @Nullable String project) {
+  private Asset(String referenceName, @Nullable String fqn, @Nullable String location, @Nullable String project,
+                @Nullable String marker) {
     this.referenceName = referenceName;
     this.fqn = fqn == null ? referenceName : fqn;
     this.location = location == null ? DEFAULT_LOCATION : location;
     this.projectId = project == null ? DEFAULT_PROJECT_ID : project;
+    this.marker = marker;
   }
 
   /**
@@ -66,6 +71,14 @@ public class Asset {
     return projectId;
   }
 
+  /**
+   * @return the marker for the {@link Asset}
+   */
+  @Nullable
+  public String getMarker() {
+    return marker;
+  }
+
   @Override
   public String toString() {
     return "Asset{" +
@@ -73,6 +86,7 @@ public class Asset {
       ", fqn='" + fqn + '\'' +
       ", location='" + location + '\'' +
       ", projectId='" + projectId + '\'' +
+      ", marker='" + marker + '\'' +
       '}';
   }
 
@@ -88,6 +102,7 @@ public class Asset {
     private String fqn;
     private String location;
     private String projectId;
+    private String marker;
 
     private Builder(String referenceName) {
       this.referenceName = referenceName;
@@ -118,10 +133,18 @@ public class Asset {
     }
 
     /**
+     * Set the marker for the {@link Asset}.
+     */
+    public Builder setMarker(String marker) {
+      this.marker = marker;
+      return this;
+    }
+
+    /**
      * Creates a new instance of {@link Asset}.
      */
     public Asset build() {
-      return new Asset(referenceName, fqn, location, projectId);
+      return new Asset(referenceName, fqn, location, projectId, marker);
     }
   }
 }

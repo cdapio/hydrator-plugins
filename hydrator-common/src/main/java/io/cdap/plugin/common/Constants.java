@@ -33,6 +33,7 @@ public final class Constants {
   }
 
   public static final String EXTERNAL_DATASET_TYPE = "externalDataset";
+  public static final String MARKER = "marker";
 
   private Constants() {
   }
