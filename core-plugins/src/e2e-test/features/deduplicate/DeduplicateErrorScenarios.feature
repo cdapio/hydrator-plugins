@@ -1,7 +1,7 @@
 @Deduplicate
 Feature:Deduplicate - Verify Deduplicate Plugin Error scenarios
 
-  @FILE_SOURCE_TEST
+  @GCS_DEDUPLICATE_TEST
   Scenario:Verify Deduplicate plugin validation errors for invalid value of number of partitions
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -10,7 +10,7 @@ Feature:Deduplicate - Verify Deduplicate Plugin Error scenarios
     Then Connect plugins: "File" and "Deduplicate" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "deduplicateFileCsvFile"
+    Then Enter input plugin property: "path" with value: "gcsDeduplicateTest"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button
@@ -26,7 +26,7 @@ Feature:Deduplicate - Verify Deduplicate Plugin Error scenarios
     Then Click on the Validate button
     Then Verify that the Plugin Property: "numPartitions" is displaying an in-line error message: "errorMessageDeduplicateInvalidNumberOfPartitions"
 
-  @FILE_SOURCE_TEST
+  @GCS_DEDUPLICATE_TEST
   Scenario:Verify Deduplicate plugin error for FilterOperation field with invalid function
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
@@ -35,7 +35,7 @@ Feature:Deduplicate - Verify Deduplicate Plugin Error scenarios
     Then Connect plugins: "File" and "Deduplicate" to establish connection
     Then Navigate to the properties page of plugin: "File"
     Then Enter input plugin property: "referenceName" with value: "FileReferenceName"
-    Then Enter input plugin property: "path" with value: "deduplicateFileCsvFile"
+    Then Enter input plugin property: "path" with value: "gcsDeduplicateTest"
     Then Select dropdown plugin property: "format" with option value: "csv"
     Then Click plugin property: "skipHeader"
     Then Click on the Get Schema button

@@ -1,4 +1,4 @@
-@File_Source @FILE_SOURCE_TEST
+@File_Source
 Feature:File Source - Verify File Source Plugin Error scenarios
 
   @File_Source_Required
