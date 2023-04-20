@@ -102,7 +102,7 @@
     <commons-lang-version>2.6</commons-lang-version>
     <commons-lang3-version>3.5</commons-lang3-version>
     <commons-collections.version>3.2.2</commons-collections.version>
-    <cdap.version>6.9.0-SNAPSHOT</cdap.version>
+    <cdap.version>6.10.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
