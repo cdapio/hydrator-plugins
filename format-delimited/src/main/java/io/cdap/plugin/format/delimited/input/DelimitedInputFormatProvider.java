@@ -33,6 +33,7 @@ import io.cdap.plugin.format.delimited.common.DataTypeDetectorStatusKeeper;
 import io.cdap.plugin.format.delimited.common.DataTypeDetectorUtils;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,9 +50,9 @@ import javax.annotation.Nullable;
 @Name(DelimitedInputFormatProvider.NAME)
 @Description(DelimitedInputFormatProvider.DESC)
 public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvider<DelimitedInputFormatProvider.Conf> {
-  public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String NAME = "delimited";
   static final String DESC = "Plugin for reading files in delimited format.";
+  public static final PluginClass PLUGIN_CLASS = getPluginClass();
   private final Conf conf;
 
   public DelimitedInputFormatProvider(Conf conf) {
@@ -77,8 +78,8 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     FailureCollector collector = context.getFailureCollector();
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null && context.getInputSchema() == null) {
       collector.addFailure(
-        "Delimited format cannot be used without specifying a schema.",
-        "Schema must be specified.")
+          "Delimited format cannot be used without specifying a schema.",
+          "Schema must be specified.")
         .withConfigProperty("schema");
     }
 
@@ -88,8 +89,8 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
 
     if (conf.getEnableQuotedValues() && conf.delimiter != null && conf.delimiter.contains("\"")) {
       collector.addFailure(
-        "The delimiter %s cannot contain \" when quoted values are enabled.",
-        "Check the delimiter.")
+          "The delimiter %s cannot contain \" when quoted values are enabled.",
+          "Check the delimiter.")
         .withConfigProperty("delimiter");
     }
   }
@@ -99,6 +100,11 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
     properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
     properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_MULTILINE_SUPPORT,
+                   String.valueOf(conf.getEnableMultilineSupport()));
+    if (conf.getEnableMultilineSupport()) {
+      properties.put(FileInputFormat.SPLIT_MINSIZE, Long.toString(Long.MAX_VALUE));
+    }
   }
 
   @Nullable
@@ -168,6 +174,6 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     Map<String, PluginPropertyField> properties = new HashMap<>(DelimitedConfig.DELIMITED_FIELDS);
     properties.put("delimiter", new PluginPropertyField("delimiter", Conf.DELIMITER_DESC, "string", false, true));
     return new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, DelimitedInputFormatProvider.class.getName(),
-      "conf", properties);
+                           "conf", properties);
   }
 }

@@ -17,6 +17,10 @@
 package io.cdap.plugin.format.delimited.input;
 
 import com.google.common.collect.AbstractIterator;
+import org.apache.hadoop.mapreduce.RecordReader;
+
+import java.io.IOException;
+import javax.annotation.Nullable;
 
 /**
  * Iterator that provides the splits in the delimited string based on the delimiter. The delimiter
@@ -31,14 +35,20 @@ import com.google.common.collect.AbstractIterator;
  */
 public class SplitQuotesIterator extends AbstractIterator<String> {
   private static final char QUOTE_CHAR = '\"';
-  private final String delimitedString;
+  private static final String LINE_SEPARATOR = "\n";
   private final String delimiter;
+  private final RecordReader recordReader;
+  private final boolean enableMultilineSupport;
+  private String delimitedString;
   private int index;
   private boolean endingWithDelimiter = false;
 
-  public SplitQuotesIterator(String delimitedString, String delimiter) {
+  public SplitQuotesIterator(String delimitedString, String delimiter, @Nullable RecordReader recordReader,
+                             boolean enableMultilineSupport) {
     this.delimitedString = delimitedString;
     this.delimiter = delimiter;
+    this.recordReader = recordReader;
+    this.enableMultilineSupport = enableMultilineSupport;
     index = 0;
   }
 
@@ -61,6 +71,7 @@ public class SplitQuotesIterator extends AbstractIterator<String> {
       if (cur == QUOTE_CHAR) {
         isWithinQuotes = !isWithinQuotes;
         index++;
+        appendNextLineIfNeeded(split, isWithinQuotes);
         continue;
       }
 
@@ -69,6 +80,7 @@ public class SplitQuotesIterator extends AbstractIterator<String> {
         !delimitedString.startsWith(delimiter, index)) {
         split.append(cur);
         index++;
+        appendNextLineIfNeeded(split, isWithinQuotes);
         continue;
       }
 
@@ -84,6 +96,7 @@ public class SplitQuotesIterator extends AbstractIterator<String> {
       // delimiter within quotes
       split.append(cur);
       index++;
+      appendNextLineIfNeeded(split, isWithinQuotes);
     }
 
     if (isWithinQuotes) {
@@ -94,4 +107,30 @@ public class SplitQuotesIterator extends AbstractIterator<String> {
 
     return split.toString();
   }
+
+
+  /**
+   * This method will fetch the next line from Record Reader if split is still within quotes which means data is also
+   * there in next line.
+   *
+   * @param isWithinQuotes whether current split value is within quotes or not
+   */
+  private void appendNextLineIfNeeded(StringBuilder split, boolean isWithinQuotes) {
+    try {
+      if (enableMultilineSupport && index == delimitedString.length() && isWithinQuotes) {
+        if (!recordReader.nextKeyValue()) {
+          throw new IllegalArgumentException(
+            "Found a line with an unenclosed quote. Ensure that all values are properly"
+              + " quoted, or disable quoted values.");
+        } else {
+          split.append(LINE_SEPARATOR);
+          delimitedString = recordReader.getCurrentValue().toString();
+          index = 0;
+        }
+      }
+    } catch (IOException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
 }
