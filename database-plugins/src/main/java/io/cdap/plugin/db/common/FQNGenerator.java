@@ -50,8 +50,8 @@ public class FQNGenerator {
      */
     String dbSchema;
     int offset =  0;
-    int startIndex = url.indexOf("connectionSchema=");
-    offset = 17;
+    int startIndex = url.indexOf("currentSchema=");
+    offset = 14;
     if (startIndex == -1) {
       startIndex = url.indexOf("searchpath=");
       offset = 11;

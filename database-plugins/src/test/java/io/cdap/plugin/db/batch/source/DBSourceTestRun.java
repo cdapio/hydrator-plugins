@@ -506,7 +506,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // Testcases consist of Connection URL, Table Name, Expected FQN String
     String[][] testCases  = {{"jdbc:postgresql://34.35.36.37/test?user=user&password=secret&ssl=true",
                               "table1", "postgresql://34.35.36.37:5432/test.public.table1"},
-                            {"jdbc:postgresql://localhost/test?connectionSchema=schema",
+                            {"jdbc:postgresql://localhost/test?currentSchema=schema",
                               "table2", "postgresql://localhost:5432/test.schema.table2"},
                             {"jdbc:postgresql://localhost/test?searchpath=schema",
                               "table3", "postgresql://localhost:5432/test.schema.table3"}};
