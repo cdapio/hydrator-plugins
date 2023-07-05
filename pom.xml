@@ -102,7 +102,7 @@
     <commons-lang-version>2.6</commons-lang-version>
     <commons-lang3-version>3.5</commons-lang3-version>
     <commons-collections.version>3.2.2</commons-collections.version>
-    <cdap.version>6.9.0-SNAPSHOT</cdap.version>
+    <cdap.version>6.9.1</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
@@ -124,7 +124,7 @@
     <json.version>20160212</json.version>
     <netty.version>4.1.75.Final</netty.version>
     <netty-http.version>1.3.0</netty-http.version>
-    <spark.version>3.1.1</spark.version>
+    <spark.version>3.3.2</spark.version>
     <testSourceLocation>${project.basedir}/src/test/java/</testSourceLocation>
   </properties>
 
@@ -775,8 +775,24 @@
             <artifactId>log4j</artifactId>
           </exclusion>
           <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+          </exclusion>
+          <exclusion>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
+          </exclusion>
+          <!--
+            We still use hadoop2,
+            so excluding hadoop3 dependencies from spark
+          -->
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client-runtime</artifactId>
           </exclusion>
           <exclusion>
             <groupId>com.esotericsoftware.reflectasm</groupId>
