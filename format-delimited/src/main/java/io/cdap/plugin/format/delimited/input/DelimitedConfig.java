@@ -39,6 +39,7 @@ public class DelimitedConfig extends PathTrackingConfig {
   public static final String NAME_ENABLE_QUOTES_VALUES = "enableQuotedValues";
   public static final String NAME_OVERRIDE = "override";
   public static final String NAME_SAMPLE_SIZE = "sampleSize";
+  public static final String NAME_ENABLE_MULTILINE_SUPPORT = "enableMultilineSupport";
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
 
   // description
@@ -46,24 +47,37 @@ public class DelimitedConfig extends PathTrackingConfig {
     "Whether to treat content between quotes as a value. The default value is false.";
   public static final String DESC_SKIP_HEADER =
     "Whether to skip the first line of each file. The default value is false.";
+  public static final String DESC_ENABLE_MULTILINE =
+    "Whether to support content spread over multiple lines if it is between quotes. The default value is false";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put("skipHeader", new PluginPropertyField("skipHeader", DESC_SKIP_HEADER, "boolean", false, true));
     fields.put(NAME_ENABLE_QUOTES_VALUES,
-      new PluginPropertyField(NAME_ENABLE_QUOTES_VALUES, DESC_ENABLE_QUOTES, "boolean", false, true));
+               new PluginPropertyField(NAME_ENABLE_QUOTES_VALUES, DESC_ENABLE_QUOTES, "boolean", false, true));
+    fields.put(NAME_ENABLE_MULTILINE_SUPPORT,
+               new PluginPropertyField(NAME_ENABLE_MULTILINE_SUPPORT, DESC_ENABLE_MULTILINE, "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
+
+  @Macro
+  @Nullable
+  @Description(DESC_ENABLE_QUOTES)
+  protected Boolean enableQuotedValues;
+
+  @Macro
+  @Nullable
+  @Description(DESC_ENABLE_MULTILINE)
+  protected Boolean enableMultilineSupport;
 
   @Macro
   @Nullable
   @Description(DESC_SKIP_HEADER)
   private Boolean skipHeader;
 
-  @Macro
-  @Nullable
-  @Description(DESC_ENABLE_QUOTES)
-  protected Boolean enableQuotedValues;
+  public DelimitedConfig() {
+    super();
+  }
 
   public boolean getSkipHeader() {
     return skipHeader != null && skipHeader;
@@ -73,12 +87,12 @@ public class DelimitedConfig extends PathTrackingConfig {
     return enableQuotedValues != null && enableQuotedValues;
   }
 
-  public long getSampleSize() {
-    return Long.parseLong(getProperties().getProperties().getOrDefault(NAME_SAMPLE_SIZE, "1000"));
+  public Boolean getEnableMultilineSupport() {
+    return enableMultilineSupport != null && enableMultilineSupport;
   }
 
-  public DelimitedConfig() {
-    super();
+  public long getSampleSize() {
+    return Long.parseLong(getProperties().getProperties().getOrDefault(NAME_SAMPLE_SIZE, "1000"));
   }
 
   /**

@@ -27,6 +27,7 @@ import io.cdap.cdap.etl.api.validation.InputFiles;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
 import java.util.Map;
@@ -78,6 +79,11 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, ",");
     properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
     properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_MULTILINE_SUPPORT,
+                   String.valueOf(conf.getEnableMultilineSupport()));
+    if (conf.getEnableMultilineSupport()) {
+      properties.put(FileInputFormat.SPLIT_MINSIZE, Long.toString(Long.MAX_VALUE));
+    }
   }
 
   @Nullable

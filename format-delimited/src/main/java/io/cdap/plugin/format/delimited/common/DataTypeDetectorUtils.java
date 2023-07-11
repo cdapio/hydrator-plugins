@@ -108,7 +108,8 @@ public class DataTypeDetectorUtils {
     if (skipHeader) {
       // need to check enableQuotedValues to remove quotes on headers
       if (enableQuotedValues) {
-        Iterator<String> splitsIterator = new SplitQuotesIterator(rawLine, delimiter);
+        // RecordReader and enable multiline support is set to null and false for header values.
+        Iterator<String> splitsIterator = new SplitQuotesIterator(rawLine, delimiter, null, false);
         List<String> tempHeaders = new ArrayList<String>();
         while (splitsIterator.hasNext()) {
           tempHeaders.add(splitsIterator.next());
@@ -155,14 +156,15 @@ public class DataTypeDetectorUtils {
    * Cleans an array of field names to make sure they comply with avro field naming standard.
    * It also makes sure each name is unique in the list.
    * Field names can start with [A-Za-z_] and subsequently contain only [A-Za-z0-9_].
-   *
+   * <p>
    * Steps:
    * 1) Trim surrounding spaces
    * 2) If its empty replace it with BLANK
    * 3) If it starts with a number, prepend "col_"
    * 4) Replace invalid characters with "_" (multiple invalid characters gets replaced with one symbol)
    * 5) Check if the name has been found before (without considering case)
-   *    if so add _# where # is the number of times seen before + 1
+   * if so add _# where # is the number of times seen before + 1
+   *
    * @param fieldNames an array of field names to be cleaned
    */
   private static String[] cleanSchemaFieldNames(String[] fieldNames) {
