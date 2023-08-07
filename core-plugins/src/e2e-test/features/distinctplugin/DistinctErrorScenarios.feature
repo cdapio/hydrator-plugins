@@ -1,7 +1,7 @@
 @Distinct
 Feature: Distinct analytics - Verify Distinct plugin error Scenarios
 
-  @GCS_DISTINCT_TEST1
+  @GCS_DISTINCT_TEST1 @Distinct_Required
   Scenario:Verify Distinct plugin validation errors for incorrect data in Fields
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"

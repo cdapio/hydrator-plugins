@@ -1,7 +1,7 @@
 @Deduplicate
 Feature: Deduplicate - Verification of Deduplicate pipeline with File as source and File as sink
 
-  @GCS_DEDUPLICATE_TEST @FILE_SINK_TEST
+  @GCS_DEDUPLICATE_TEST @FILE_SINK_TEST @Deduplicate_Required
   Scenario: To verify complete flow of data extract and transfer from File source to File sink using Deduplicate Plugin with Max filter option
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
