@@ -383,7 +383,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   }
 
   private void init(@Nullable TransformContext context, FailureCollector collector) {
-    ScriptEngineManager manager = new ScriptEngineManager();
+    ScriptEngineManager manager = new ScriptEngineManager(getClass().getClassLoader());
     engine = manager.getEngineByName("JavaScript");
     try {
       engine.eval(ScriptConstants.HELPER_DEFINITION);
