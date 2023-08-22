@@ -18,7 +18,9 @@ package io.cdap.plugin.joiner.actions;
 import io.cdap.e2e.pages.locators.CdfPluginPropertiesLocators;
 import io.cdap.e2e.utils.ElementHelper;
 import io.cdap.e2e.utils.SeleniumHelper;
+import io.cdap.e2e.utils.WaitHelper;
 import io.cdap.plugin.joiner.locators.JoinerLocators;
+import org.openqa.selenium.ElementClickInterceptedException;
 
 /**
  *  Joiner Related Actions.
@@ -26,6 +28,7 @@ import io.cdap.plugin.joiner.locators.JoinerLocators;
 public class JoinerActions {
   static {
     SeleniumHelper.getPropertiesLocators(JoinerLocators.class);
+
   }
 
   public static void clickFieldsExpandButton() {
@@ -36,8 +39,13 @@ public class JoinerActions {
     ElementHelper.sendKeys(JoinerLocators.numPartitions, numPartitions);
   }
 
-  public static void uncheckPluginFieldAliasCheckBox(String plugin, String field) {
+  public static void uncheckPluginFieldAliasCheckBox(String plugin, String field) throws InterruptedException {
+    Thread.sleep(500);
     ElementHelper.selectCheckbox(JoinerLocators.fieldAliasCheckBox(plugin, field));
+  }
+
+  public static void selectRequiredInputCheckbox(int value, String inputSchemaName) {
+    ElementHelper.selectCheckbox(JoinerLocators.requiredInputCheckbox(value - 1, inputSchemaName));
   }
 
   public static void selectJoinerType(String targetJoinerType) {
@@ -49,4 +57,9 @@ public class JoinerActions {
     String incount = JoinerLocators.targetRecordsCount.getText();
     return Integer.parseInt(incount.replaceAll(",", ""));
   }
+
+  public static void clickByclosingSelectedinputsPannel(String inputSchemaName) {
+    ElementHelper.clickOnElement(JoinerLocators.closeSelectedInputsPannel(inputSchemaName));
+  }
+
 }

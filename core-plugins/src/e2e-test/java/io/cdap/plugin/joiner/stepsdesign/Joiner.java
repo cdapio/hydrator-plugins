@@ -32,8 +32,13 @@ public class Joiner implements CdfHelper {
   }
 
   @Then("Uncheck plugin {string} field {string} alias checkbox")
-  public void uncheckPluginFieldAliasCheckBox(String plugin, String field) {
+  public void uncheckPluginFieldAliasCheckBox(String plugin, String field) throws InterruptedException {
     JoinerActions.uncheckPluginFieldAliasCheckBox(plugin, field);
+  }
+
+  @Then("Click on the required input checkbox for schema {int} named {string}")
+  public void clickRequiredInput(int value, String inputSchemaName) {
+    JoinerActions.selectRequiredInputCheckbox(value, inputSchemaName);
   }
 
   @Then("Enter numPartitions {string}")
@@ -54,5 +59,10 @@ public class Joiner implements CdfHelper {
   @Then("Validate OUT record count of joiner is equal to IN record count of sink")
   public void validateOUTRecordCountOfJoinerIsEqualToINRecordCountOfSink() {
     Assert.assertEquals(recordOut(), JoinerActions.getTargetRecordsCount());
+  }
+
+  @Then("Close {string} plugin selected input pannel")
+  public void closeJoinerSelectedInputsPannel(String inputSchemaName) {
+    JoinerActions.clickByclosingSelectedinputsPannel(inputSchemaName);
   }
 }
