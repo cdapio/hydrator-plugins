@@ -28,6 +28,7 @@ import io.cdap.plugin.groupby.locators.GroupByLocators;
 import io.cucumber.core.logging.Logger;
 import io.cucumber.core.logging.LoggerFactory;
 import org.junit.Assert;
+import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 
@@ -55,8 +56,23 @@ public class GroupByActions {
     int index = 0;
     for (Map.Entry<String, String> entry : fieldsMapping.entrySet()) {
       ElementHelper.sendKeys(GroupByLocators.field(index), entry.getKey().split("#")[0]);
-      ElementHelper.selectDropdownOption(GroupByLocators.fieldFunction(index), CdfPluginPropertiesLocators.
-        locateDropdownListItem(entry.getKey().split("#")[1]));
+      ElementHelper.clickOnElement(GroupByLocators.fieldFunction(index));
+      int attempts = 0;
+      while (attempts < 5) {
+        try {
+          ElementHelper.clickOnElement(SeleniumDriver.getDriver().findElement(CdfPluginPropertiesLocators.
+                                                       locateDropdownListItem(entry.getKey().split("#")[1])));
+          break;
+        } catch (ElementClickInterceptedException e) {
+          if (attempts == 4) {
+            throw e;
+          }
+        }
+        attempts++;
+      }
+      if (entry.getKey().split("#")[1].contains("If")) {
+        ElementHelper.sendKeys(GroupByLocators.fieldFunctionCondition(index), entry.getKey().split("#")[2]);
+      }
       ElementHelper.sendKeys(GroupByLocators.fieldFunctionAlias(index), entry.getValue());
       ElementHelper.clickOnElement(GroupByLocators.fieldAddRowButton(index));
       index++;
