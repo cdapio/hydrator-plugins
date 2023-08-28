@@ -106,6 +106,10 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   @Override
   public BrowseDetail browse(ConnectorContext connectorContext, BrowseRequest request) throws IOException {
+    return this.browse(request);
+  }
+
+  public BrowseDetail browse(BrowseRequest request) throws IOException {
     DBConnectorPath dbConnectorPath = getDBConnectorPath(request.getPath());
     try (Connection connection = getConnection(dbConnectorPath)) {
       int limit = request.getLimit() == null || request.getLimit() <= 0 ? Integer.MAX_VALUE : request.getLimit();
