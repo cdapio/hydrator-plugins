@@ -58,17 +58,8 @@ public class DataCacher extends SparkCompute<StructuredRecord, StructuredRecord>
 
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext sparkExecutionPluginContext,
-                                             JavaRDD<StructuredRecord> javaRDD) throws Exception {
-
-    StorageLevel storageLevel = StorageLevel.MEMORY_AND_DISK();
-    if (config.storageLevel.isEmpty()) {
-      StorageLevel.fromString(config.storageLevel);
-    }
-    if (storageLevel == StorageLevel.NONE()) {
-      throw new RuntimeException(
-        String.format("Invalid storage level '%s'. Please select a valid value", config.storageLevel));
-    }
-
+                                             JavaRDD<StructuredRecord> javaRDD) {
+    StorageLevel storageLevel = StorageLevel.fromString(config.storageLevel);
     javaRDD.persist(storageLevel);
     return javaRDD;
   }
