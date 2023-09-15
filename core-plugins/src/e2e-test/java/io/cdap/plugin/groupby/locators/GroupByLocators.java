@@ -75,4 +75,9 @@ public class GroupByLocators {
     String xpath = "//*[@data-cy='groupByFields']//*[@data-cy='" + row + "']//button[@data-cy='add-row']";
     return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
   }
+
+  public static WebElement fieldFunctionCondition(int row) {
+    String xpath = "//div[@data-cy='aggregates']//div[@data-cy= '" + row + "']//input[@placeholder='condition']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
 }
