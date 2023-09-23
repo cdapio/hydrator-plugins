@@ -22,6 +22,7 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
@@ -77,18 +78,22 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
-    try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-      fields = outputSchema.getFields();
-    } catch (IOException e) {
-      collector.addFailure("Invalid output schema.", "Output schema must be valid JSON.");
+    if (!config.containsMacro(Config.SCHEMA)) {
+      try {
+        Schema outputSchema = Schema.parseJson(config.schema);
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+        fields = outputSchema.getFields();
+      } catch (IOException e) {
+        collector.addFailure("Invalid output schema.", "Output schema must be valid JSON.");
+      }
     }
 
+    if (!config.containsMacro(Config.FIELD)) {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null && inputSchema.getField(config.field) == null) {
-      collector.addFailure(String.format("Field '%s' must be present in the input schema.", config.field), null)
-        .withConfigProperty(Config.FIELD);
+      if (inputSchema != null && inputSchema.getField(config.field) == null) {
+        collector.addFailure(String.format("Field '%s' must be present in the input schema.", config.field), null)
+                .withConfigProperty(Config.FIELD);
+      }
     }
     extractMappings(collector);
   }
@@ -207,9 +212,11 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   public static class Config extends PluginConfig {
     public static final String FIELD = "field";
     public static final String MAPPING = "mapping";
+    public static final String SCHEMA = "schema";
 
     @Name("field")
     @Description("Input field to be parsed as JSON")
+    @Macro
     private String field;
 
     @Name("mapping")
@@ -217,10 +224,12 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       "field name and the second field specifies the JSON path expression, such as '$.employee.name.first'. " +
       "See reference documentation for additional examples.")
     @Nullable
+    @Macro
     private String mapping;
 
     @Name("schema")
     @Description("Output schema")
+    @Macro
     private String schema;
 
     public Config(String field, @Nullable String mapping, String schema) {
