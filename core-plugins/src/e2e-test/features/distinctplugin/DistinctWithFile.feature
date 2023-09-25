@@ -1,7 +1,7 @@
 @Distinct
 Feature: Distinct Analytics - Verify File source data transfer using Distinct analytics
 
-  @GCS_DISTINCT_TEST1 @FILE_SINK_TEST
+  @GCS_DISTINCT_TEST1 @FILE_SINK_TEST @Distinct_Required
   Scenario: To verify data is getting transferred from File source to File sink plugin successfully using Distinct Single field name
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"

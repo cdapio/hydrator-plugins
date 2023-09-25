@@ -1,6 +1,7 @@
 @Normalize
 Feature: Normalize - Verify Normalize plugin error Scenarios
 
+  @Normalize_Required
   Scenario:Verify Normalize plugin validation errors for mandatory fields
     Given Open Datafusion Project to configure pipeline
     When Expand Plugin group in the LHS plugins list: "Transform"

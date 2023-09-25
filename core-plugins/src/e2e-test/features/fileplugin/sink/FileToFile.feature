@@ -1,7 +1,7 @@
 @File_Sink
 Feature:File Sink - Verification of File to File successful data transfer
 
-  @CSV_TEST @FILE_SINK_TEST
+  @CSV_TEST @FILE_SINK_TEST @File_Sink_Required
   Scenario Outline: To verify data is getting transferred from File to File sink successfully for different formats
     Given Open Datafusion Project to configure pipeline
     When Select plugin: "File" from the plugins list as: "Source"
