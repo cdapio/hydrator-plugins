@@ -28,7 +28,17 @@ public class JoinerLocators {
 
   public static WebElement fieldAliasCheckBox(String pluginName, String field) {
     String xpath = "//*[@data-cy='" + pluginName + "-stage-expansion-panel']" + "//*[@data-cy='" + field +
-      "-field-selector-name']/..//*[@type='checkbox']";
+      "-field-selector-name']/..//*[@data-cy='" + field + "-field-selector-checkbox']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement requiredInputCheckbox(int value, String inputSchemaName) {
+    String xpath = "//*[@type='checkbox'][@value='" + value + "-" + inputSchemaName + "']";
+    return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
+  }
+
+  public static WebElement closeSelectedInputsPannel(String inputSchemaName) {
+    String xpath = "//*[@data-cy='" + inputSchemaName + "-stage-expansion-panel']//*[contains(@class,'edgeEnd')]";
     return SeleniumDriver.getDriver().findElement(By.xpath(xpath));
   }
 
