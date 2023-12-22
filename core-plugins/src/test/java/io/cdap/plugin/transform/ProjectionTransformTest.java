@@ -568,6 +568,7 @@ public class ProjectionTransformTest {
     Assert.assertEquals("bar", output.get("stringField"));
   }
 
+
   @Test
   public void testConvertToDouble() throws Exception {
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
@@ -714,5 +715,51 @@ public class ProjectionTransformTest {
       expectedCause.addAttribute(STAGE, MOCK_STAGE);
       Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
     }
+  }
+
+  @Test
+  public void testConvertFloatToDouble() throws Exception {
+    ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
+      .ProjectionTransformConfig(null, null,
+                                 "doubleField1:float,doubleField2:float,doubleField3:float,doubleField4:float," +
+                                   "doubleField5:float",
+                                 null);
+    Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
+    TransformContext transformContext = new MockTransformContext();
+    transform.initialize(transformContext);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    final Schema SCHEMA =
+      Schema.recordOf("record",
+                      Schema.Field.of("doubleField1", Schema.of(Schema.Type.DOUBLE)),
+                      Schema.Field.of("doubleField2", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                      Schema.Field.of("doubleField3", Schema.of(Schema.Type.DOUBLE)),
+                      Schema.Field.of("doubleField4", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                      Schema.Field.of("doubleField5", Schema.of(Schema.Type.DOUBLE)));
+    final StructuredRecord SINGLE = StructuredRecord.builder(SCHEMA)
+      .set("doubleField1", 3.14)
+      .set("doubleField2", Double.MAX_VALUE)
+      .set("doubleField3", Double.MIN_VALUE)
+      .set("doubleField4", -Double.MAX_VALUE)
+      .set("doubleField5", -12.12d)
+      .build();
+    transform.transform(SINGLE, emitter);
+    StructuredRecord output = emitter.getEmitted().get(0);
+
+    Schema expectedSchema = Schema.recordOf("record.projected",
+                                            Schema.Field.of("doubleField1", Schema.of(Schema.Type.FLOAT)),
+                                            Schema.Field.of("doubleField2",
+                                                            Schema.nullableOf(Schema.of(Schema.Type.FLOAT))),
+                                            Schema.Field.of("doubleField3", Schema.of(Schema.Type.FLOAT)),
+                                            Schema.Field.of("doubleField4",
+                                                            Schema.nullableOf(Schema.of(Schema.Type.FLOAT))),
+                                            Schema.Field.of("doubleField5", Schema.of(Schema.Type.FLOAT)));
+
+    Assert.assertEquals(expectedSchema, output.getSchema());
+    Assert.assertTrue(Math.abs(3.14 - (Float) output.get("doubleField1")) < 0.000001);
+    Assert.assertNull(output.get("doubleField2"));
+    Assert.assertTrue(Math.abs(Double.MIN_VALUE - (Float) output.get("doubleField3")) < 0.000001);
+    Assert.assertNull(output.get("doubleField4"));
+    Assert.assertTrue(Math.abs(-12.12 - (Float) output.get("doubleField5")) < 0.000001);
   }
 }

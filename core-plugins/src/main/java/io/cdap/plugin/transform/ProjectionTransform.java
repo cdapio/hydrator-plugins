@@ -220,7 +220,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         }
         if (containAllFields) {
           collector.addFailure(
-            "'Fields to drop' cannot contain all the fields of the input schema.", null)
+              "'Fields to drop' cannot contain all the fields of the input schema.", null)
             .withConfigProperty(ProjectionTransformConfig.DROP);
         }
       }
@@ -230,8 +230,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         for (String field : fieldsToKeep) {
           if (inputSchema.getField(field) == null) {
             collector.addFailure(
-              String.format("Field '%s' provided in 'Fields to keep' must be present in the input schema.",
-                            field), null)
+                String.format("Field '%s' provided in 'Fields to keep' must be present in the input schema.",
+                              field), null)
               .withConfigElement(ProjectionTransformConfig.KEEP, field);
           }
         }
@@ -244,22 +244,22 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         String val = keyVal.getValue();
         if (inputSchema != null && inputSchema.getField(key) == null) {
           collector.addFailure(
-            String.format("Field '%s' provided in 'Fields to rename' must be present in the input schema.", key),
-            null)
+              String.format("Field '%s' provided in 'Fields to rename' must be present in the input schema.", key),
+              null)
             .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, val));
         }
         try {
           String oldVal = fieldsToRename.put(key, val);
           if (oldVal != null) {
             collector.addFailure(
-              String.format("Cannot rename '%s' to both '%s' and '%s'.", key, oldVal, val), null)
+                String.format("Cannot rename '%s' to both '%s' and '%s'.", key, oldVal, val), null)
               .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, oldVal))
               .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, val));
           }
         } catch (IllegalArgumentException e) {
           // purely so that we can give a more descriptive error message
           collector.addFailure(
-            String.format("Cannot rename more than one field to '%s'.", val), null)
+              String.format("Cannot rename more than one field to '%s'.", val), null)
             .withConfigProperty(ProjectionTransformConfig.RENAME);
         }
       }
@@ -271,21 +271,21 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         String typeStr = keyVal.getValue();
         if (inputSchema != null && inputSchema.getField(name) == null) {
           collector.addFailure(
-            String.format(
-              "Field '%s' provided in 'Convert' is not present in the input schema.", name), null)
+              String.format(
+                "Field '%s' provided in 'Convert' is not present in the input schema.", name), null)
             .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", name, typeStr));
         }
         Schema.Type type = Schema.Type.valueOf(typeStr.toUpperCase());
         if (!type.isSimpleType() || type == Schema.Type.NULL) {
           collector.addFailure(
-            String.format(
-              "Cannot convert field '%s' to a '%s'.", name, typeStr),
-            "Only simple types are supported.")
+              String.format(
+                "Cannot convert field '%s' to a '%s'.", name, typeStr),
+              "Only simple types are supported.")
             .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", name, typeStr));
         }
         if (fieldsToConvert.containsKey(name)) {
           collector.addFailure(
-            String.format("Cannot convert '%s' to multiple types.", name), null)
+              String.format("Cannot convert '%s' to multiple types.", name), null)
             .withConfigProperty(ProjectionTransformConfig.CONVERT);
         }
         fieldsToConvert.put(name, type);
@@ -411,14 +411,16 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
             return (int) Math.round(doubleVal);
           case LONG:
             return Math.round(doubleVal);
+          case FLOAT:
+            return getFloatFromDouble(doubleVal);
         }
         break;
     }
 
     String typeStr = outputType.toString().toLowerCase();
     collector.addFailure(
-      String.format("Cannot convert field '%s' from type '%s' to type '%s'.", fieldName, inputType, outputType),
-      null)
+        String.format("Cannot convert field '%s' from type '%s' to type '%s'.", fieldName, inputType, outputType),
+        null)
       .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", fieldName, typeStr));
     throw collector.getOrThrowException();
   }
@@ -454,8 +456,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         if (!inputFieldType.isSimpleType() || inputFieldType == Schema.Type.NULL) {
           String typeStr = outputFieldSchema.getType().toString().toLowerCase();
           collector.addFailure(
-            String.format(
-              "Field '%s' is of unconvertible type '%s'.", inputFieldName, inputFieldType), null)
+              String.format(
+                "Field '%s' is of unconvertible type '%s'.", inputFieldName, inputFieldType), null)
             .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", inputFieldName, typeStr));
           collector.getOrThrowException();
         }
@@ -472,5 +474,17 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     output = Schema.recordOf(inputSchema.getRecordName() + ".projected", outputFields);
     schemaCache.put(inputSchema, output);
     return output;
+  }
+
+  /**
+   * @param doubleValue
+   * @return It will return float value if it is within float range otherwise will return null.
+   */
+  private Float getFloatFromDouble(Double doubleValue) {
+    boolean isNegative = doubleValue.doubleValue() < 0.0;
+    if ((isNegative && doubleValue >= -Float.MAX_VALUE) || (!isNegative && doubleValue <= Float.MAX_VALUE)) {
+      return doubleValue.floatValue();
+    }
+    return null;
   }
 }
