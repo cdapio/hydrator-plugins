@@ -74,12 +74,6 @@ jobs:
       - name: Run all e2e tests
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || steps.filter.outputs.e2e-test == 'true'
         run: python3 e2e/src/main/scripts/run_e2e_test.py --module ${{ matrix.module }}
-      - name: Upload report
-        uses: actions/upload-artifact@v2.2.4
-        if: always()
-        with:
-          name: Cucumber report
-          path: ./**/target/cucumber-reports
       - name: Upload debug files
         uses: actions/upload-artifact@v3
         if: always()
@@ -87,9 +81,12 @@ jobs:
           name: Debug files
           path: ./**/target/e2e-debug
       - name: Upload files to GCS
-        uses: google-github-actions/upload-cloud-storage@v0
+        uses: google-github-actions/upload-cloud-storage@v2
         if: always()
         with:
           path: ./plugin
           destination: e2e-tests-cucumber-reports/${{ github.event.repository.name }}/${{ github.ref }}
           glob: '**/target/cucumber-reports/**'
+      - name: Cucumber Report URL
+        if: always()
+        run: echo "https://storage.googleapis.com/e2e-tests-cucumber-reports/${{ github.event.repository.name }}/${{ github.ref }}/plugin/${{ matrix.module }}/target/cucumber-reports/advanced-reports/cucumber-html-reports/overview-features.html"
