@@ -81,6 +81,15 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     this.config = config;
   }
 
+  /**
+   * Override this to provide the class name of the Empty InputFormat
+   * to use when the input path does not exist.
+   * If not overridden, ClassNotFound exception will be thrown when the input path does not exist.
+   */
+  protected String getEmptyInputFormatClassName() {
+    return EmptyInputFormat.class.getName();
+  }
+
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
@@ -203,7 +212,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     String inputFormatClass;
     if (fileStatus == null) {
       if (config.shouldAllowEmptyInput()) {
-        inputFormatClass = EmptyInputFormat.class.getName();
+        inputFormatClass = getEmptyInputFormatClassName();
       } else {
         throw new IOException(String.format("Input path %s does not exist", path));
       }
