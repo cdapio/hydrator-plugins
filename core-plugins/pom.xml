@@ -174,14 +174,34 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.15.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.26.0</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
-      <version>3.12</version>
+      <version>5.2.4</version>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi-ooxml</artifactId>
-      <version>3.11</version>
+      <version>5.2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.pjfanning</groupId>
+      <artifactId>excel-streaming-reader</artifactId>
+      <version>4.2.1</version>
+    </dependency>
+    <dependency>
+       <groupId>com.github.pjfanning</groupId>
+       <artifactId>poi-shared-strings</artifactId>
+       <version>2.8.0</version>
     </dependency>
     <dependency>
       <scope>test</scope>
