@@ -35,7 +35,7 @@ public class XlsRowConverter {
   private final FormulaEvaluator evaluator;
   private static final DataFormatter dataFormatter = new DataFormatter();
 
-  XlsRowConverter(FormulaEvaluator evaluator) {
+  XlsRowConverter(@Nullable FormulaEvaluator evaluator) {
     this.evaluator = evaluator;
   }
 
@@ -59,7 +59,7 @@ public class XlsRowConverter {
       }
       Schema.Field field = fields.get(cellIndex);
       Schema.Type type = field.getSchema().isNullable() ?
-              field.getSchema().getNonNullable().getType() : field.getSchema().getType();
+        field.getSchema().getNonNullable().getType() : field.getSchema().getType();
       Object cellValue;
       switch (type) {
         case STRING:
@@ -74,7 +74,7 @@ public class XlsRowConverter {
         default:
           // As we only support string, double and boolean, this should never happen.
           throw new IllegalStateException(
-                  String.format("Field '%s' is of unsupported type '%s'. Supported types are: %s",
+            String.format("Field '%s' is of unsupported type '%s'. Supported types are: %s",
                           field.getName(), type, "string, double, boolean"));
       }
       if (cellValue == null) {
@@ -95,7 +95,9 @@ public class XlsRowConverter {
       try {
         cellType = cell.getCachedFormulaResultType();
       } catch (Exception e) {
-        cellType = evaluator.evaluateFormulaCell(cell);
+        if (evaluator != null) {
+          cellType = evaluator.evaluateFormulaCell(cell);
+        }
       }
     }
     return cellType;
@@ -119,7 +121,7 @@ public class XlsRowConverter {
         return null;
       default:
         throw new IllegalStateException(
-                String.format("Failed to format (%s) due to unsupported cell type (%s)", cell, cellType));
+          String.format("Failed to format (%s) due to unsupported cell type (%s)", cell, cellType));
     }
   }
 
@@ -139,7 +141,7 @@ public class XlsRowConverter {
         return false;
       default:
         throw new IllegalStateException(
-                String.format("Failed to format (%s) due to unsupported cell type (%s)", cell, cellType));
+          String.format("Failed to format (%s) due to unsupported cell type (%s)", cell, cellType));
     }
   }
 
@@ -158,7 +160,7 @@ public class XlsRowConverter {
         return 0.0;
       default:
         throw new IllegalStateException(
-                String.format("Failed to format (%s) due to unsupported cell type (%s)", cell, cellType));
+          String.format("Failed to format (%s) due to unsupported cell type (%s)", cell, cellType));
     }
   }
 

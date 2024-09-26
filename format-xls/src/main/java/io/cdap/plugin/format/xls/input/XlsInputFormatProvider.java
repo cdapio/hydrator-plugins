@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.xls.input;
 
+import com.github.pjfanning.xlsx.StreamingReader;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
@@ -30,17 +31,21 @@ import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.poi.EmptyFileException;
+import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.util.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -56,13 +61,13 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
   static final String NAME = "xls";
   static final String DESC = "Plugin for reading files in xls(x) format.";
   public static final PluginClass PLUGIN_CLASS = PluginClass.builder()
-          .setType(ValidatingInputFormat.PLUGIN_TYPE)
-          .setName(NAME)
-          .setDescription(DESC)
-          .setClassName(XlsInputFormatProvider.class.getName())
-          .setConfigFieldName("conf")
-          .setProperties(XlsInputFormatConfig.XLS_FIELDS)
-          .build();
+    .setType(ValidatingInputFormat.PLUGIN_TYPE)
+    .setName(NAME)
+    .setDescription(DESC)
+    .setClassName(XlsInputFormatProvider.class.getName())
+    .setConfigFieldName("conf")
+    .setProperties(XlsInputFormatConfig.XLS_FIELDS)
+    .build();
   private final XlsInputFormatConfig conf;
 
   public XlsInputFormatProvider(XlsInputFormatConfig conf) {
@@ -81,13 +86,13 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
     FailureCollector collector = context.getFailureCollector();
     // When the sheet is specified by number, the sheet value must be a number
     if (!conf.containsMacro(XlsInputFormatConfig.NAME_SHEET_VALUE) &&
-            conf.getSheet().equals(XlsInputFormatConfig.SHEET_NUMBER) &&
-            !Strings.isNullOrEmpty(conf.getSheetValue())) {
+      conf.getSheet().equals(XlsInputFormatConfig.SHEET_NUMBER) &&
+      !Strings.isNullOrEmpty(conf.getSheetValue())) {
       getSheetAsNumber(collector);
     }
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null && context.getInputSchema() == null) {
       collector.addFailure("XLS format cannot be used without specifying a schema.", "Schema must be specified.")
-              .withConfigProperty(PathTrackingConfig.NAME_SCHEMA);
+        .withConfigProperty(PathTrackingConfig.NAME_SCHEMA);
     }
   }
 
@@ -107,12 +112,9 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
   public Schema detectSchema(FormatContext context, InputFiles inputFiles) throws IOException {
     String blankHeader = "BLANK";
     FailureCollector failureCollector = context.getFailureCollector();
-    FormulaEvaluator formulaEvaluator;
+    DataFormatter formatter = new DataFormatter();
     for (InputFile inputFile : inputFiles) {
-      DataFormatter formatter = new DataFormatter();
-      try (Workbook workbook = WorkbookFactory.create(inputFile.open())) {
-        formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
-        formulaEvaluator.setIgnoreMissingWorkbooks(true);
+      try (Workbook workbook = getWorkbook(inputFile.open())) {
         Sheet workSheet;
         // Check if user wants to access with name or number
         if (conf.getSheet() != null && conf.getSheet().equals(XlsInputFormatConfig.SHEET_NUMBER)) {
@@ -124,7 +126,7 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
         } else {
           if (Strings.isNullOrEmpty(conf.getSheetValue())) {
             failureCollector.addFailure("Sheet name must be specified.", null)
-                    .withConfigProperty(XlsInputFormatConfig.NAME_SHEET_VALUE);
+              .withConfigProperty(XlsInputFormatConfig.NAME_SHEET_VALUE);
             return null;
           }
           workSheet = workbook.getSheet(conf.getSheetValue());
@@ -133,7 +135,7 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
         // If provided sheet does not exist, throw an exception
         if (workSheet == null) {
           failureCollector.addFailure("Sheet " + conf.getSheetValue() + " does not exist in the workbook.",
-                  "Specify a valid sheet.");
+                                      "Specify a valid sheet.");
           return null;
         }
 
@@ -145,8 +147,9 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
         int lastCellNumMax = 0;
         List<String> columnNames = new ArrayList<>();
         XlsInputFormatSchemaDetector schemaDetector = new XlsInputFormatSchemaDetector();
-        for (int rowIndex = rowStart; rowIndex <= rowEnd; rowIndex++) {
-          Row row = workSheet.getRow(rowIndex);
+        Iterator<Row> rows = workSheet.iterator();
+        for (int rowIndex = rowStart; rowIndex <= rowEnd && rows.hasNext(); rowIndex++) {
+          Row row = rows.next();
           if (row == null) {
             continue;
           }
@@ -156,7 +159,7 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
           if (rowIndex == 0 && conf.getSkipHeader()) {
             for (int cellIndex = 0; cellIndex < lastCellNumMax; cellIndex++) {
               Cell cell = row.getCell(cellIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-              columnNames.add(cell == null ? blankHeader : formatter.formatCellValue(cell, formulaEvaluator));
+              columnNames.add(cell == null ? blankHeader : formatter.formatCellValue(cell));
             }
             // Skip Header
             continue;
@@ -185,7 +188,7 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
         }
 
         Schema schema = Schema.recordOf("xls", schemaDetector.getFields(
-                XlsInputFormatUtils.getSafeColumnNames(columnNames)));
+          XlsInputFormatUtils.getSafeColumnNames(columnNames)));
         return PathTrackingInputFormatProvider.addPathField(context.getFailureCollector(), schema, conf.getPathField());
       }
     }
@@ -200,12 +203,45 @@ public class XlsInputFormatProvider extends PathTrackingInputFormatProvider<XlsI
           return sheetValue;
         }
         failureCollector.addFailure("Sheet number must be a positive number.", null)
-                    .withConfigProperty(XlsInputFormatConfig.NAME_SHEET_VALUE);
+          .withConfigProperty(XlsInputFormatConfig.NAME_SHEET_VALUE);
       } catch (NumberFormatException e) {
         failureCollector.addFailure("Sheet number must be a number.", null)
-                .withConfigProperty(XlsInputFormatConfig.NAME_SHEET_VALUE);
+          .withConfigProperty(XlsInputFormatConfig.NAME_SHEET_VALUE);
       }
     }
-    return null;
+    return 0;
   }
+
+  private Workbook getWorkbook(InputStream fileIn) {
+    Workbook workbook;
+    try {
+      // Use Magic Bytes to detect the file type
+      InputStream is = FileMagic.prepareToCheckMagic(fileIn);
+      byte[] emptyFileCheck = new byte[1];
+      is.mark(emptyFileCheck.length);
+      if (is.read(emptyFileCheck) < emptyFileCheck.length) {
+        throw new EmptyFileException();
+      }
+      is.reset();
+
+      final FileMagic fm = FileMagic.valueOf(is);
+      switch (fm) {
+        case OOXML:
+          workbook = StreamingReader.builder().rowCacheSize(10).open(is);
+          break;
+        case OLE2:
+          // workaround for large files
+          IOUtils.setByteArrayMaxOverride(XlsInputFormat.EXCEL_BYTE_ARRAY_MAX_OVERRIDE_DEFAULT);
+          workbook = WorkbookFactory.create(is);
+          break;
+        default:
+          throw new IOException("Can't open workbook - unsupported file type: " + fm);
+      }
+      return workbook;
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Exception while reading excel sheet. " + e.getMessage(), e);
+    }
+
+  }
+
 }

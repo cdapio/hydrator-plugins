@@ -16,6 +16,9 @@
 
 package io.cdap.plugin.format.xls.input;
 
+
+import com.github.pjfanning.xlsx.StreamingReader;
+import com.google.common.base.Preconditions;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
@@ -25,17 +28,23 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.poi.EmptyFileException;
+import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
 import javax.annotation.Nullable;
 
 
@@ -51,11 +60,12 @@ public class XlsInputFormat extends PathTrackingInputFormat {
   public static final String SHEET_VALUE = "sheetValue";
   public static final String NAME_SKIP_HEADER = "skipHeader";
   public static final String TERMINATE_IF_EMPTY_ROW = "terminateIfEmptyRow";
+  protected static final int EXCEL_BYTE_ARRAY_MAX_OVERRIDE_DEFAULT = Integer.MAX_VALUE / 2;
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
-          FileSplit split, TaskAttemptContext context, @Nullable String pathField,
-          @Nullable Schema schema) throws IOException {
+    FileSplit split, TaskAttemptContext context, @Nullable String pathField,
+    @Nullable Schema schema) throws IOException {
     Configuration jobConf = context.getConfiguration();
     boolean skipFirstRow = jobConf.getBoolean(NAME_SKIP_HEADER, false);
     boolean terminateIfEmptyRow = jobConf.getBoolean(TERMINATE_IF_EMPTY_ROW, false);
@@ -63,6 +73,10 @@ public class XlsInputFormat extends PathTrackingInputFormat {
     String sheet = jobConf.get(SHEET_NUM);
     String sheetValue = jobConf.get(SHEET_VALUE, "0");
     return new XlsRecordReader(sheet, sheetValue, outputSchema, terminateIfEmptyRow, skipFirstRow);
+  }
+
+  public boolean isSplitable(JobContext context, Path file) {
+    return false;
   }
 
   /**
@@ -74,11 +88,7 @@ public class XlsInputFormat extends PathTrackingInputFormat {
     FormulaEvaluator formulaEvaluator;
     // Builder for building structured record
     private StructuredRecord.Builder valueBuilder;
-    private Sheet workSheet;
-    // InputStream handler for Excel files.
     private FSDataInputStream fileIn;
-    // Specifies the row index.
-    private int rowIndex;
     // Specifies last row num.
     private int lastRowNum;
     private boolean isRowNull;
@@ -87,6 +97,11 @@ public class XlsInputFormat extends PathTrackingInputFormat {
     private final Schema outputSchema;
     private final boolean terminateIfEmptyRow;
     private final boolean skipFirstRow;
+    private int rowCount;
+    private Iterator<Row> rows;
+    // Specifies the row index.
+    private long rowIdx;
+
 
     /**
      * Constructor for XlsRecordReader.
@@ -113,10 +128,35 @@ public class XlsInputFormat extends PathTrackingInputFormat {
       Path file = fileSplit.getPath();
       FileSystem fs = file.getFileSystem(jobConf);
       fileIn = fs.open(file);
+      Sheet workSheet;
+      Workbook workbook;
+      boolean isStreaming = false;
+      try {
+        // Use Magic Bytes to detect the file type
+        InputStream is = FileMagic.prepareToCheckMagic(fileIn);
+        byte[] emptyFileCheck = new byte[1];
+        is.mark(emptyFileCheck.length);
+        if (is.read(emptyFileCheck) < emptyFileCheck.length) {
+          throw new EmptyFileException();
+        }
+        is.reset();
 
-      try (Workbook workbook = WorkbookFactory.create(fileIn)) {
-        formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
-        formulaEvaluator.setIgnoreMissingWorkbooks(true);
+        final FileMagic fm = FileMagic.valueOf(is);
+        switch (fm) {
+          case OOXML:
+            workbook = StreamingReader.builder().rowCacheSize(10).open(is);
+            isStreaming = true;
+            break;
+          case OLE2:
+            IOUtils.setByteArrayMaxOverride(EXCEL_BYTE_ARRAY_MAX_OVERRIDE_DEFAULT);
+            workbook = WorkbookFactory.create(is);
+            formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            formulaEvaluator.setIgnoreMissingWorkbooks(true);
+            break;
+          default:
+            throw new IOException("Can't open workbook - unsupported file type: " + fm);
+        }
+
         // Check if user wants to access with name or number
         if (sheet.equals(XlsInputFormatConfig.SHEET_NUMBER)) {
           workSheet = workbook.getSheetAt(Integer.parseInt(sheetValue));
@@ -127,37 +167,43 @@ public class XlsInputFormat extends PathTrackingInputFormat {
       } catch (Exception e) {
         throw new IOException("Exception while reading excel sheet. " + e.getMessage(), e);
       }
-
+      // As we cannot get the number of rows in a sheet while streaming.
+      // -1 is used as rowCount to indicate that all rows should be read.
+      rowCount = isStreaming ? -1 : workSheet.getPhysicalNumberOfRows();
       lastRowNum = workSheet.getLastRowNum();
+      rows = workSheet.iterator();
       isRowNull = false;
-      rowIndex = skipFirstRow ? 1 : 0;
+      rowIdx = 0;
       valueBuilder = StructuredRecord.builder(outputSchema);
+      if (skipFirstRow) {
+        Preconditions.checkArgument(rows.hasNext(), "No rows found on sheet %s", sheetValue);
+        rowIdx = 1;
+        rows.next();
+      }
     }
 
     @Override
     public boolean nextKeyValue() {
       // If any is true, then we stop processing.
-      if (rowIndex > lastRowNum || lastRowNum == -1 || (isRowNull && terminateIfEmptyRow)) {
+      if (!rows.hasNext() || rowCount == 0 || (isRowNull && terminateIfEmptyRow)) {
         return false;
       }
       // Get the next row.
-      Row row = workSheet.getRow(rowIndex);
+      Row row = rows.next();
       valueBuilder = rowConverter.convert(row, outputSchema);
       if (row == null || valueBuilder == null) {
         isRowNull = true;
         // set valueBuilder to a new builder with all fields set to null
         valueBuilder = StructuredRecord.builder(outputSchema);
       }
-      // if all fields are null, then the row is null
-      rowIndex++;
-
+      rowIdx++;
       // Stop processing if the row is null and terminateIfEmptyRow is true.
       return !isRowNull || !terminateIfEmptyRow;
     }
 
     @Override
     public float getProgress() {
-      return (float) rowIndex / lastRowNum;
+      return (float) rowIdx / lastRowNum;
     }
 
     @Override

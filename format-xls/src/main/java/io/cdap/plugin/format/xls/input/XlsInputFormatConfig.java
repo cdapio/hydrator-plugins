@@ -17,14 +17,10 @@
 package io.cdap.plugin.format.xls.input;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
-import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
-import io.cdap.plugin.common.KeyValueListParser;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 
 import java.util.Collections;
@@ -37,7 +33,6 @@ import javax.annotation.Nullable;
  */
 public class XlsInputFormatConfig extends PathTrackingConfig {
   public static final String SHEET_NUMBER = "Sheet Number";
-  private static final String NAME_OVERRIDE = "override";
   private static final String NAME_SHEET = "sheet";
   public static final String NAME_SHEET_VALUE = "sheetValue";
   private static final String NAME_SKIP_HEADER = "skipHeader";
@@ -53,18 +48,18 @@ public class XlsInputFormatConfig extends PathTrackingConfig {
     "Can be either sheet name or sheet no; for example: 'Sheet1' or '0' in case user selects 'Sheet Name' or " +
     "'Sheet Number' as 'sheet' input respectively. Sheet number starts with 0. Default is 'Sheet Number' 0.";
   public static final String DESC_TERMINATE_ROW = "Specify whether to stop reading after " +
-          "encountering the first empty row. Defaults to false.";
+    "encountering the first empty row. Defaults to false.";
   public static final Map<String, PluginPropertyField> XLS_FIELDS;
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put(NAME_SKIP_HEADER,
-            new PluginPropertyField(NAME_SKIP_HEADER, DESC_SKIP_HEADER, "boolean", false, true));
+               new PluginPropertyField(NAME_SKIP_HEADER, DESC_SKIP_HEADER, "boolean", false, true));
     // Add fields specific for excel format handling.
     fields.put(NAME_SHEET, new PluginPropertyField(NAME_SHEET, DESC_SHEET, "string", false, true));
     fields.put(NAME_SHEET_VALUE, new PluginPropertyField(NAME_SHEET_VALUE, DESC_SHEET_VALUE, "string", false, true));
     fields.put(NAME_TERMINATE_IF_EMPTY_ROW, new PluginPropertyField(
-                       NAME_TERMINATE_IF_EMPTY_ROW, DESC_TERMINATE_ROW, "boolean", false, true));
+      NAME_TERMINATE_IF_EMPTY_ROW, DESC_TERMINATE_ROW, "boolean", false, true));
     XLS_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -102,7 +97,7 @@ public class XlsInputFormatConfig extends PathTrackingConfig {
     super();
     this.schema = schema;
     this.sheet = sheet;
-    this.sheetValue =  sheetValue;
+    this.sheetValue = sheetValue;
     this.skipHeader = skipHeader;
     this.terminateIfEmptyRow = terminateIfEmptyRow;
   }
@@ -173,7 +168,7 @@ public class XlsInputFormatConfig extends PathTrackingConfig {
     }
 
     public XlsInputFormatConfig build() {
-     return new XlsInputFormatConfig(schema, sheet, sheetValue, skipHeader, terminateIfEmptyRow);
+      return new XlsInputFormatConfig(schema, sheet, sheetValue, skipHeader, terminateIfEmptyRow);
     }
   }
 
