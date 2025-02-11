@@ -19,6 +19,9 @@ package io.cdap.plugin.batch.source;
 import com.github.pjfanning.xlsx.StreamingReader;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -193,7 +196,9 @@ public class ExcelInputFormat extends TextInputFormat {
           workSheet = workbook.getSheetAt(Integer.parseInt(sheetValue));
         }
       } catch (Exception e) {
-        throw new IllegalArgumentException("Exception while reading excel sheet. " + e.getMessage(), e);
+        String error = String.format("Exception while reading excel sheet: %s", e.getMessage());
+        throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                error, error, ErrorType.USER, false, e);
       }
 
       // As we cannot get the number of rows in a sheet while streaming.
