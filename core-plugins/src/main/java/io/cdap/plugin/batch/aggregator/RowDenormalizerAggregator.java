@@ -21,6 +21,9 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
@@ -92,18 +95,24 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   public void groupBy(StructuredRecord record, Emitter<String> emitter) throws Exception {
     if (record.get(keyField) == null) {
       if (record.getSchema().getField(keyField) == null) {
-        throw new IllegalArgumentException(
-          String.format("Keyfield '%s' does not exist in input schema %s", keyField, record.getSchema()));
+        String error = String.format("Keyfield '%s' does not exist in input schema %s",
+                keyField, record.getSchema());
+        throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                error, error, ErrorType.USER, false, null);
       }
       return;
     }
     if (record.get(nameField) == null && record.getSchema().getField(nameField) == null) {
-      throw new IllegalArgumentException(
-        String.format("Namefield '%s' does not exist in input schema %s", nameField, record.getSchema()));
+      String error = String.format("Namefield '%s' does not exist in input schema %s",
+              nameField, record.getSchema());
+      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+              error, error, ErrorType.USER, false, null);
     }
     if (record.get(valueField) == null && record.getSchema().getField(valueField) == null) {
-      throw new IllegalArgumentException(
-        String.format("Valuefield '%s' does not exist in input schema %s", valueField, record.getSchema()));
+      String error = String.format("Valuefield '%s' does not exist in input schema %s",
+              valueField, record.getSchema());
+      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+              error, error, ErrorType.USER, false, null);
     }
     emitter.emit((String) record.get(keyField));
   }

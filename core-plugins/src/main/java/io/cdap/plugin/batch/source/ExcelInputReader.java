@@ -35,16 +35,12 @@ import io.cdap.cdap.api.dataset.lib.CloseableIterator;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.lib.KeyValueTable;
 import io.cdap.cdap.api.dataset.table.Table;
-import io.cdap.cdap.api.exception.ErrorCategory;
-import io.cdap.cdap.api.exception.ErrorType;
-import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
-import io.cdap.cdap.etl.api.exception.ErrorDetailsProviderSpec;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.Properties;
 import io.cdap.plugin.common.ReferencePluginConfig;
@@ -196,11 +192,10 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     int currentRowNum = Integer.parseInt(excelRecord[0]);
     if (currentRowNum - prevRowNum > 1 && excelInputreaderConfig.terminateIfEmptyRow.equalsIgnoreCase("true")) {
-      String error = String.format("Encountered empty row while reading Excel file :%s." +
-              " Terminating processing", fileName);
-      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
-              error, error, ErrorType.USER, false, null);
+      throw new ExecutionException("Encountered empty row while reading Excel file :" + fileName +
+                                     " . Terminating processing", new Throwable());
     }
+    prevRowNum = currentRowNum;
 
     Map<String, String> excelColumnValueMap = new HashMap<>();
 
@@ -216,9 +211,6 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
           excelColumnValueMap.put(name, value);
         }
       }
-    }
-    if (!excelColumnValueMap.isEmpty()) {
-      prevRowNum = currentRowNum;
     }
 
     try {
@@ -340,9 +332,6 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     // Sets the input path(s).
     ExcelInputFormat.addInputPaths(job, excelInputreaderConfig.filePath);
 
-    batchSourceContext.setErrorDetailsProvider(new ErrorDetailsProviderSpec
-            (ExcelErrorDetailsProvider.class.getName()));
-
     // Sets the filter based on extended class implementation.
     ExcelInputFormat.setInputPathFilter(job, ExcelReaderRegexFilter.class);
     SourceInputFormatProvider inputFormatProvider = new SourceInputFormatProvider(ExcelInputFormat.class,
@@ -453,10 +442,8 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
           }
         }
       } catch (Exception e) {
-        String error = String.format("Exception while creating output schema for Excel input reader. " +
-                        "Invalid output " + "schema: %s", e.getMessage());
-        throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
-                error, error, ErrorType.USER, false, e);
+        throw new IllegalArgumentException("Exception while creating output schema for Excel input reader. " +
+                                             "Invalid output " + "schema: " + e.getMessage(), e);
       }
       outputSchema = Schema.recordOf("outputSchema", outputFields);
     }
