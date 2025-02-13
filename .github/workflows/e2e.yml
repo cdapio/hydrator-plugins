@@ -46,7 +46,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: plugin
-          submodules: 'recursive'
+      - name: Update Submodules
+        working-directory: plugin
+        run: |
+          git submodule update --init --recursive --remote
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Pinned version 2.11.1
         if: github.event_name != 'workflow_dispatch' && github.event_name != 'push'
