@@ -28,6 +28,9 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Arguments;
 import io.cdap.cdap.etl.api.Emitter;
@@ -185,9 +188,10 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       Class<?> somClass = Class.forName("jdk.nashorn.api.scripting.ScriptObjectMirror");
       somValuesMethod = somClass.getMethod("values");
     } catch (NoSuchMethodException e) {
-      throw new RuntimeException(
-        "Failed to get method ScriptObjectMirror#values() for converting ScriptObjectMirror to List. " +
-          "Please check your version of Nashorn is supported.", e);
+      String error = "Failed to get method ScriptObjectMirror#values() for converting ScriptObjectMirror to List." +
+        " Please check your version of Nashorn is supported.";
+      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                  error, error, ErrorType.SYSTEM, false, e);
     } catch (ClassNotFoundException e) {
       // Ignore -- we don't have Nashorn, so no need to handle Nashorn
     }
@@ -208,7 +212,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       engine.put(EMITTER_NAME, jsEmitter);
       invocable.invokeFunction(FUNCTION_NAME);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
+      String error = String.format("Could not transform input: %s", e.getMessage());
+      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                  error, error, ErrorType.USER, false, e);
     }
   }
 
@@ -265,7 +271,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
                                "errorCode must be a valid Integer");
       errorCodeInt = errorCodeDouble.intValue();
     } else {
-      throw new IllegalArgumentException("Unsupported errorCode type: " + errorCode.getClass().getName());
+      String error = String.format("Unsupported errorCode type: %s", errorCode.getClass().getName());
+      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                  error, error, ErrorType.USER, false, null);
     }
     return new InvalidEntry<>(errorCodeInt, (String) result.get("errorMsg"), input);
   }
@@ -313,8 +321,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       case UNION:
         return decodeUnion(object, schema.getUnionSchemas());
     }
-
-    throw new RuntimeException("Unable decode object with schema " + schema);
+    String error = String.format("Unable decode object with schema %s", schema);
+    throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                error, error, ErrorType.USER, false, null);
   }
 
   private StructuredRecord decodeRecord(Map nativeObject, Schema schema) {
@@ -333,7 +342,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       try {
         return (List) somValuesMethod.invoke(object);
       } catch (InvocationTargetException | IllegalAccessException | ClassCastException e) {
-        throw new RuntimeException("Failed to convert ScriptObjectMirror to List", e);
+        String error = "Failed to convert ScriptObjectMirror to List";
+        throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                    error, error, ErrorType.USER, false, null);
       }
     }
     return (List) object;
@@ -369,7 +380,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       case STRING:
         return (String) object;
     }
-    throw new RuntimeException("Unable decode object with schema " + schema);
+    String error = String.format("Unable decode object with schema %s", schema);
+    throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                error, error, ErrorType.USER, false, null);
   }
 
   private Map<Object, Object> decodeMap(Map<Object, Object> object, Schema keySchema, Schema valSchema) {
@@ -396,7 +409,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
         // could be ok, just move on and try the next schema
       }
     }
-    throw new RuntimeException("Unable decode union with schema " + schemas);
+    String error = String.format("Unable decode union with schema %s", schema);
+    throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                error, error, ErrorType.USER, false, null);
   }
 
   private void init(@Nullable TransformContext context, FailureCollector collector) {
