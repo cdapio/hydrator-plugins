@@ -19,6 +19,10 @@ package io.cdap.plugin.format.delimited.input;
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorCategory.ErrorCategoryEnum;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.plugin.format.delimited.common.DelimitedStructuredRecordStringConverter;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
@@ -112,14 +116,22 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
           Schema bodySchema = bodyField.getSchema();
           bodySchema = bodySchema.isNullable() ? bodySchema.getNonNullable() : bodySchema;
           if (bodySchema.getType() == Schema.Type.STRING) {
-            throw new IOException(message + " Did you mean to use the 'text' format?");
+            String errorMessage = String.format("%s Did you mean to use the 'text' format?",
+                message);
+            throw ErrorUtils.getProgramFailureException(
+                new ErrorCategory(ErrorCategoryEnum.PLUGIN, "Configuration"),
+                errorMessage, errorMessage, ErrorType.USER, false, null);
           }
         }
         if (!enableQuotesValue && containsQuote) {
           message += " Check if quoted values should be allowed.";
         }
-        throw new IOException(
-          message + " Check that the schema contains the right number of fields.");
+        String errorMessage =
+            String.format("%s Check that the schema contains the right number of fields.",
+                message);
+        throw ErrorUtils.getProgramFailureException(
+            new ErrorCategory(ErrorCategoryEnum.PLUGIN, "Configuration"),
+            errorMessage, errorMessage, ErrorType.USER, false, null);
       }
 
       @Override
