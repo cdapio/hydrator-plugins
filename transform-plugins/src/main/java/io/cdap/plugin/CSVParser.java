@@ -26,6 +26,9 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
@@ -176,16 +179,20 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         break;
 
       default:
-        throw new IllegalArgumentException("Format {} specified is not one of the allowed format. Allowed formats are" +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited and Tab Delimited or " +
-                                             "Custom");
+        String error = String.format("Format %s specified is not one of the allowed format. Allowed formats are " +
+                                       "DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited and Tab Delimited or Custom",
+                                     csvFormatString);
+        throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                    error, error, ErrorType.USER, false, null);
     }
 
     try {
       outSchema = Schema.parseJson(config.schema);
       fields = outSchema.getFields();
     } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
+      String error = "Format of schema specified is invalid. Please check the format.";
+      throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                  error, error, ErrorType.USER, false, null);
     }
   }
 
@@ -224,6 +231,13 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       } else if (record == null) {
         builder.set(name, null);
       } else {
+        if (i >= record.size()) {
+          String error = String.format("Number of values in the record : %s are not as per output schema. " +
+                                         "Expected %d values, but found only %d values",
+                                       record, fields.size(), record.size());
+          throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                      error, error, ErrorType.USER, false, null);
+        }
         String val = record.get(i);
         Schema fieldSchema = field.getSchema();
 
@@ -235,10 +249,12 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
             builder.set(field.getName(), "");
           } else if (!isNullable) {
             // otherwise, error out
-            throw new IllegalArgumentException(String.format(
+            String error = String.format(
               "Field #%d (named '%s') is of non-nullable type '%s', " +
                 "but was parsed as an empty string for CSV record '%s'",
-              i, field.getName(), field.getSchema().getType(), record));
+              i, field.getName(), field.getSchema().getType(), record);
+            throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                                                        error, error, ErrorType.USER, false, null);
           }
         } else {
           builder.convertAndSet(field.getName(), val);
