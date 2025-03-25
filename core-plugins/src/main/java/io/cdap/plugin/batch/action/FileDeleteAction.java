@@ -21,12 +21,16 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
+import io.cdap.plugin.batch.source.FileErrorDetailsProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -66,7 +70,13 @@ public class FileDeleteAction extends Action {
   public void run(ActionContext context) throws Exception {
     Path path = new Path(config.path);
 
-    FileSystem fileSystem = path.getFileSystem(new Configuration());
+    FileSystem fileSystem;
+    try {
+      fileSystem = path.getFileSystem(new Configuration());
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to get FileSystem for path %s.", path);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
+    }
 
     FileStatus[] listFiles;
     if (config.fileRegex != null) {
@@ -78,9 +88,9 @@ public class FileDeleteAction extends Action {
           return pattern.matcher(path.getName()).matches();
         }
       };
-      listFiles = fileSystem.listStatus(path, filter);
+      listFiles = getFileStatuses(fileSystem, path, filter);
     } else {
-      listFiles = fileSystem.listStatus(path);
+      listFiles = getFileStatuses(fileSystem, path, null);
     }
 
     for (FileStatus file : listFiles) {
@@ -88,24 +98,45 @@ public class FileDeleteAction extends Action {
       removePath(fileSystem, currPath);
     }
 
-
-    if (fileSystem.isDirectory(path) && config.fileRegex == null) {
+    boolean isDirectory = false;
+    try {
+      isDirectory = fileSystem.isDirectory(path);
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to check if %s is a directory.", path);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
+    }
+    if (isDirectory && config.fileRegex == null) {
       removePath(fileSystem, path);
     }
 
+  }
+
+  private static FileStatus[] getFileStatuses(FileSystem fileSystem, Path path, @Nullable PathFilter filter) {
+    try {
+      if (filter == null) {
+        return fileSystem.listStatus(path);
+      }
+      return fileSystem.listStatus(path, filter);
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to list files in %s.", path);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
+    }
   }
 
   public void removePath(FileSystem fileSystem, Path currPath) throws Exception {
     try {
       if (!fileSystem.delete(currPath, true)) {
         if (!config.continueOnError) {
-          throw new IOException(String.format("Removal of %s was unsuccessful.", currPath.toString()));
+          String error = String.format("Removal of %s was unsuccessful.", currPath.toString());
+          throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+              error, error, ErrorType.USER, false, null);
         }
         LOG.warn("Removal of {} was unsuccessful.", currPath.toString());
       }
     } catch (IOException e) {
       if (!config.continueOnError) {
-        throw e;
+        String errorReason = String.format("Removal of %s was unsuccessful.", currPath.toString());
+        throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
       }
       LOG.warn("Removal of {} was unsuccessful.", currPath.toString());
     }
