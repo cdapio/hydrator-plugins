@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * A custom ErrorDetailsProvider for Database plugins.
@@ -39,6 +40,7 @@ public class DBErrorDetailsProvider implements ErrorDetailsProvider {
   private static final Map<String, ErrorType> ERROR_CODE_TO_ERROR_TYPE;
   private static final Map<String, ErrorCategory> ERROR_CODE_TO_ERROR_CATEGORY;
   private static final String ERROR_MESSAGE_FORMAT = "Error occurred in the phase: '%s'. Error message: %s";
+  private static final String DEFAULT_EXTERNAL_DOCUMENTATION_LINK = "https://en.wikipedia.org/wiki/SQLSTATE";
 
   static {
     // https://en.wikipedia.org/wiki/SQLSTATE
@@ -179,15 +181,17 @@ public class DBErrorDetailsProvider implements ErrorDetailsProvider {
     return null;
   }
 
-  private ProgramFailureException getProgramFailureException(SQLException e, ErrorContext errorContext) {
+  public ProgramFailureException getProgramFailureException(SQLException e, @Nullable ErrorContext errorContext) {
     String errorMessage =
       String.format("SQL Exception occurred: [Message='%s', SQLState='%s', ErrorCode='%s'].", e.getMessage(),
         e.getSQLState(), e.getErrorCode());
     String sqlState = e.getSQLState();
     int errorCode = e.getErrorCode();
-    String errorMessageWithDetails =
+    String errorMessageWithDetails = errorContext != null ?
       String.format("Error occurred in the phase: '%s' with sqlState: '%s', errorCode: '%s', errorMessage: %s",
-        errorContext.getPhase(), sqlState, errorCode, errorMessage);
+        errorContext.getPhase(), sqlState, errorCode, errorMessage) :
+      String.format("SQL Error occurred, sqlState: '%s', errorCode: '%s', errorMessage: %s", sqlState, errorCode,
+        errorMessage);
     String externalDocumentationLink = getExternalDocumentationLink();
     if (!Strings.isNullOrEmpty(externalDocumentationLink)) {
       if (!errorMessage.endsWith(".")) {
@@ -215,7 +219,7 @@ public class DBErrorDetailsProvider implements ErrorDetailsProvider {
    * @return The external documentation link as a {@link String}.
    */
   protected String getExternalDocumentationLink() {
-    return "https://en.wikipedia.org/wiki/SQLSTATE";
+    return DEFAULT_EXTERNAL_DOCUMENTATION_LINK;
   }
 
   /**
