@@ -25,7 +25,9 @@ import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import io.cdap.plugin.DBManager;
 
+import io.cdap.plugin.common.db.DBErrorDetailsProvider;
 import java.sql.Driver;
+import java.sql.SQLException;
 
 /**
  * Action that runs a db command
@@ -52,6 +54,17 @@ public class DBAction extends Action {
   public void run(ActionContext context) throws Exception {
     Class<? extends Driver> driverClass = context.loadPluginClass(JDBC_PLUGIN_ID);
     DBRun executeQuery = new DBRun(config, driverClass);
-    executeQuery.run();
+    try {
+      executeQuery.run();
+    } catch (Exception e) {
+      if (e instanceof SQLException) {
+        DBErrorDetailsProvider dbe = new DBErrorDetailsProvider();
+        throw dbe.getProgramFailureException((SQLException) e, null);
+      }
+      FailureCollector collector = context.getFailureCollector();
+      collector.addFailure("Failed to execute query with message: " + e.getMessage(), null)
+          .withStacktrace(e.getStackTrace());
+      collector.getOrThrowException();
+    }
   }
 }
