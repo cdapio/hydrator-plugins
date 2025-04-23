@@ -21,7 +21,6 @@ import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -108,10 +107,7 @@ public class XlsRowConverter {
 
     switch (cellType) {
       case NUMERIC:
-        if (DateUtil.isCellDateFormatted(cell)) {
-          return dataFormatter.formatCellValue(cell);
-        }
-        return Double.toString(cell.getNumericCellValue());
+         return dataFormatter.formatCellValue(cell);
       case STRING:
         return cell.getRichStringCellValue().getString();
       case BOOLEAN:

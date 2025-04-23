@@ -35,20 +35,25 @@ import java.io.IOException;
  * Unit tests for {@link XlsRowConverter}
  */
 public class XlsRowConverterTest {
-  Workbook workbook;
-  Sheet sheet;
+  Workbook xlsxWorkbook;
+  Sheet xlsxSheet;
+  Workbook xlsWorkbook;
+  Sheet xlsSheet;
 
   @Before
   public void setUp() throws IOException {
+    // Mock XLSX File
+    boolean newXssfFile = false;
+    xlsxWorkbook = WorkbookFactory.create(newXssfFile);
+    xlsxSheet = xlsxWorkbook.createSheet("sheet");
     // Mock XLS File
-    boolean newXssfFile = true;
-    workbook = WorkbookFactory.create(newXssfFile);
-    sheet = workbook.createSheet("sheet");
+    xlsWorkbook = WorkbookFactory.create(false);
+    xlsSheet = xlsWorkbook.createSheet("sheet");
   }
 
   @Test
   public void testFormatCellValue() {
-    Row row = sheet.createRow(0);
+    Row row = xlsxSheet.createRow(0);
     row.createCell(0).setCellValue("test");
     int testColumn = 0;
 
@@ -76,7 +81,7 @@ public class XlsRowConverterTest {
             Schema.Field.of("string2", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("error", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
     );
-    XlsRowConverter rowConverter = new XlsRowConverter(workbook.getCreationHelper().createFormulaEvaluator());
+    XlsRowConverter rowConverter = new XlsRowConverter(xlsxWorkbook.getCreationHelper().createFormulaEvaluator());
     StructuredRecord record = rowConverter.convert(row, outputSchema).build();
     Assert.assertEquals("test", record.get("string"));
     Assert.assertNull(record.get("blank"));
@@ -88,7 +93,7 @@ public class XlsRowConverterTest {
 
   @Test
   public void testFormatCellValueWithCachedFormulaResult() {
-    Row row = sheet.createRow(0);
+    Row row = xlsxSheet.createRow(0);
     double numericValue1 = 1.0;
     double numericValue2 = 2.0;
     Cell a1Numeric = row.createCell(0);
@@ -96,7 +101,7 @@ public class XlsRowConverterTest {
     Cell b1Numeric = row.createCell(1);
     b1Numeric.setCellValue(numericValue2);
 
-    Row row2 = sheet.createRow(1);
+    Row row2 = xlsxSheet.createRow(1);
     String stringValue1 = "hello";
     String stringValue2 = "world";
     Cell a2String = row2.createCell(0);
@@ -104,13 +109,13 @@ public class XlsRowConverterTest {
     Cell b2String = row2.createCell(1);
     b2String.setCellValue(stringValue2);
 
-    Row row3 = sheet.createRow(2);
+    Row row3 = xlsxSheet.createRow(2);
     Cell formulaCell = row3.createCell(0);
     formulaCell.setCellFormula("SUM(A1:B1)");
     Cell formulaCell2 = row3.createCell(1);
     formulaCell2.setCellFormula("CONCAT(A2:B2)");
 
-    FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+    FormulaEvaluator evaluator = xlsxWorkbook.getCreationHelper().createFormulaEvaluator();
     // Cache the formula results
     evaluator.evaluateAll();
 
@@ -123,5 +128,59 @@ public class XlsRowConverterTest {
     StructuredRecord record = xlsRowConverter.convert(row3, outputSchema).build();
     Assert.assertEquals(3.0, record.get("numeric"), 0.0001);
     Assert.assertEquals("helloworld", record.get("string"));
+  }
+
+  @Test
+  public void testNumericCellValueXLSX() {
+    Row row = xlsxSheet.createRow(0);
+    row.createCell(0).setCellValue("test");
+    int testColumn = 0;
+    Cell numericCell = row.createCell(++testColumn);
+    numericCell.setCellValue(1.0);
+    Cell numericWithoutDecimal = row.createCell(++testColumn);
+    numericWithoutDecimal.setCellValue(123);
+    Cell numericBigNumber = row.createCell(++testColumn);
+    numericBigNumber.setCellValue("12512631287635.123");
+
+    Schema outputSchema = Schema.recordOf(
+      "record",
+      Schema.Field.of("test", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("numeric", Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of("string", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("bigNumber", Schema.of(Schema.Type.STRING))
+    );
+    XlsRowConverter rowConverter = new XlsRowConverter(xlsxWorkbook.getCreationHelper().createFormulaEvaluator());
+    StructuredRecord record = rowConverter.convert(row, outputSchema).build();
+    Assert.assertEquals("test", record.get("test"));
+    Assert.assertEquals("123", record.get("string"));
+    Assert.assertEquals(1.0, record.get("numeric"), 0.0001);
+    Assert.assertEquals("12512631287635.123", record.get("bigNumber"));
+  }
+
+  @Test
+  public void testNumericCellValueXLS() {
+    Row row = xlsSheet.createRow(0);
+    row.createCell(0).setCellValue("test");
+    int testColumn = 0;
+    Cell numericCell = row.createCell(++testColumn);
+    numericCell.setCellValue(1.0);
+    Cell numericWithoutDecimal = row.createCell(++testColumn);
+    numericWithoutDecimal.setCellValue(123);
+    Cell numericBigNumber = row.createCell(++testColumn);
+    numericBigNumber.setCellValue("12512631287635.123");
+
+    Schema outputSchema = Schema.recordOf(
+      "record",
+      Schema.Field.of("test", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("numeric", Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of("string", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("bigNumber", Schema.of(Schema.Type.STRING))
+    );
+    XlsRowConverter rowConverter = new XlsRowConverter(xlsWorkbook.getCreationHelper().createFormulaEvaluator());
+    StructuredRecord record = rowConverter.convert(row, outputSchema).build();
+    Assert.assertEquals("test", record.get("test"));
+    Assert.assertEquals("123", record.get("string"));
+    Assert.assertEquals(1.0, record.get("numeric"), 0.0001);
+    Assert.assertEquals("12512631287635.123", record.get("bigNumber"));
   }
 }
