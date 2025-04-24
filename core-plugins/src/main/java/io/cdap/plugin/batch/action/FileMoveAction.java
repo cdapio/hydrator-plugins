@@ -21,12 +21,16 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.exception.ErrorCategory;
+import io.cdap.cdap.api.exception.ErrorType;
+import io.cdap.cdap.api.exception.ErrorUtils;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
+import io.cdap.plugin.batch.source.FileErrorDetailsProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -69,21 +73,42 @@ public class FileMoveAction extends Action {
 
     Path dest = new Path(config.destPath);
 
-    FileSystem fileSystem = source.getFileSystem(new Configuration());
-    fileSystem.mkdirs(dest.getParent());
+    FileSystem fileSystem;
+    try {
+      fileSystem = source.getFileSystem(new Configuration());
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to get file system for source path %s", source);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
+    }
+    try {
+      fileSystem.mkdirs(dest.getParent());
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to create parent directory for dest path %s", dest);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
+    }
+    FileStatus fileStatus;
+    try {
+      fileStatus = fileSystem.getFileStatus(source);
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to get file status for source path %s", source);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
+    }
 
-    if (fileSystem.getFileStatus(source).isFile()) { //moving single file
+    if (fileStatus != null && fileStatus.isFile()) { //moving single file
 
       try {
         if (!fileSystem.rename(source, dest)) {
           if (!config.continueOnError) {
-            throw new IOException(String.format("Failed to rename file %s to %s", source, dest));
+            String error = String.format("Failed to move file %s to %s", source, dest);
+            throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                error, error, ErrorType.USER, false, null);
           }
           LOG.error("Failed to move file {} to {}", source, dest);
         }
       } catch (IOException e) {
         if (!config.continueOnError) {
-          throw e;
+          String errorReason = String.format("Failed to move file %s to %s", source, dest);
+          throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
         }
         LOG.error("Failed to move file {} to {}", source, dest, e);
       }
@@ -102,24 +127,31 @@ public class FileMoveAction extends Action {
         }
       };
 
-      listFiles = fileSystem.listStatus(source, filter);
+      listFiles = FileActionUtils.getFileStatuses(fileSystem, source, filter);
     } else {
-      listFiles = fileSystem.listStatus(source);
+      listFiles = FileActionUtils.getFileStatuses(fileSystem, source, null);
     }
 
     if (listFiles.length == 0) {
       if (config.fileRegex != null) {
-        LOG.warn("Not moving any files of type {} from source {}", config.fileRegex, source.toString());
+        LOG.warn("Not moving any files of type {} from source {}", config.fileRegex, source);
       } else {
-        LOG.warn("Not moving any files from source {}", source.toString());
+        LOG.warn("Not moving any files from source {}", source);
       }
     }
 
-    if (fileSystem.isFile(dest)) {
-      throw new IllegalArgumentException(String.format("destPath %s needs to be a directory since sourcePath is a " +
-                                                         "directory", config.destPath));
+    try {
+      if (fileSystem.isFile(dest)) {
+        String error = String.format("destPath %s needs to be a directory since sourcePath is a directory",
+            config.destPath);
+        throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN), error,
+            error, ErrorType.USER, false, null);
+      }
+      fileSystem.mkdirs(dest); // create destination directory if necessary
+    } catch (IOException e) {
+      String errorReason = String.format("Failed to create destination directory %s", dest);
+      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
     }
-    fileSystem.mkdirs(dest); //create destination directory if necessary
 
     for (FileStatus file : listFiles) {
       source = file.getPath();
@@ -127,13 +159,16 @@ public class FileMoveAction extends Action {
       try {
         if (!fileSystem.rename(source, dest)) {
           if (!config.continueOnError) {
-            throw new IOException(String.format("Failed to rename file %s to %s", source, dest));
+            String error = String.format("Failed to rename  file %s to %s", source, dest);
+            throw ErrorUtils.getProgramFailureException(new ErrorCategory(ErrorCategory.ErrorCategoryEnum.PLUGIN),
+                error, error, ErrorType.USER, false, null);
           }
           LOG.error("Failed to move file {} to {}", source, dest);
         }
       } catch (IOException e) {
         if (!config.continueOnError) {
-          throw e;
+          String errorReason = String.format("Failed to rename  file %s to %s", source, dest);
+          throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
         }
         LOG.error("Failed to move file {} to {}", source, dest, e);
       }
