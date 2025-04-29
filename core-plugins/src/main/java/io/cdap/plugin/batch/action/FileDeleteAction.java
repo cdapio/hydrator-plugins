@@ -88,9 +88,9 @@ public class FileDeleteAction extends Action {
           return pattern.matcher(path.getName()).matches();
         }
       };
-      listFiles = getFileStatuses(fileSystem, path, filter);
+      listFiles = FileActionUtils.getFileStatuses(fileSystem, path, filter);
     } else {
-      listFiles = getFileStatuses(fileSystem, path, null);
+      listFiles = FileActionUtils.getFileStatuses(fileSystem, path, null);
     }
 
     for (FileStatus file : listFiles) {
@@ -109,18 +109,6 @@ public class FileDeleteAction extends Action {
       removePath(fileSystem, path);
     }
 
-  }
-
-  private static FileStatus[] getFileStatuses(FileSystem fileSystem, Path path, @Nullable PathFilter filter) {
-    try {
-      if (filter == null) {
-        return fileSystem.listStatus(path);
-      }
-      return fileSystem.listStatus(path, filter);
-    } catch (IOException e) {
-      String errorReason = String.format("Failed to list files in %s.", path);
-      throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
-    }
   }
 
   public void removePath(FileSystem fileSystem, Path currPath) throws Exception {
