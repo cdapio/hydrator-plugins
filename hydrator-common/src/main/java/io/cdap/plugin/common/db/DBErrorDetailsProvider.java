@@ -100,6 +100,8 @@ public class DBErrorDetailsProvider implements ErrorDetailsProvider {
     ERROR_CODE_TO_ERROR_TYPE.put("45", ErrorType.USER);
     ERROR_CODE_TO_ERROR_TYPE.put("46", ErrorType.SYSTEM);
     ERROR_CODE_TO_ERROR_TYPE.put("HW", ErrorType.SYSTEM);
+    ERROR_CODE_TO_ERROR_TYPE.put("HV", ErrorType.USER);
+    ERROR_CODE_TO_ERROR_TYPE.put("HY", ErrorType.USER);
 
     ERROR_CODE_TO_ERROR_CATEGORY = new HashMap<>();
     ErrorCategory.ErrorCategoryEnum plugin = ErrorCategory.ErrorCategoryEnum.PLUGIN;
@@ -159,6 +161,8 @@ public class DBErrorDetailsProvider implements ErrorDetailsProvider {
     ERROR_CODE_TO_ERROR_CATEGORY.put("45", new ErrorCategory(plugin, "DB Unhandled User-Defined Exception"));
     ERROR_CODE_TO_ERROR_CATEGORY.put("46", new ErrorCategory(plugin, "DB JAVA DDL"));
     ERROR_CODE_TO_ERROR_CATEGORY.put("HW", new ErrorCategory(plugin, "DB Datalink Exception"));
+    ERROR_CODE_TO_ERROR_CATEGORY.put("HV", new ErrorCategory(plugin, "DB Foreign Data Wrapper Error"));
+    ERROR_CODE_TO_ERROR_CATEGORY.put("HY", new ErrorCategory(plugin, "DB General or Vendor-Specific Error"));
   }
 
   public ProgramFailureException getExceptionDetails(Exception e, ErrorContext errorContext) {
