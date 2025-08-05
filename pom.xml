@@ -42,7 +42,6 @@
     <module>format-xls</module>
 <!--    <module>hbase-plugins</module> TO EVALUATE https://cdap.atlassian.net/browse/CDAP-21052 -->
     <module>http-plugins</module>
-    <module>mongodb-plugins</module>
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
