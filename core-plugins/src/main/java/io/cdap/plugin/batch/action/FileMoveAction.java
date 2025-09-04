@@ -74,18 +74,19 @@ public class FileMoveAction extends Action {
     try {
       fileSystem.mkdirs(dest.getParent());
       LOG.debug("mkdirs(): ensured destination parent directory exists: {}", dest.getParent());
-    } catch (GoogleJsonResponseException e) {
-      if (e.getStatusCode() == 412 || (e.getStatusMessage() != null && e.getStatusMessage()
-        .contains("412 Precondition Failed"))) {
-        // Expected GCS directory marker race condition — safe to ignore
-        LOG.info("Directory already exists in GCS, skipping creation: {}", dest.getParent());
+    } catch (IOException exception) {
+      if (exception instanceof GoogleJsonResponseException) {
+        GoogleJsonResponseException googleJsonResponseException = (GoogleJsonResponseException) exception;
+        if (googleJsonResponseException.getStatusCode() == 412 || (googleJsonResponseException.getStatusMessage()
+          != null && googleJsonResponseException.getStatusMessage().contains("412 Precondition Failed"))) {
+          // Expected GCS directory marker race condition — safe to ignore
+          LOG.info("Directory already exists in GCS, skipping creation: {}", dest.getParent());
+          return;
+        }
+        throw googleJsonResponseException;
       } else {
-        String errorReason = String.format("Failed to create parent directory for dest path: %s, Status Code: %s, " +
-          "Message: %s", dest.getParent(), e.getStatusCode(), e.getMessage());
-        throw new IOException(errorReason, e);
+        throw exception;
       }
-    } catch (IOException e) {
-      throw e;
     }
 
     if (fileSystem.getFileStatus(source).isFile()) { //moving single file
@@ -137,19 +138,20 @@ public class FileMoveAction extends Action {
     }
     try {
       fileSystem.mkdirs(dest); //create destination directory if necessary
-      LOG.debug("mkdirs(): ensured destination parent directory exists: {}", dest.getParent());
-    } catch (GoogleJsonResponseException e) {
-      if (e.getStatusCode() == 412 || (e.getStatusMessage() != null && e.getStatusMessage()
-        .contains("412 Precondition Failed"))) {
-        // Expected GCS directory marker race condition — safe to ignore
-        LOG.info("Directory already exists in GCS, skipping creation: {}", dest.getParent());
+      LOG.debug("mkdirs(): ensured destination parent directory exists: {}", dest);
+    } catch (IOException ex) {
+      if (ex instanceof GoogleJsonResponseException) {
+        GoogleJsonResponseException googleJsonResponseException = (GoogleJsonResponseException) ex;
+        if (googleJsonResponseException.getStatusCode() == 412 || (googleJsonResponseException.getStatusMessage()
+          != null && googleJsonResponseException.getStatusMessage().contains("412 Precondition Failed"))) {
+          // Expected GCS directory marker race condition — safe to ignore
+          LOG.info("Directory already exists in GCS, skipping creation: {}", dest);
+          return;
+        }
+        throw googleJsonResponseException;
       } else {
-        String errorReason = String.format("Failed to create parent directory for dest path: %s, Status Code: %s, " +
-          "Message: %s", dest.getParent(), e.getStatusCode(), e.getMessage());
-        throw new IOException(errorReason, e);
+        throw ex;
       }
-    } catch (IOException e) {
-      throw e;
     }
 
     for (FileStatus file : listFiles) {
