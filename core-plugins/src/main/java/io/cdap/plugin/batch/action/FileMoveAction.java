@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.batch.action;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
@@ -70,7 +71,23 @@ public class FileMoveAction extends Action {
     Path dest = new Path(config.destPath);
 
     FileSystem fileSystem = source.getFileSystem(new Configuration());
-    fileSystem.mkdirs(dest.getParent());
+    try {
+      fileSystem.mkdirs(dest.getParent());
+      LOG.debug("mkdirs(): ensured destination parent directory exists: {}", dest.getParent());
+    } catch (IOException exception) {
+      if (exception instanceof GoogleJsonResponseException) {
+        GoogleJsonResponseException googleJsonResponseException = (GoogleJsonResponseException) exception;
+        if (googleJsonResponseException.getStatusCode() == 412 || (googleJsonResponseException.getStatusMessage()
+          != null && googleJsonResponseException.getStatusMessage().contains("412 Precondition Failed"))) {
+          // Expected GCS directory marker race condition — safe to ignore
+          LOG.info("Directory already exists in GCS, skipping creation: {}", dest.getParent());
+          return;
+        }
+        throw googleJsonResponseException;
+      } else {
+        throw exception;
+      }
+    }
 
     if (fileSystem.getFileStatus(source).isFile()) { //moving single file
 
@@ -119,7 +136,23 @@ public class FileMoveAction extends Action {
       throw new IllegalArgumentException(String.format("destPath %s needs to be a directory since sourcePath is a " +
                                                          "directory", config.destPath));
     }
-    fileSystem.mkdirs(dest); //create destination directory if necessary
+    try {
+      fileSystem.mkdirs(dest); //create destination directory if necessary
+      LOG.debug("mkdirs(): ensured destination parent directory exists: {}", dest);
+    } catch (IOException ex) {
+      if (ex instanceof GoogleJsonResponseException) {
+        GoogleJsonResponseException googleJsonResponseException = (GoogleJsonResponseException) ex;
+        if (googleJsonResponseException.getStatusCode() == 412 || (googleJsonResponseException.getStatusMessage()
+          != null && googleJsonResponseException.getStatusMessage().contains("412 Precondition Failed"))) {
+          // Expected GCS directory marker race condition — safe to ignore
+          LOG.info("Directory already exists in GCS, skipping creation: {}", dest);
+          return;
+        }
+        throw googleJsonResponseException;
+      } else {
+        throw ex;
+      }
+    }
 
     for (FileStatus file : listFiles) {
       source = file.getPath();
