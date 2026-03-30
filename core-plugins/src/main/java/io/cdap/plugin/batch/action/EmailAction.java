@@ -96,12 +96,14 @@ public class EmailAction extends PostAction {
         }
       };
     }
+
     if ("SMTPS".equalsIgnoreCase(config.protocol)) {
       javaMailProperties.put("mail.smtp.ssl.enable", true);
       if (!userJavaMailProperties.containsKey("mail.smtps.ssl.protocols")) {
         javaMailProperties.put("mail.smtps.ssl.protocols", "TLSv1.2 TLSv1.3");
       }
     }
+    System.out.println("hello");
     if ("TLS".equalsIgnoreCase(config.protocol)) {
       javaMailProperties.put("mail.smtp.starttls.enable", true);
       if (!userJavaMailProperties.containsKey("mail.smtp.starttls.enable")) {
