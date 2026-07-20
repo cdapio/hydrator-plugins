@@ -62,6 +62,18 @@
       "label": "Plugin Properties",
       "properties": [
         {
+          "widget-type": "select",
+          "label": "SMB Protocol Version",
+          "name": "smbVersion",
+          "widget-attributes": {
+            "values": [
+              "SMBv2/v3",
+              "SMBv1"
+            ],
+            "default": "SMBv2/v3"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Number of parallel tasks",
           "name": "numThreads"

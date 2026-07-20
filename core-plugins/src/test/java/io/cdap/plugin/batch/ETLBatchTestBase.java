@@ -39,6 +39,7 @@ import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.alert.TMSAlertPublisher;
 import io.cdap.plugin.batch.action.EmailAction;
 import io.cdap.plugin.batch.action.SSHAction;
+import io.cdap.plugin.batch.action.WindowsShareCopy;
 import io.cdap.plugin.batch.aggregator.DedupAggregator;
 import io.cdap.plugin.batch.aggregator.GroupByAggregator;
 import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
@@ -147,6 +148,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       TMSAlertPublisher.class,
                       ErrorCollector.class,
                       FileSink.class,
+                      WindowsShareCopy.class,
                       // Spark needs this class to get exported to use the correct classloader
                       AggregateFunction.class);
     // add format plugins
