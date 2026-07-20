@@ -20,6 +20,16 @@ import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.hierynomus.msdtyp.AccessMask;
+import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
+import com.hierynomus.mssmb2.SMB2CreateDisposition;
+import com.hierynomus.mssmb2.SMB2ShareAccess;
+import com.hierynomus.smbj.SMBClient;
+import com.hierynomus.smbj.auth.AuthenticationContext;
+import com.hierynomus.smbj.connection.Connection;
+import com.hierynomus.smbj.session.Session;
+import com.hierynomus.smbj.share.DiskShare;
+import com.hierynomus.smbj.share.File;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -41,6 +51,9 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.CountDownLatch;
@@ -54,6 +67,7 @@ import javax.annotation.Nullable;
 
 /**
  * {@link WindowsShareCopy} is an {@link Action} that will copy the data from a Windows share into an HDFS directory.
+ * Supports SMBv1 (via jcifs) and SMBv2/SMBv3 (via smbj) based on user configuration.
  */
 @Plugin(type = Action.PLUGIN_TYPE)
 @Name("WindowsShareCopy")
@@ -81,6 +95,32 @@ public class WindowsShareCopy extends Action {
                         config.numThreads;
     config.bufferSize = (config.bufferSize == null || config.bufferSize < MIN_BUFFER_SIZE) ? MIN_BUFFER_SIZE :
                         config.bufferSize;
+
+    // Determines the buffer size to be used during writing.
+    Configuration conf = new Configuration();
+    conf.setLong("io.file.buffer.size", config.bufferSize);
+    conf.setLong("file.stream-buffer-size", config.bufferSize);
+
+    // Create the HDFS directory if it doesn't exist.
+    final Path hdfsDir = new Path(config.destinationDirectory);
+    final FileSystem hdfs = hdfsDir.getFileSystem(conf);
+    if (!hdfs.exists(hdfsDir)) {
+      hdfs.mkdirs(hdfsDir);
+    }
+
+    if (config.isSMBv1()) {
+      LOG.info("Executing copy using legacy SMBv1 protocol (jcifs)");
+      executeSMBv1(hdfsDir, hdfs);
+    } else {
+      LOG.info("Executing copy using modern SMBv2/v3 protocol (smbj)");
+      executeSMBv2(hdfsDir, hdfs);
+    }
+  }
+
+  /**
+   * Executes the copy operation using the legacy jcifs (SMBv1) library.
+   */
+  private void executeSMBv1(final Path hdfsDir, final FileSystem hdfs) throws Exception {
     StringBuilder sb = new StringBuilder("smb://");
     sb.append(config.netBiosHostname);
     sb.append("/");
@@ -102,21 +142,9 @@ public class WindowsShareCopy extends Action {
 
     // Authentication with NTLM and read the directory from the Windows Share.
     final NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(config.netBiosDomainName,
-                                                                           config.netBiosUsername,
-                                                                           config.netBiosPassword);
+            config.netBiosUsername,
+            config.netBiosPassword);
     SmbFile dir = new SmbFile(smbDirectory, auth);
-
-    // Determines the buffer size to be used during writing.
-    Configuration conf = new Configuration();
-    conf.setLong("io.file.buffer.size", config.bufferSize);
-    conf.setLong("file.stream-buffer-size", config.bufferSize);
-    // Create the HDFS directory if it doesn't exist.
-    final Path hdfsDir = new Path(config.destinationDirectory);
-    final FileSystem hdfs = hdfsDir.getFileSystem(conf);
-    if (!hdfs.exists(hdfsDir)) {
-      hdfs.mkdirs(hdfsDir);
-    }
-
     String[] files = dir.list();
     // Copies the files in a multithreaded way
     CountDownLatch executorTerminateLatch = new CountDownLatch(1);
@@ -128,15 +156,10 @@ public class WindowsShareCopy extends Action {
         completionService.submit(new Callable<String>() {
           @Override
           public String call() throws Exception {
-            try {
-              if (smbDirectory.endsWith("/")) {
-                return copyFileToHDFS(hdfs, smbDirectory + file, hdfsDir, auth);
-              } else {
-                return copyFileToHDFS(hdfs, smbDirectory + "/" + file, hdfsDir, auth);
-              }
-            } catch (Exception e) {
-              LOG.warn("Exception while copying the file {}", file, e);
-              return null;
+            if (smbDirectory.endsWith("/")) {
+              return copyFileToHDFS(hdfs, smbDirectory + file, hdfsDir, auth);
+            } else {
+              return copyFileToHDFS(hdfs, smbDirectory + "/" + file, hdfsDir, auth);
             }
           }
         });
@@ -162,12 +185,12 @@ public class WindowsShareCopy extends Action {
   }
 
   private String copyFileToHDFS(FileSystem hdfs, String smbSourceFile, Path dest, NtlmPasswordAuthentication auth)
-    throws IOException {
+          throws IOException {
     SmbFile smbFile = new SmbFile(smbSourceFile, auth);
     String name = smbFile.getName();
     Path destFile = new Path(dest, name);
     LOG.debug("Thread {} is copying source file {}, dest file {}", Thread.currentThread().getName(),
-              smbFile.getName(), destFile.getName());
+            smbFile.getName(), destFile.getName());
     // If file already exists, then we skip over.
     if (hdfs.exists(destFile) && !config.overwrite) {
       LOG.info("File {} already exists on HDFS, Skipping", destFile.getName());
@@ -177,8 +200,115 @@ public class WindowsShareCopy extends Action {
     try (InputStream in = smbFile.getInputStream();
          BufferedOutputStream out = new BufferedOutputStream(hdfs.create(destFile), config.bufferSize)) {
       ByteStreams.copy(in, out);
-    } catch (IOException e) {
-      LOG.warn("Exception in copying the file {}", name, e);
+    }
+    return name;
+  }
+
+  /**
+   * Executes the copy operation using the modern smbj library.
+   */
+  private void executeSMBv2(final Path hdfsDir, final FileSystem hdfs) throws Exception {
+    String normalizedSourcePath = config.getSourceDirectory();
+
+    try (SMBClient client = new SMBClient()) {
+      AuthenticationContext authContext = new AuthenticationContext(
+              config.netBiosUsername,
+              config.netBiosPassword.toCharArray(),
+              config.netBiosDomainName == null ? "" : config.netBiosDomainName
+      );
+
+      List<String> filesToCopy = new ArrayList<>();
+
+      try (Connection listConnection = client.connect(config.netBiosHostname);
+           Session listSession = listConnection.authenticate(authContext);
+           DiskShare listShare = (DiskShare) listSession.connectShare(config.netBiosSharename)) {
+
+        if (listShare.folderExists(normalizedSourcePath)) {
+          for (FileIdBothDirectoryInformation f : listShare.list(normalizedSourcePath)) {
+            String fileName = f.getFileName();
+            if (fileName.equals(".") || fileName.equals("..")) {
+              continue;
+            }
+            String fullPath = normalizedSourcePath.isEmpty() ? fileName : normalizedSourcePath + "\\" + fileName;
+            filesToCopy.add(fullPath);
+          }
+        } else if (listShare.fileExists(normalizedSourcePath)) {
+          filesToCopy.add(normalizedSourcePath);
+        } else {
+          throw new IllegalArgumentException(
+                  String.format("The source path '%s' does not exist on share '%s'",
+                          normalizedSourcePath, config.netBiosSharename)
+          );
+        }
+      }
+
+      CountDownLatch executorTerminateLatch = new CountDownLatch(1);
+      ExecutorService executorService = createExecutor(config.numThreads, executorTerminateLatch);
+      CompletionService<String> completionService = new ExecutorCompletionService<>(executorService);
+
+      try {
+        for (final String filePath : filesToCopy) {
+          completionService.submit(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+              try (Connection threadConnection = client.connect(config.netBiosHostname);
+                   Session threadSession = threadConnection.authenticate(authContext);
+                   DiskShare threadShare = (DiskShare) threadSession.connectShare(config.netBiosSharename)) {
+
+                return copyFileToHDFS_SMBv2(hdfs, threadShare, filePath, hdfsDir);
+              }
+            }
+          });
+        }
+
+        int count = 0;
+        while (count < filesToCopy.size()) {
+          try {
+            Future<String> fileWritten = completionService.take();
+            String fileName = fileWritten.get();
+            if (fileName != null) {
+              LOG.debug("{} is copied", fileName);
+            }
+          } catch (Throwable t) {
+            throw Throwables.propagate(t);
+          }
+          count++;
+        }
+      } finally {
+        executorService.shutdownNow();
+        executorTerminateLatch.await();
+      }
+    }
+  }
+
+  /**
+   * The new SMBv2/v3 file copy method
+   */
+  private String copyFileToHDFS_SMBv2(FileSystem hdfs, DiskShare share, String smbSourceFile, Path dest)
+          throws IOException {
+    int lastSlashIndex = smbSourceFile.lastIndexOf('\\');
+    String name = lastSlashIndex >= 0 ? smbSourceFile.substring(lastSlashIndex + 1) : smbSourceFile;
+
+    Path destFile = new Path(dest, name);
+    LOG.debug("Thread {} is copying source file {}, dest file {}", Thread.currentThread().getName(),
+            name, destFile.getName());
+
+    if (hdfs.exists(destFile) && !config.overwrite) {
+      LOG.info("File {} already exists on HDFS, Skipping", destFile.getName());
+      return null;
+    }
+    LOG.info("Copying file {} to {}", smbSourceFile, destFile.toString());
+
+    try (File smbFile = share.openFile(
+            smbSourceFile,
+            EnumSet.of(AccessMask.GENERIC_READ),
+            null,
+            SMB2ShareAccess.ALL,
+            SMB2CreateDisposition.FILE_OPEN,
+            null);
+         InputStream in = smbFile.getInputStream();
+         BufferedOutputStream out = new BufferedOutputStream(hdfs.create(destFile), config.bufferSize)) {
+      ByteStreams.copy(in, out);
     }
     return name;
   }
@@ -263,9 +393,16 @@ public class WindowsShareCopy extends Action {
     @Macro
     private Integer bufferSize;
 
+    @Description("Specifies the SMB protocol version. Use 'SMBv1' for legacy systems or 'SMBv2/v3' for modern " +
+            "secure shares.")
+    @Nullable
+    @Macro
+    private final String smbVersion;
+
     WindowsShareCopyConfig(String netBiosDomainName, String netBiosHostname, String netBiosUsername,
                            String netBiosPassword, String netBiosSharename, String sourceDirectory,
-                           String destinationDirectory, Integer bufferSize, Integer numThreads, String overwrite) {
+                           String destinationDirectory, Integer bufferSize, Integer numThreads, String overwrite
+            , String smbVersion) {
 
       this.netBiosDomainName = netBiosDomainName;
       this.netBiosHostname = netBiosHostname;
@@ -277,6 +414,32 @@ public class WindowsShareCopy extends Action {
       this.bufferSize = bufferSize;
       this.numThreads = numThreads;
       this.overwrite = !("false".equals(overwrite));
+      this.smbVersion = smbVersion;
+    }
+
+    /**
+     * Determines if the plugin should use legacy SMBv1.
+     * Defaults to true (SMBv1) if null, meaning old pipelines will work without modification.
+     */
+    public boolean isSMBv1() {
+      return smbVersion == null || "SMBv1".equalsIgnoreCase(smbVersion);
+    }
+
+    /**
+     * Normalizes the source directory by removing all leading slashes
+     * and converting to Windows-native backslashes for SMBv2/v3.
+     */
+    public String getSourceDirectory() {
+      if (Strings.isNullOrEmpty(sourceDirectory)) {
+        return sourceDirectory;
+      }
+      String normalized = sourceDirectory;
+
+      while (normalized.startsWith("/") || normalized.startsWith("\\")) {
+        normalized = normalized.substring(1);
+      }
+
+      return normalized.replace('/', '\\');
     }
 
     public void validate(FailureCollector collector) {
