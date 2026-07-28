@@ -305,6 +305,11 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.hierynomus</groupId>
+      <artifactId>smbj</artifactId>
+      <version>0.11.5</version>
+    </dependency>
   </dependencies>
 
   <build>
