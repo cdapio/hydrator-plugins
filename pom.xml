@@ -1209,7 +1209,7 @@
         <dependency>
           <groupId>io.cdap.tests.e2e</groupId>
           <artifactId>cdap-e2e-framework</artifactId>
-          <version>0.4.0</version>
+          <version>0.4.2</version>
           <scope>test</scope>
         </dependency>
         <dependency>
