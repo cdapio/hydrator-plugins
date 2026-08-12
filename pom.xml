@@ -89,7 +89,7 @@
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <commons-lang-version>2.6</commons-lang-version>
-    <commons-lang3-version>3.5</commons-lang3-version>
+    <commons-lang3-version>3.18.0</commons-lang3-version>
     <commons-collections.version>3.2.2</commons-collections.version>
     <cdap.version>6.11.0</cdap.version>
     <datastax.version>2.0.5</datastax.version>
