@@ -44,6 +44,7 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
   public static final String NAME_SUFFIX = "suffix";
 
   @Description("Name be used to uniquely identify this sink for lineage, annotating metadata, etc.")
+  @Nullable
   private String referenceName;
 
   @Macro
@@ -88,7 +89,9 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
   }
 
   public void validate(FailureCollector collector, Map<String, String> arguments) {
-    IdUtils.validateReferenceName(referenceName, collector);
+    if (!Strings.isNullOrEmpty(referenceName)) {
+      IdUtils.validateReferenceName(referenceName, collector);
+    }
     if (suffix != null && !containsMacro(NAME_SUFFIX)) {
       try {
         new SimpleDateFormat(suffix);
