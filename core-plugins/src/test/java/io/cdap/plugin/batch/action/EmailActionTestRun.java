@@ -19,9 +19,12 @@ package io.cdap.plugin.batch.action;
 import com.dumbster.smtp.SimpleSmtpServer;
 import com.dumbster.smtp.SmtpMessage;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.common.utils.Networks;
+import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.PostAction;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
@@ -30,7 +33,9 @@ import io.cdap.plugin.batch.ETLBatchTestBase;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.lang.reflect.Field;
 import java.util.Iterator;
 
 /**
@@ -55,7 +60,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     ETLStage action = new ETLStage(
       "email",
       new ETLPlugin("Email", PostAction.PLUGIN_TYPE,
-                    ImmutableMap.of("recipients", "to@test.com",
+                    ImmutableMap.of("recipients", "to@test.com,to2@test.com",
                                     "sender", "from@test.com",
                                     "message", "Run for ${logicalStartTime(yyyy-MM-dd,0m,UTC)} completed.",
                                     "subject", "Test",
@@ -84,7 +89,46 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     Iterator emailIter = server.getReceivedEmail();
     SmtpMessage email = (SmtpMessage) emailIter.next();
     Assert.assertEquals("Test", email.getHeaderValue("Subject"));
+    Assert.assertEquals(1, email.getHeaderValues("To").length);
+    Assert.assertEquals("to@test.com, to2@test.com", email.getHeaderValue("To"));
     Assert.assertTrue(email.getBody().startsWith("Run for 1970-01-01 completed."));
     Assert.assertFalse(emailIter.hasNext());
+  }
+
+  @Test
+  public void testMultipleRecipientsSingleToHeader() throws Exception {
+    int smtpPort = Networks.getRandomPort();
+    SimpleSmtpServer smtpServer = SimpleSmtpServer.start(smtpPort);
+    try {
+      EmailAction.Config config = new EmailAction.Config();
+      setField(config, "sender", "from@test.com");
+      setField(config, "recipients", "to1@test.com, to2@test.com");
+      setField(config, "subject", "Test Multiple Recipients");
+      setField(config, "message", "Test message body.");
+      setField(config, "port", smtpPort);
+
+      BatchActionContext context = Mockito.mock(BatchActionContext.class);
+      Mockito.when(context.getFailureCollector()).thenReturn(new MockFailureCollector());
+
+      EmailAction emailAction = new EmailAction(config);
+      emailAction.run(context);
+
+      Assert.assertEquals(1, smtpServer.getReceivedEmailSize());
+      Iterator<?> emailIter = smtpServer.getReceivedEmail();
+      SmtpMessage email = (SmtpMessage) emailIter.next();
+      Assert.assertEquals("Test Multiple Recipients", email.getHeaderValue("Subject"));
+      String[] toHeaders = email.getHeaderValues("To");
+      Assert.assertEquals(1, toHeaders.length);
+      Assert.assertEquals("to1@test.com, to2@test.com", toHeaders[0]);
+      Assert.assertFalse(emailIter.hasNext());
+    } finally {
+      smtpServer.stop();
+    }
+  }
+
+  private static void setField(Object target, String fieldName, Object value) throws Exception {
+    Field field = target.getClass().getDeclaredField(fieldName);
+    field.setAccessible(true);
+    field.set(target, value);
   }
 }
