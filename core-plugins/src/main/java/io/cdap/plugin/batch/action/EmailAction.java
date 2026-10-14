@@ -124,9 +124,8 @@ public class EmailAction extends PostAction {
     try {
       Message msg = new MimeMessage(session);
       msg.setFrom(new InternetAddress(config.sender));
-      for (InternetAddress internetAddress : InternetAddress.parse(config.recipients)) {
-        msg.addRecipient(Message.RecipientType.TO, internetAddress);
-      }
+      msg.setRecipients(Message.RecipientType.TO,
+                        InternetAddress.parse(config.recipients));
       msg.setSubject(config.subject);
       WorkflowToken token = context.getToken();
       String message = config.includeWorkflowToken ?
