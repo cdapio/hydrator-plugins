@@ -30,6 +30,7 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.FileSystemPropertiesValidator;
 import io.cdap.plugin.format.plugin.AbstractFileSource;
 import io.cdap.plugin.format.plugin.FileSourceProperties;
 import org.apache.hadoop.fs.Path;
@@ -256,7 +257,13 @@ public class FTPBatchSource extends AbstractFileSource {
     Map<String, String> getFileSystemProperties(FailureCollector collector) {
       HashMap<String, String> fileSystemPropertiesMap = new HashMap<>();
       if (!Strings.isNullOrEmpty(fileSystemProperties)) {
-        fileSystemPropertiesMap.putAll(GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE));
+        Map<String, String> userProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
+        if (collector != null) {
+          FileSystemPropertiesValidator.validateFileSystemProperties(userProperties, NAME_FILE_SYSTEM_PROPERTIES,
+                                                                     collector);
+        }
+        // reserved keys are never copied into the Hadoop configuration, see FileSystemPropertiesValidator
+        fileSystemPropertiesMap.putAll(FileSystemPropertiesValidator.removeReservedFileSystemProperties(userProperties));
       }
 
       if (!containsMacro(PATH) && authContainsSpecialCharacters()) {
