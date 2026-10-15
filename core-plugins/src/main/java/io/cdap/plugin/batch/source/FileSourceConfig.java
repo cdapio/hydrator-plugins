@@ -24,6 +24,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.FileSystemPropertiesValidator;
 import io.cdap.plugin.format.plugin.AbstractFileSourceConfig;
 
 import java.lang.reflect.Type;
@@ -101,12 +102,8 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
 
   public void validate(FailureCollector collector) {
     super.validate(collector);
-    try {
-      getFileSystemProperties();
-    } catch (IllegalArgumentException e) {
-      collector.addFailure("File system properties must be a valid json.", null)
-        .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
-    }
+    FileSystemPropertiesValidator.parseAndValidateFileSystemProperties(fileSystemProperties,
+                                                                       NAME_FILE_SYSTEM_PROPERTIES, collector);
     validateSchemaDelimitedFormats(collector);
   }
 
