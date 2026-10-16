@@ -30,6 +30,7 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.plugin.batch.source.FileErrorDetailsProvider;
+import io.cdap.plugin.format.FileSystemPropertiesValidator;
 import io.cdap.plugin.format.plugin.AbstractFileSink;
 import io.cdap.plugin.format.plugin.AbstractFileSinkConfig;
 
@@ -59,7 +60,9 @@ public class FileSink extends AbstractFileSink<FileSink.Conf> {
 
   @Override
   protected Map<String, String> getFileSystemProperties(BatchSinkContext context) {
-    return config.getFSProperties();
+    // Reserved keys are rejected by Conf.validate(); dropping them here as well guarantees they never reach the
+    // Hadoop configuration, even for values that were resolved from macros after validation.
+    return FileSystemPropertiesValidator.removeReservedFileSystemProperties(config.getFSProperties());
   }
 
   /**
@@ -92,7 +95,9 @@ public class FileSink extends AbstractFileSink<FileSink.Conf> {
     public void validate(FailureCollector collector) {
       super.validate(collector);
       try {
-        getFSProperties();
+        Map<String, String> fileSystemProperties = getFSProperties();
+        FileSystemPropertiesValidator.validateFileSystemProperties(fileSystemProperties, NAME_FILE_SYSTEM_PROPERTIES,
+                                                                   collector);
       } catch (IllegalArgumentException e) {
         collector.addFailure(String.format("File system properties must be a valid json. %s: %s",
                 e.getClass().getName(), e.getMessage()), null)
