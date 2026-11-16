@@ -40,6 +40,7 @@ import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import io.cdap.plugin.format.SchemaDetector;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.plugin.FileSourceProperties;
@@ -152,6 +153,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
   public InputFormatProvider getInputFormatProvider(ConnectorContext context,
                                                     SampleRequest sampleRequest) throws IOException {
     String fullPath = getFullPath(sampleRequest.getPath());
+    LocalFilePathValidator.validateFileSystemProperties(getFileSystemProperties(fullPath));
+    LocalFilePathValidator.validatePath(fullPath, null);
     Map<String, String> sampleRequestProperties = sampleRequest.getProperties();
     FormatAndSchema inputFormat = getValidatedInputFormat(context, fullPath, sampleRequestProperties);
 
@@ -163,7 +166,9 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
       conf.set(entry.getKey(), entry.getValue());
     }
 
+    LocalFilePathValidator.validatePath(fullPath, conf);
     Path path = new Path(fullPath);
+    LocalFilePathValidator.validatePath(path, conf);
     ClassLoader cl = conf.getClassLoader();
     conf.setClassLoader(getClass().getClassLoader());
     FileSystem fs = FileSystem.get(path.toUri(), conf);
@@ -172,6 +177,9 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
 
     if (fileStatus == null) {
       throw new IOException(String.format("Input path %s does not exist", path));
+    }
+    for (FileStatus status : fileStatus) {
+      LocalFilePathValidator.validatePath(status.getPath(), conf);
     }
 
     FileInputFormat.addInputPath(job, path);
@@ -287,6 +295,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
 
   private FormatAndSchema getValidatedInputFormat(ConnectorContext context, String path,
                                                   Map<String, String> sampleProperties) throws IOException {
+    LocalFilePathValidator.validateFileSystemProperties(getFileSystemProperties(path));
+    LocalFilePathValidator.validatePath(path, null);
     PluginProperties.Builder builder = PluginProperties.builder();
     builder.addAll(sampleProperties);
 

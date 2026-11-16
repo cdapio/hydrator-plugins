@@ -38,6 +38,7 @@ import io.cdap.plugin.batch.source.FileBatchSource;
 import io.cdap.plugin.batch.source.FileSourceConfig;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.batch.JobUtils;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import io.cdap.plugin.format.connector.AbstractFileConnector;
 import io.cdap.plugin.format.connector.FileTypeDetector;
 import org.apache.hadoop.conf.Configuration;
@@ -81,9 +82,11 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
 
   @Override
   public BrowseDetail browse(ConnectorContext connectorContext, BrowseRequest request) throws IOException {
-    Path path = new Path(request.getPath());
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
+    LocalFilePathValidator.validatePath(request.getPath(), conf);
+    Path path = new Path(request.getPath());
+    LocalFilePathValidator.validatePath(path, conf);
     // need this to load the extra class loader to avoid ClassNotFoundException for the file system
     FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
                                                        f -> FileSystem.get(path.toUri(), conf));
@@ -95,6 +98,7 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
     // if it is not a directory, then it is not browsable, return the path itself
     FileStatus file = fs.getFileStatus(path);
     if (!file.isDirectory()) {
+      LocalFilePathValidator.validatePath(file.getPath(), conf);
       return BrowseDetail.builder().setTotalCount(1).addEntity(generateBrowseEntity(file))
         .setSampleProperties(getSampleProperties()).build();
     }
@@ -108,6 +112,11 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
     for (FileStatus fileStatus : files) {
       // do not browse hidden files
       if (fileStatus.getPath().getName().startsWith(".")) {
+        continue;
+      }
+      try {
+        LocalFilePathValidator.validatePath(fileStatus.getPath(), conf);
+      } catch (IllegalArgumentException e) {
         continue;
       }
 

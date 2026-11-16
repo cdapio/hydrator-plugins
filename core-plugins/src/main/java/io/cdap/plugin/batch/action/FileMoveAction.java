@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import io.cdap.plugin.batch.source.FileErrorDetailsProvider;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -69,13 +70,18 @@ public class FileMoveAction extends Action {
 
   @Override
   public void run(ActionContext context) throws Exception {
+    Configuration conf = new Configuration();
+    LocalFilePathValidator.validatePath(config.sourcePath, conf);
+    LocalFilePathValidator.validatePath(config.destPath, conf);
     Path source = new Path(config.sourcePath);
+    LocalFilePathValidator.validatePath(source, conf);
 
     Path dest = new Path(config.destPath);
+    LocalFilePathValidator.validatePath(dest, conf);
 
     FileSystem fileSystem;
     try {
-      fileSystem = source.getFileSystem(new Configuration());
+      fileSystem = source.getFileSystem(conf);
     } catch (IOException e) {
       String errorReason = String.format("Failed to get file system for source path %s", source);
       throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
@@ -203,6 +209,20 @@ public class FileMoveAction extends Action {
     private boolean continueOnError;
 
     public void validate(FailureCollector collector) {
+      if (!containsMacro("sourcePath") && sourcePath != null) {
+        try {
+          LocalFilePathValidator.validatePath(sourcePath, null);
+        } catch (IllegalArgumentException e) {
+          collector.addFailure(e.getMessage(), null).withConfigProperty("sourcePath");
+        }
+      }
+      if (!containsMacro("destPath") && destPath != null) {
+        try {
+          LocalFilePathValidator.validatePath(destPath, null);
+        } catch (IllegalArgumentException e) {
+          collector.addFailure(e.getMessage(), null).withConfigProperty("destPath");
+        }
+      }
       if (!containsMacro(FILE_REGEX) && fileRegex != null) {
         try {
           Pattern.compile(fileRegex);

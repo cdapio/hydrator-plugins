@@ -86,6 +86,7 @@ public class SchemaDetector {
 
   private InputFiles getInputFiles(String path, @Nullable Pattern pattern,
                                    Map<String, String> fileSystemProperties) throws IOException {
+    LocalFilePathValidator.validateFileSystemProperties(fileSystemProperties);
     Job job = JobUtils.createInstance();
     Configuration configuration = job.getConfiguration();
     for (Map.Entry<String, String> entry : fileSystemProperties.entrySet()) {
@@ -95,7 +96,9 @@ public class SchemaDetector {
       configuration.set(entry.getKey(), entry.getValue());
     }
 
+    LocalFilePathValidator.validatePath(path, configuration);
     Path fsPath = new Path(path);
+    LocalFilePathValidator.validatePath(fsPath, configuration);
 
     ClassLoader cl = configuration.getClassLoader();
     configuration.setClassLoader(getClass().getClassLoader());
@@ -109,6 +112,7 @@ public class SchemaDetector {
 
       FileStatus fileStatus = fs.getFileStatus(fsPath);
       if (fileStatus.isFile()) {
+        LocalFilePathValidator.validatePath(fileStatus.getPath(), configuration);
         return new FileSystemInputFiles(fs, Collections.singletonList(fileStatus));
       }
 
@@ -125,6 +129,9 @@ public class SchemaDetector {
       List<FileStatus> filteredFiles = Arrays.stream(files)
         .filter(fStatus -> pathFilter.accept(fStatus.getPath()))
         .collect(Collectors.toList());
+      for (FileStatus fStatus : filteredFiles) {
+        LocalFilePathValidator.validatePath(fStatus.getPath(), configuration);
+      }
 
       return new FileSystemInputFiles(fs, filteredFiles);
     } finally {

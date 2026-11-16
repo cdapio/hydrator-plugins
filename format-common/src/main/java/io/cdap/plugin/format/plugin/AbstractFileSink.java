@@ -38,6 +38,7 @@ import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.batch.sink.SinkOutputFormatProvider;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.slf4j.Logger;
@@ -72,6 +73,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(collector);
+    validateFileSystemPropertiesAndPath(collector, null);
     // throw exception if there were any errors while validating the config. This could happen if format or schema is
     // invalid
     collector.getOrThrowException();
@@ -107,6 +109,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   public void prepareRun(BatchSinkContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector, context.getArguments().asMap());
+    validateFileSystemPropertiesAndPath(collector, context);
     String format = config.getFormatName();
     ValidatingOutputFormat validatingOutputFormat = getOutputFormatForRun(context);
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
@@ -218,6 +221,26 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
           .withPluginNotFound(format, format, ValidatingOutputFormat.PLUGIN_TYPE);
     } else {
       validatingOutputFormat.validate(context);
+    }
+  }
+
+  private void validateFileSystemPropertiesAndPath(FailureCollector collector,
+                                                   @Nullable BatchSinkContext context) {
+    try {
+      LocalFilePathValidator.validateFileSystemProperties(getFileSystemProperties(context));
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty("fileSystemProperties");
+    }
+    if (context == null && config.containsMacro("path")) {
+      return;
+    }
+    String rawPath = context == null ? config.getPath() : config.getPath(context);
+    if (!Strings.isNullOrEmpty(rawPath)) {
+      try {
+        LocalFilePathValidator.validatePath(rawPath, null);
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null).withConfigProperty("path");
+      }
     }
   }
 }

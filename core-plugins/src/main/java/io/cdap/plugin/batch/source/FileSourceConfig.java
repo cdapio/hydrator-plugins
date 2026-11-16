@@ -24,6 +24,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import io.cdap.plugin.format.plugin.AbstractFileSourceConfig;
 
 import java.lang.reflect.Type;
@@ -96,16 +97,37 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
   @Override
   public void validate() {
     super.validate();
-    getFileSystemProperties();
+    Map<String, String> fsProps = getFileSystemProperties();
+    LocalFilePathValidator.validateFileSystemProperties(fsProps);
+    if (!containsMacro(NAME_PATH) && path != null) {
+      LocalFilePathValidator.validatePath(path, null);
+    }
   }
 
   public void validate(FailureCollector collector) {
     super.validate(collector);
+    Map<String, String> fsProps = null;
     try {
-      getFileSystemProperties();
+      fsProps = getFileSystemProperties();
     } catch (IllegalArgumentException e) {
       collector.addFailure("File system properties must be a valid json.", null)
         .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
+    }
+    if (fsProps != null) {
+      try {
+        LocalFilePathValidator.validateFileSystemProperties(fsProps);
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null)
+          .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES);
+      }
+    }
+    if (!containsMacro(NAME_PATH) && path != null) {
+      try {
+        LocalFilePathValidator.validatePath(path, null);
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null)
+          .withConfigProperty(NAME_PATH);
+      }
     }
     validateSchemaDelimitedFormats(collector);
   }

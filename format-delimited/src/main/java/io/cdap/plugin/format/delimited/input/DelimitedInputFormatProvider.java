@@ -17,6 +17,7 @@
 package io.cdap.plugin.format.delimited.input;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -41,6 +42,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -122,7 +124,13 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
       String[] rowValue;
       try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.open()))) {
         for (int rowIndex = 0; rowIndex < conf.getSampleSize() && (line = reader.readLine()) != null; rowIndex++) {
-          rowValue = line.split(delimiter, -1);
+          if (conf.getEnableQuotedValues()) {
+            List<String> values = Lists.newArrayList(
+              new SplitQuotesIterator(line, delimiter, null, false));
+            rowValue = values.toArray(new String[0]);
+          } else {
+            rowValue = line.split(Pattern.quote(delimiter), -1);
+          }
           if (rowIndex == 0) {
             columnNames = DataTypeDetectorUtils.setColumnNames(line, conf.getSkipHeader(), conf.getEnableQuotedValues(),
                                                                delimiter);

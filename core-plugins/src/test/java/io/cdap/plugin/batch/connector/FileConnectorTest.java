@@ -71,6 +71,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
@@ -331,6 +332,40 @@ public class FileConnectorTest {
   @Test
   public void testSchemaDetectionTSV() throws IOException {
     testSchemaDetectionDelimited("\t", new TSVInputFormatProvider(new DelimitedConfig()));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBrowseRestrictedPathRejected() throws IOException {
+    FileConnector fileConnector = new FileConnector(new FileConnector.FileConnectorConfig());
+    ConnectorContext context = new MockConnectorContext(new MockConnectorConfigurer(Collections.emptyMap()));
+    fileConnector.browse(
+      context, BrowseRequest.builder("/var/run/secrets/kubernetes.io/serviceaccount/token").build());
+  }
+
+  @Test
+  public void testBrowseSkipsRestrictedSymlinkChildren() throws Exception {
+    File directory = TEMP_FOLDER.newFolder();
+    File validFile = new File(directory, "valid.txt");
+    Assert.assertTrue(validFile.createNewFile());
+    Files.createSymbolicLink(
+      directory.toPath().resolve("secret_link.txt"),
+      Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"));
+
+    FileConnector fileConnector = new FileConnector(new FileConnector.FileConnectorConfig());
+    ConnectorContext context = new MockConnectorContext(new MockConnectorConfigurer(Collections.emptyMap()));
+    BrowseDetail detail = fileConnector.browse(context, BrowseRequest.builder(directory.getCanonicalPath()).build());
+    Assert.assertEquals(1, detail.getTotalCount());
+    Assert.assertEquals("valid.txt", detail.getEntities().get(0).getName());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testGenerateSpecRestrictedPathRejected() throws IOException {
+    FileConnector fileConnector = new FileConnector(new FileConnector.FileConnectorConfig());
+    ConnectorContext context = new TestConnectorContext(new CSVInputFormatProvider(new DelimitedConfig()));
+    ConnectorSpecRequest specRequest = ConnectorSpecRequest.builder()
+      .setPath("/etc/passwd")
+      .build();
+    fileConnector.generateSpec(context, specRequest);
   }
 
   private void testSchemaDetectionDelimited(String delimiter, InputFormatProvider plugin) throws IOException {

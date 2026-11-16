@@ -88,4 +88,21 @@ public class DelimitedInputFormatProviderTest {
                                       Schema.Field.of("pathField", Schema.of(Schema.Type.STRING)));
     Assert.assertEquals(expected, schema);
   }
+
+  @Test
+  public void testRegexMetacharacterDelimiterLiteralSplit() throws IOException {
+    File file = TMP_FOLDER.newFile(UUID.randomUUID() + ".txt");
+    try (FileOutputStream fos = new FileOutputStream(file)) {
+      fos.write("col1,col2,col3\n10,20,30\n".getBytes(StandardCharsets.UTF_8));
+    }
+    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
+    // ".*" is a regex metacharacter sequence; it must be treated as a literal 2-char delimiter
+    // rather than splitting every character and failing column count validation.
+    SchemaDetector schemaDetector = new SchemaDetector(
+      new DelimitedInputFormatProvider(new DelimitedInputFormatProvider.Conf(".*")));
+    Schema schema = schemaDetector.detectSchema(file.getAbsolutePath(), formatContext, Collections.emptyMap());
+    Schema expected = Schema.recordOf("text",
+                                      Schema.Field.of("body_0", Schema.of(Schema.Type.STRING)));
+    Assert.assertEquals(expected, schema);
+  }
 }

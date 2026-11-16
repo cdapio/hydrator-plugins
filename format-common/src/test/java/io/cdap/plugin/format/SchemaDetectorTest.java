@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -73,6 +75,39 @@ public class SchemaDetectorTest {
     inputFiles = inputFormat.inputFiles.iterator();
     Assert.assertEquals(purchasesFile.getName(), inputFiles.next().getName());
     Assert.assertFalse(inputFiles.hasNext());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testRejectsRestrictedLocalSecretPath() throws IOException {
+    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
+    TrackingFormat inputFormat = new TrackingFormat(TMP_FOLDER.newFolder());
+    SchemaDetector schemaDetector = new SchemaDetector(inputFormat);
+    schemaDetector.detectSchema("/var/run/secrets/kubernetes.io/serviceaccount/token",
+                                formatContext, Collections.emptyMap());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testRejectsDirectoryContainingSymlinkToRestrictedPath() throws IOException {
+    File inputDir = TMP_FOLDER.newFolder();
+    Files.createSymbolicLink(
+        inputDir.toPath().resolve("token.csv"),
+        Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"));
+
+    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
+    TrackingFormat inputFormat = new TrackingFormat(inputDir);
+    SchemaDetector schemaDetector = new SchemaDetector(inputFormat);
+    schemaDetector.detectSchema(inputDir.getAbsolutePath(), formatContext, Collections.emptyMap());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testRejectsRestrictedFileSystemProperties() throws IOException {
+    File inputDir = TMP_FOLDER.newFolder();
+    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
+    TrackingFormat inputFormat = new TrackingFormat(inputDir);
+    SchemaDetector schemaDetector = new SchemaDetector(inputFormat);
+    schemaDetector.detectSchema(
+        inputDir.getAbsolutePath(), formatContext,
+        Collections.singletonMap(FileSystem.FS_DEFAULT_NAME_KEY, "file:///"));
   }
 
   /**
