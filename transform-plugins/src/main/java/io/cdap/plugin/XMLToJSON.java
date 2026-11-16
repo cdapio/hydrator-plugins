@@ -38,6 +38,7 @@ import org.json.XML;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +49,8 @@ import java.util.stream.Collectors;
 @Description("Converts an XML string to a JSON string")
 public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecord> {
   private static final String INPUT_FIELD = "inputField";
+  private static final String LOWERCASE_XINCLUDE_NAMESPACE_URI = "http://www.w3.org/2001/xinclude";
+  private static final String LOWERCASE_XINCLUDE_2003_NAMESPACE_URI = "http://www.w3.org/2003/xinclude";
 
   private final Config config;
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
@@ -134,12 +137,13 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
+    String xmlInput = (String) input.get(config.inputField);
     JSONObject jsonBody;
     try {
-      jsonBody = XML.toJSONObject((String) input.get(config.inputField));
+      rejectDisallowedXmlConstructs(xmlInput);
+      jsonBody = XML.toJSONObject(xmlInput);
     } catch (JSONException e) {
-      throw new Exception(String.format("Failed to convert XML to JSON. XML In: '%s'",
-                                        (String) input.get(config.inputField)), e);
+      throw new Exception(String.format("Failed to convert XML to JSON. XML In: '%s'", xmlInput), e);
     }
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
 
@@ -160,6 +164,19 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
     // Finally add the transformed JSON string
     builder.set(outputSchema.getField(config.outputField).getName(), jsonBody.toString());
     emitter.emit(builder.build());
+  }
+
+  private static void rejectDisallowedXmlConstructs(String xmlInput) throws JSONException {
+    if (xmlInput == null) {
+      return;
+    }
+    String normalized = xmlInput.toLowerCase(Locale.ROOT);
+    if (normalized.contains("<!doctype") || normalized.contains("<!entity")
+        || normalized.contains("xi:include") || normalized.contains(":include")
+        || normalized.contains(LOWERCASE_XINCLUDE_NAMESPACE_URI)
+        || normalized.contains(LOWERCASE_XINCLUDE_2003_NAMESPACE_URI)) {
+      throw new JSONException("DOCTYPE declarations, external entities, and XInclude are not allowed");
+    }
   }
 
   /**
