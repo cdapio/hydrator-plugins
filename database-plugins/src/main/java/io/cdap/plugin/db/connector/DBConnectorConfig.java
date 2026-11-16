@@ -24,6 +24,7 @@ import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.plugin.common.KeyValueListParser;
 import io.cdap.plugin.common.db.DBConnectorProperties;
+import io.cdap.plugin.common.db.JdbcConnectionValidator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -92,6 +93,7 @@ public class DBConnectorConfig extends PluginConfig implements DBConnectorProper
    */
   public static Properties getConnectionArgumentsProperties(@Nullable String connectionArguments,
                                                             @Nullable String user, @Nullable String password) {
+    JdbcConnectionValidator.validateConnectionArgumentsString(connectionArguments);
     KeyValueListParser kvParser = new KeyValueListParser("\\s*;\\s*", "=");
 
     Map<String, String> connectionArgumentsMap = new HashMap<>();
@@ -109,6 +111,7 @@ public class DBConnectorConfig extends PluginConfig implements DBConnectorProper
     }
     Properties properties = new Properties();
     properties.putAll(connectionArgumentsMap);
+    JdbcConnectionValidator.validateProperties(properties);
     return properties;
   }
 
@@ -122,6 +125,7 @@ public class DBConnectorConfig extends PluginConfig implements DBConnectorProper
 
   @Override
   public String getConnectionArguments() {
+    JdbcConnectionValidator.validateConnectionArgumentsString(connectionArguments);
     return connectionArguments;
   }
 

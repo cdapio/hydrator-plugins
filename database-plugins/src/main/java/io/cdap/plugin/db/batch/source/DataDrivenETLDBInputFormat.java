@@ -21,6 +21,7 @@ import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DataSizeReporter;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.JDBCDriverShim;
+import io.cdap.plugin.common.db.JdbcConnectionValidator;
 import io.cdap.plugin.db.batch.NoOpCommitConnection;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import org.apache.hadoop.conf.Configuration;
@@ -70,6 +71,7 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
       Configuration conf = getConf();
       try {
         String url = conf.get(DBConfiguration.URL_PROPERTY);
+        JdbcConnectionValidator.validateUrl(url);
         try {
           // throws SQLException if no suitable driver is found
           DriverManager.getDriver(url);
@@ -95,6 +97,7 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
           ConnectionConfig.getConnectionArguments(conf.get(DBUtils.CONNECTION_ARGUMENTS),
                                                   conf.get(DBConfiguration.USERNAME_PROPERTY),
                                                   conf.get(DBConfiguration.PASSWORD_PROPERTY));
+        JdbcConnectionValidator.validateJdbcConnection(url, properties);
         connection = DriverManager.getConnection(url, properties);
 
         boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);

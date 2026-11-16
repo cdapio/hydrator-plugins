@@ -91,6 +91,7 @@ public final class DBUtils {
   public static DriverCleanup ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass,
     String connectionString, String jdbcPluginName, String jdbcPluginType)
     throws IllegalAccessException, InstantiationException, SQLException {
+    JdbcConnectionValidator.validateUrl(connectionString);
 
     try {
       DriverManager.getDriver(connectionString);
