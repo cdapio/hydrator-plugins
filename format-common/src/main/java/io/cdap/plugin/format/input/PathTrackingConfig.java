@@ -26,6 +26,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.plugin.common.batch.JobUtils;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -128,8 +129,11 @@ public class PathTrackingConfig extends PluginConfig {
                                                     String regexPathFilter,
                                                     Configuration configuration,
                                                     Job job)
-    throws IOException { 
+    throws IOException {
+    LocalFilePathValidator.validateFileSystemProperties(getFileSystemProperties());
+    LocalFilePathValidator.validatePath(path, configuration);
     Path fsPath = new Path(path);
+    LocalFilePathValidator.validatePath(fsPath, configuration);
     // need this to load the extra class loader to avoid ClassNotFoundException for the file system
     FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
                                                        f -> FileSystem.get(fsPath.toUri(), configuration));
@@ -139,6 +143,7 @@ public class PathTrackingConfig extends PluginConfig {
     }
 
     if (fs.isFile(fsPath)) {
+      LocalFilePathValidator.validatePath(fsPath, configuration);
       paths.add(fsPath);
       return paths;
     }
@@ -159,10 +164,12 @@ public class PathTrackingConfig extends PluginConfig {
     }
     for (FileStatus file : files) {
       if (pattern == null) {
+        LocalFilePathValidator.validatePath(file.getPath(), configuration);
         paths.add(file.getPath());
       } else {
         Matcher matcher = pattern.matcher(file.getPath().toString());
         if (matcher.find()) {
+          LocalFilePathValidator.validatePath(file.getPath(), configuration);
           paths.add(file.getPath());
         }
       }

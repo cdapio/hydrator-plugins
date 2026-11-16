@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import io.cdap.plugin.batch.source.FileErrorDetailsProvider;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -68,11 +69,14 @@ public class FileDeleteAction extends Action {
 
   @Override
   public void run(ActionContext context) throws Exception {
+    Configuration conf = new Configuration();
+    LocalFilePathValidator.validatePath(config.path, conf);
     Path path = new Path(config.path);
+    LocalFilePathValidator.validatePath(path, conf);
 
     FileSystem fileSystem;
     try {
-      fileSystem = path.getFileSystem(new Configuration());
+      fileSystem = path.getFileSystem(conf);
     } catch (IOException e) {
       String errorReason = String.format("Failed to get FileSystem for path %s.", path);
       throw FileErrorDetailsProvider.getFileBasedProgramFailureExceptionDetailsFromChain(e, errorReason);
@@ -154,6 +158,13 @@ public class FileDeleteAction extends Action {
     private boolean continueOnError;
 
     public void validate(FailureCollector collector) {
+      if (!containsMacro("path") && path != null) {
+        try {
+          LocalFilePathValidator.validatePath(path, null);
+        } catch (IllegalArgumentException e) {
+          collector.addFailure(e.getMessage(), null).withConfigProperty("path");
+        }
+      }
       if (!containsMacro(FILE_REGEX) && fileRegex != null) {
         try {
           Pattern.compile(fileRegex);

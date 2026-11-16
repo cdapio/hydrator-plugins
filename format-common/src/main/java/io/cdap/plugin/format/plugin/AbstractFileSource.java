@@ -39,6 +39,7 @@ import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import io.cdap.plugin.format.RegexPathFilter;
 import io.cdap.plugin.format.SchemaDetector;
 import io.cdap.plugin.format.input.EmptyInputFormat;
@@ -98,6 +99,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(collector);
+    validateFileSystemPropertiesAndPath(collector, null);
     // throw exception if there were any errors while validating the config. This could happen if format or schema is
     // invalid
     collector.getOrThrowException();
@@ -157,6 +159,8 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   public void prepareRun(BatchSourceContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
+    validateFileSystemPropertiesAndPath(collector, context);
+    collector.getOrThrowException();
     String fileFormat = config.getFormatName();
     ValidatingInputFormat validatingInputFormat = getInputFormatForRun(context);
 
@@ -373,6 +377,26 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
    */
   protected boolean shouldGetSchema() {
     return true;
+  }
+
+  private void validateFileSystemPropertiesAndPath(FailureCollector collector,
+                                                   @Nullable BatchSourceContext context) {
+    try {
+      LocalFilePathValidator.validateFileSystemProperties(getFileSystemProperties(context));
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty("fileSystemProperties");
+    }
+    if (context == null && config.containsMacro("path")) {
+      return;
+    }
+    String rawPath = context == null ? config.getPath() : config.getPath(context);
+    if (!Strings.isNullOrEmpty(rawPath)) {
+      try {
+        LocalFilePathValidator.validatePath(rawPath, null);
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null).withConfigProperty("path");
+      }
+    }
   }
 
 }

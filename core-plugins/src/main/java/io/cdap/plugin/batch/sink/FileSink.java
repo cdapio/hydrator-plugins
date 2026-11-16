@@ -30,6 +30,7 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.plugin.batch.source.FileErrorDetailsProvider;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import io.cdap.plugin.format.plugin.AbstractFileSink;
 import io.cdap.plugin.format.plugin.AbstractFileSinkConfig;
 
@@ -91,12 +92,29 @@ public class FileSink extends AbstractFileSink<FileSink.Conf> {
     @Override
     public void validate(FailureCollector collector) {
       super.validate(collector);
+      Map<String, String> fsProps = null;
       try {
-        getFSProperties();
+        fsProps = getFSProperties();
       } catch (IllegalArgumentException e) {
         collector.addFailure(String.format("File system properties must be a valid json. %s: %s",
                 e.getClass().getName(), e.getMessage()), null)
           .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
+      }
+      if (fsProps != null) {
+        try {
+          LocalFilePathValidator.validateFileSystemProperties(fsProps);
+        } catch (IllegalArgumentException e) {
+          collector.addFailure(e.getMessage(), null)
+            .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES);
+        }
+      }
+      if (!containsMacro("path") && path != null) {
+        try {
+          LocalFilePathValidator.validatePath(path, null);
+        } catch (IllegalArgumentException e) {
+          collector.addFailure(e.getMessage(), null)
+            .withConfigProperty("path");
+        }
       }
     }
 

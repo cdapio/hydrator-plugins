@@ -51,6 +51,7 @@ import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import io.cdap.plugin.common.batch.JobUtils;
+import io.cdap.plugin.format.LocalFilePathValidator;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
@@ -338,6 +339,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
                                        excelInputreaderConfig.ifErrorRecord, processFiles, byteArrayMaxOverride);
 
     // Sets the input path(s).
+    LocalFilePathValidator.validatePath(excelInputreaderConfig.filePath, job.getConfiguration());
     ExcelInputFormat.addInputPaths(job, excelInputreaderConfig.filePath);
 
     batchSourceContext.setErrorDetailsProvider(new ErrorDetailsProviderSpec
@@ -554,6 +556,13 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     }
 
     public void validate(FailureCollector collector) {
+      if (!containsMacro("filePath") && !Strings.isNullOrEmpty(filePath)) {
+        try {
+          LocalFilePathValidator.validatePath(filePath, null);
+        } catch (IllegalArgumentException e) {
+          collector.addFailure(e.getMessage(), null).withConfigProperty("filePath");
+        }
+      }
       if (!containsMacro("sheetValue") && sheet.equalsIgnoreCase(SHEET_NO) && !StringUtils.isNumeric(sheetValue)) {
         collector.addFailure(
           String.format("Invalid sheet number: '%s'.", sheetValue),
