@@ -112,7 +112,7 @@
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
     <json-path.version>2.2.0</json-path.version>
-    <json.version>20160212</json.version>
+    <json.version>20260719</json.version>
     <json-smart.version>2.6.1</json-smart.version>
     <log4j2.version>2.26.1</log4j2.version>
     <netty.version>4.1.75.Final</netty.version>
