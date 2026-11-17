@@ -79,7 +79,14 @@
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
-      <version>1.12.0</version>
+    </dependency>
+    <!--
+      parquet-hadoop declares parquet-jackson (its shaded jackson) at runtime scope, which the bundle plugin
+      does not embed (scope=compile), so declare it here to keep it in the plugin jar.
+    -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-jackson</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
