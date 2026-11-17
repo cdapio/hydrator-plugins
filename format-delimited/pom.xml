@@ -30,7 +30,6 @@
   <packaging>jar</packaging>
 
   <properties>
-    <commons-io.version>2.5</commons-io.version>
     <commons-lang3.version>3.1</commons-lang3.version>
   </properties>
 
@@ -78,7 +77,6 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons-io.version}</version>
     </dependency>
   </dependencies>
 
