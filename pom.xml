@@ -102,6 +102,7 @@
     <hadoop.version>3.3.6</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
     <javamail.version>1.4.1</javamail.version>
+    <jline3.version>3.30.17</jline3.version>
     <junit.version>4.13.1</junit.version>
     <mockito.version>2.24.0</mockito.version>
     <mockftp.version>2.6</mockftp.version>
@@ -147,6 +148,11 @@
         <groupId>javax.annotation</groupId>
         <artifactId>jsr250-api</artifactId>
         <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jline</groupId>
+        <artifactId>jline</artifactId>
+        <version>${jline3.version}</version>
       </dependency>
       <dependency>
         <groupId>io.cdap.cdap</groupId>
