@@ -26,13 +26,18 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.hadoop.util.HadoopOutputFile;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.xerial.snappy.Snappy;
 
 import java.io.File;
 import java.io.IOException;
@@ -153,5 +158,37 @@ public class ParquetInputFormatProviderTest {
     List<ValidationFailure.Cause> expectedCauses = new ArrayList<>();
     expectedCauses.add(expectedCause);
     Assert.assertEquals(expectedCauses, actualCauses);
+  }
+
+  @Test
+  public void testSnappyParquetWriteAndRead() throws IOException {
+    Assert.assertNotNull(Snappy.getNativeLibraryVersion());
+    Configuration hConf = new Configuration();
+    File parquetFile = new File(TMP_FOLDER.newFolder(), "snappy.parquet");
+    Path parquetPath = new Path(parquetFile.toURI());
+    Schema expectedSchema = Schema.recordOf("x",
+                                            Schema.Field.of("id", Schema.of(Schema.Type.INT)),
+                                            Schema.Field.of("name", Schema.of(Schema.Type.STRING)));
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(expectedSchema.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("id", 42)
+      .set("name", "snappy-row")
+      .build();
+
+    try (ParquetWriter<GenericRecord> parquetWriter =
+           AvroParquetWriter.<GenericRecord>builder(HadoopOutputFile.fromPath(parquetPath, hConf))
+             .withCompressionCodec(CompressionCodecName.SNAPPY)
+             .withSchema(avroSchema)
+             .build()) {
+      parquetWriter.write(record);
+    }
+
+    try (ParquetReader<GenericRecord> parquetReader =
+           AvroParquetReader.<GenericRecord>builder(HadoopInputFile.fromPath(parquetPath, hConf)).build()) {
+      GenericRecord actual = parquetReader.read();
+      Assert.assertNotNull(actual);
+      Assert.assertEquals(42, actual.get("id"));
+      Assert.assertEquals("snappy-row", actual.get("name").toString());
+    }
   }
 }
