@@ -50,6 +50,7 @@ import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.db.DBErrorDetailsProvider;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.DriverCleanup;
+import io.cdap.plugin.common.db.JdbcConnectionValidator;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.common.FQNGenerator;
@@ -133,6 +134,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         collector.addFailure(String.format(
           "Encountered SQL error while getting query schema with sqlState: '%s', errorCode: '%s', errorMessage: %s",
           e.getSQLState(), e.getErrorCode(), e.getMessage()), null);
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null);
       }
     }
   }
@@ -275,6 +278,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       ConnectionConfig.getConnectionArguments(sourceConfig.getConnectionArguments(),
                                               sourceConfig.getUser(),
                                               sourceConfig.getPassword());
+    JdbcConnectionValidator.validateJdbcConnection(sourceConfig.getConnectionString(), properties);
     return DriverManager.getConnection(sourceConfig.getConnectionString(), properties);
   }
 

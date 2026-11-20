@@ -16,12 +16,14 @@
 
 package io.cdap.plugin;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import io.cdap.cdap.etl.api.Destroyable;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.common.db.DriverCleanup;
+import io.cdap.plugin.common.db.JdbcConnectionValidator;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Properties;
 import javax.annotation.Nullable;
 
 /**
@@ -61,6 +64,23 @@ public class DBManager implements Destroyable {
                              "password.")
         .withConfigProperty(DBConnectorConfig.USER).withConfigProperty(DBConnectorConfig.PASSWORD);
     }
+    if (!config.containsMacro(DBConnectorConfig.CONNECTION_STRING)
+        && !Strings.isNullOrEmpty(config.getConnectionString())) {
+      try {
+        JdbcConnectionValidator.validateUrl(config.getConnectionString());
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null)
+          .withConfigProperty(DBConnectorConfig.CONNECTION_STRING);
+      }
+    }
+    if (!config.containsMacro(DBConnectorConfig.CONNECTION_ARGUMENTS)) {
+      try {
+        JdbcConnectionValidator.validateProperties(config.getConnectionArgumentsProperties());
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null)
+          .withConfigProperty(DBConnectorConfig.CONNECTION_ARGUMENTS);
+      }
+    }
   }
 
   @Nullable
@@ -72,6 +92,8 @@ public class DBManager implements Destroyable {
   }
 
   public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
+    Properties connectionProps = config.getConnectionArgumentsProperties();
+    JdbcConnectionValidator.validateJdbcConnection(config.getConnectionString(), connectionProps);
     try {
       ensureJDBCDriverIsAvailable(jdbcDriverClass);
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
@@ -80,8 +102,7 @@ public class DBManager implements Destroyable {
       throw Throwables.propagate(e);
     }
 
-    try (Connection connection = DriverManager.getConnection(config.getConnectionString(),
-                                                             config.getConnectionArgumentsProperties())) {
+    try (Connection connection = DriverManager.getConnection(config.getConnectionString(), connectionProps)) {
       DatabaseMetaData metadata = connection.getMetaData();
       try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
         return rs.next();
@@ -99,6 +120,7 @@ public class DBManager implements Destroyable {
    */
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
+    JdbcConnectionValidator.validateUrl(config.getConnectionString());
     driverCleanup =
       DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(), config.getJdbcPluginName(),
                                           jdbcPluginType);

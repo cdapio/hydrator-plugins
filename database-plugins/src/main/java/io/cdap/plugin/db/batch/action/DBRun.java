@@ -17,12 +17,14 @@
 package io.cdap.plugin.db.batch.action;
 
 import io.cdap.plugin.DBManager;
+import io.cdap.plugin.common.db.JdbcConnectionValidator;
 
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 /**
  * Class used by database action plugins to run database commands
@@ -63,6 +65,8 @@ public class DBRun {
   }
 
   private Connection getConnection() throws SQLException {
-    return DriverManager.getConnection(config.connectionString, config.getConnectionArguments());
+    Properties properties = config.getConnectionArguments();
+    JdbcConnectionValidator.validateJdbcConnection(config.connectionString, properties);
+    return DriverManager.getConnection(config.connectionString, properties);
   }
 }

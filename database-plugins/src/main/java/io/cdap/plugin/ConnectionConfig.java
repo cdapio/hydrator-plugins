@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.plugin.common.KeyValueListParser;
+import io.cdap.plugin.common.db.JdbcConnectionValidator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -101,6 +102,7 @@ public class ConnectionConfig extends PluginConfig {
    */
   public static Properties getConnectionArguments(@Nullable String connectionArguments,
                                                   @Nullable String user, @Nullable String password) {
+    JdbcConnectionValidator.validateConnectionArgumentsString(connectionArguments);
     KeyValueListParser kvParser = new KeyValueListParser("\\s*;\\s*", "=");
 
     Map<String, String> connectionArgumentsMap = new HashMap<>();
@@ -118,6 +120,7 @@ public class ConnectionConfig extends PluginConfig {
     }
     Properties properties = new Properties();
     properties.putAll(connectionArgumentsMap);
+    JdbcConnectionValidator.validateProperties(properties);
     return properties;
   }
 

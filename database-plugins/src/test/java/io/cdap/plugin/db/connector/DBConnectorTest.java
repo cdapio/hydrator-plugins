@@ -33,6 +33,7 @@ import io.cdap.cdap.etl.api.connector.SampleRequest;
 import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.mock.common.MockConnectorConfigurer;
 import io.cdap.cdap.etl.mock.common.MockConnectorContext;
+import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.db.batch.sink.DBSink;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
@@ -70,34 +71,29 @@ public class DBConnectorTest {
 
   @BeforeClass
   public static void setupTestClass() throws Exception {
-    // Certain properties need to be configured otherwise the whole tests will be skipped.
-
-    String messageTemplate = "%s is not configured, please refer to javadoc of this class for details.";
-
     username = System.getProperty("username");
-    Assume.assumeFalse(String.format(messageTemplate, "username"), username == null);
-
     password = System.getProperty("password");
-    Assume.assumeFalse(String.format(messageTemplate, "password"), password == null);
-
     connectionString = System.getProperty("connection.string");
-    Assume.assumeFalse(String.format(messageTemplate, "connection string"), connectionString == null);
-
     String driver = System.getProperty("driver.class");
-    Assume.assumeFalse(String.format(messageTemplate, "JDBC driver class"), driver == null);
-    driverClass = DBConnectorTest.class.getClassLoader().loadClass(driver);
-
+    if (driver != null) {
+      driverClass = DBConnectorTest.class.getClassLoader().loadClass(driver);
+    }
     schema = System.getProperty("schema.name");
-
     table = System.getProperty("table.name");
-    Assume.assumeFalse(String.format(messageTemplate, "table name"), table == null);
-
     connectionArguments = System.getProperty("connection.arguments");
   }
 
 
   @Test
   public void test() throws IOException {
+    // Certain properties need to be configured otherwise the integration test will be skipped.
+    String messageTemplate = "%s is not configured, please refer to javadoc of this class for details.";
+    Assume.assumeFalse(String.format(messageTemplate, "username"), username == null);
+    Assume.assumeFalse(String.format(messageTemplate, "password"), password == null);
+    Assume.assumeFalse(String.format(messageTemplate, "connection string"), connectionString == null);
+    Assume.assumeFalse(String.format(messageTemplate, "JDBC driver class"), driverClass == null);
+    Assume.assumeFalse(String.format(messageTemplate, "table name"), table == null);
+
     DBConnector connector = new DBConnector(
       new DBConnectorConfig(username, password, JDBC_PLUGIN_NAME, connectionString, connectionArguments));
     ConnectorConfigurer configurer = Mockito.mock(ConnectorConfigurer.class);
@@ -108,6 +104,37 @@ public class DBConnectorTest {
     testBrowse(connector);
     testSample(connector);
     testGenerateSpec(connector);
+  }
+
+  @Test
+  public void testRejectsMaliciousJdbcUrlAndConnectionArguments() {
+    DBConnectorConfig badUrlConfig = new DBConnectorConfig(
+      "user", "pass", JDBC_PLUGIN_NAME,
+      "jdbc:mysql://localhost:3306/db?allowLoadLocalInfile=true", null);
+    DBConnector badUrlConnector = new DBConnector(badUrlConfig);
+    ConnectorContext badUrlContext = new MockConnectorContext(new MockConnectorConfigurer());
+    badUrlConnector.test(badUrlContext);
+    Assert.assertThrows(ValidationException.class,
+                        () -> badUrlContext.getFailureCollector().getOrThrowException());
+
+    DBConnectorConfig badArgsConfig = new DBConnectorConfig(
+      "user", "pass", JDBC_PLUGIN_NAME,
+      "jdbc:mysql://localhost:3306/db", "autoDeserialize=true;allowLoadLocalInfile=true");
+    Assert.assertThrows(IllegalArgumentException.class, badArgsConfig::getConnectionArgumentsProperties);
+
+    DBConnector badArgsConnector = new DBConnector(badArgsConfig);
+    ConnectorContext badArgsContext = new MockConnectorContext(new MockConnectorConfigurer());
+    badArgsConnector.test(badArgsContext);
+    Assert.assertThrows(ValidationException.class,
+                        () -> badArgsContext.getFailureCollector().getOrThrowException());
+
+    ConnectionConfig stageConfig = new ConnectionConfig() {
+      {
+        this.connectionString = "jdbc:postgresql://localhost:5432/db";
+        this.connectionArguments = "socketFactory=org.evil.SocketFactory";
+      }
+    };
+    Assert.assertThrows(IllegalArgumentException.class, stageConfig::getConnectionArguments);
   }
 
   private void testSample(DBConnector connector) throws IOException {

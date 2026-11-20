@@ -339,6 +339,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
   }
 
   protected Connection getConnection(String connectionString, Properties connectionArguments) {
+    JdbcConnectionValidator.validateJdbcConnection(connectionString, connectionArguments);
     try {
       return DriverManager.getConnection(connectionString, connectionArguments);
     } catch (SQLException e) {
