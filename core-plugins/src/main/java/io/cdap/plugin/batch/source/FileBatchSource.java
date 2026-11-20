@@ -25,10 +25,10 @@ import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.batch.connector.FileConnector;
+import io.cdap.plugin.format.FileSystemPropertiesValidator;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.plugin.AbstractFileSource;
 
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -55,7 +55,11 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
 
   @Override
   protected Map<String, String> getFileSystemProperties(BatchSourceContext context) {
-    Map<String, String> properties = new HashMap<>(config.getFileSystemProperties());
+    // Reserved keys are rejected by FileSourceConfig.validate(FailureCollector); dropping them here as well
+    // guarantees they never reach the Hadoop configuration (for example during schema detection in prepareRun
+    // before validation failures are thrown).
+    Map<String, String> properties =
+      FileSystemPropertiesValidator.removeReservedFileSystemProperties(config.getFileSystemProperties());
     if (config.shouldCopyHeader()) {
       properties.put(PathTrackingInputFormat.COPY_HEADER, "true");
     }
