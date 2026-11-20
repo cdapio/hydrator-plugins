@@ -137,8 +137,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
     }
 
-    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES, config.shouldEnableExternalEntities());
-    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_SUPPORT_DTD, config.shouldSupportDTD());
+    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES, false);
+    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_SUPPORT_DTD, false);
 
     if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
       setFileTrackingInfo(context, conf);
@@ -300,12 +300,14 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Macro
     private final String temporaryFolder;
 
-    @Description("Enable external entities while processing XML files")
+    @Deprecated
+    @Description("Deprecated and ignored; external entities are always disabled.")
     @Nullable
     @Macro
     private final Boolean enableExternalEntities;
 
-    @Description("Enable support DTDs while processing XML files")
+    @Deprecated
+    @Description("Deprecated and ignored; DTDs are always disabled.")
     @Nullable
     private final Boolean supportDTD;
 
@@ -365,14 +367,16 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       return nodePath;
     }
 
+    @Deprecated
     @VisibleForTesting
     boolean shouldEnableExternalEntities() {
-      return enableExternalEntities == null ? false : enableExternalEntities;
+      return false;
     }
 
+    @Deprecated
     @VisibleForTesting
     boolean shouldSupportDTD() {
-      return supportDTD == null ? false : supportDTD;
+      return false;
     }
 
     void validate(FailureCollector collector) {

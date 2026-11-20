@@ -34,9 +34,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -52,6 +55,8 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   public static final String OPENING_END_TAG_DELIMITER = "</";
   public static final String CLOSING_START_TAG_DELIMITER = ">";
   public static final String OPENING_START_TAG_DELIMITER = "<";
+  private static final String XINCLUDE_NAMESPACE_URI = "http://www.w3.org/2001/XInclude";
+  private static final String XINCLUDE_2003_NAMESPACE_URI = "http://www.w3.org/2003/XInclude";
 
   private String fileName;
   private XMLStreamReader reader;
@@ -65,8 +70,6 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   private long availableBytes;
   private FSDataInputStream fdDataInputStream;
   private final DecimalFormat df = new DecimalFormat("#.##");
-  private boolean enableExternalEntities;
-  private boolean supportDTD;
 
   private LongWritable currentKey;
   private Map<String, String> currentValue;
@@ -108,10 +111,13 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     Configuration conf = context.getConfiguration();
     fs = file.getFileSystem(conf);
     XMLInputFactory factory = XMLInputFactory.newInstance();
-    enableExternalEntities = conf.getBoolean(XMLInputFormat.XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES, false);
-    supportDTD = conf.getBoolean(XMLInputFormat.XML_INPUTFORMAT_SUPPORT_DTD, false);
-    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, enableExternalEntities);
-    factory.setProperty(XMLInputFactory.SUPPORT_DTD, supportDTD);
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+    try {
+      factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+    } catch (IllegalArgumentException | UnsupportedOperationException ignored) {
+      // Optional JAXP 1.5 defense-in-depth property; StAX DTD and external entity flags are disabled above.
+    }
     fdDataInputStream = fs.open(file);
     availableBytes = split.getLength();
     try {
@@ -148,7 +154,14 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
       while (reader.hasNext()) {
         int event = reader.next();
         switch (event) {
+          case XMLStreamConstants.DTD:
+          case XMLStreamConstants.ENTITY_REFERENCE:
+          case XMLStreamConstants.ENTITY_DECLARATION:
+            throw new XMLStreamException("DOCTYPE declarations and external entities are not allowed");
           case XMLStreamConstants.START_ELEMENT:
+            if (isXIncludeElement(reader)) {
+              throw new XMLStreamException("XInclude is not allowed");
+            }
             String nodeNameStart = reader.getLocalName();
             boolean validHierarchy = true;
             currentNodeLevelMap.put(nodeLevel, nodeNameStart);
@@ -207,6 +220,37 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     }
     processFileAction();
     return false;
+  }
+
+  private static boolean isXIncludeElement(XMLStreamReader reader) {
+    if (isXIncludeNamespace(reader.getNamespaceURI())) {
+      return true;
+    }
+    String localName = reader.getLocalName();
+    String prefix = reader.getPrefix();
+    if ("include".equalsIgnoreCase(localName) && prefix != null && !prefix.isEmpty()) {
+      return true;
+    }
+    if (localName != null && (localName.equalsIgnoreCase("xi:include")
+        || localName.toLowerCase(Locale.ROOT).endsWith(":include"))) {
+      return true;
+    }
+    int nsCount = reader.getNamespaceCount();
+    for (int i = 0; i < nsCount; i++) {
+      if (isXIncludeNamespace(reader.getNamespaceURI(i))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isXIncludeNamespace(@Nullable String uri) {
+    if (uri == null) {
+      return false;
+    }
+    String trimmed = uri.trim();
+    return XINCLUDE_NAMESPACE_URI.equalsIgnoreCase(trimmed)
+        || XINCLUDE_2003_NAMESPACE_URI.equalsIgnoreCase(trimmed);
   }
 
   /**

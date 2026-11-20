@@ -74,6 +74,11 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
 
   public XMLMultiParser(Config config) {
     this.config = config;
+    try {
+      XMLParser.configureDocumentBuilderFactory(this.builderFactory);
+    } catch (ParserConfigurationException e) {
+      throw new IllegalStateException("Failed to configure secure XML DocumentBuilderFactory", e);
+    }
   }
 
   @Override
@@ -100,16 +105,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     schema = config.getSchema(collector);
     xPathExpression = config.getXPathExpression(collector);
     fieldNames = new HashSet<>();
-    builderFactory.setFeature("http://xml.org/sax/features/external-general-entities",
-                              config.shouldEnableExternalGeneralEntities());
-    builderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities",
-                              config.shouldEnableExternalParameterEntities());
-    builderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd",
-                              config.shouldLoadExternalDTD());
-    builderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",
-                              config.shouldDisallowDocTypeDTD());
-    builderFactory.setXIncludeAware(false);
-    builderFactory.setExpandEntityReferences(false);
+    XMLParser.configureDocumentBuilderFactory(builderFactory);
     for (Schema.Field field : schema.getFields()) {
       fieldNames.add(field.getName());
     }
@@ -130,6 +126,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
       try {
         DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
         document = documentBuilder.parse(source);
+        XMLParser.rejectXInclude(document.getDocumentElement());
       } catch (ParserConfigurationException e) {
         // shouldn't happen
         throw new RuntimeException("Unable to create document builder.", e);
@@ -199,28 +196,28 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
       "The field names must match the node names in the given xpath.")
     private final String schema;
 
+    @Deprecated
     @Nullable
-    @Description("Enable external entities.Sets" +
-            " 'http://xml.org/sax/features/external-general-entities'")
+    @Description("Deprecated and ignored; external general entities are always disabled.")
     private final Boolean enableExternalGeneralEntities;
 
+    @Deprecated
     @Nullable
-    @Description("Enable external parameter entities. Sets" +
-            " 'http://xml.org/sax/features/external-parameter-entitiesl'")
+    @Description("Deprecated and ignored; external parameter entities are always disabled.")
     private final Boolean enableExternalParameterEntities;
 
+    @Deprecated
     @Nullable
-    @Description("Enable loading external dtd. Sets" +
-            " 'http://apache.org/xml/features/nonvalidating/load-external-dtd'")
+    @Description("Deprecated and ignored; loading external DTDs is always disabled.")
     private final Boolean loadExternalDTD;
 
+    @Deprecated
     @Nullable
-    @Description("Disallow doctype type declaration. Sets" +
-            " 'http://apache.org/xml/features/disallow-doctype-decl'")
+    @Description("Deprecated and ignored; DOCTYPE declarations are always disallowed.")
     private final Boolean disallowDocTypeDTD;
 
     public Config(String field, String encoding, String xPath, String schema) {
-      this(field, encoding, xPath, schema, false, false, false, false);
+      this(field, encoding, xPath, schema, false, false, false, true);
     }
 
     public Config(String field, String encoding, String xPath, String schema, Boolean enableExternalGeneralEntities,
@@ -270,20 +267,24 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
       }
     }
 
+    @Deprecated
     public boolean shouldEnableExternalGeneralEntities() {
-      return enableExternalGeneralEntities == null ? false : enableExternalGeneralEntities;
+      return false;
     }
 
+    @Deprecated
     public boolean shouldEnableExternalParameterEntities() {
-      return enableExternalParameterEntities == null ? false : enableExternalParameterEntities;
+      return false;
     }
 
+    @Deprecated
     public boolean shouldLoadExternalDTD() {
-      return loadExternalDTD == null ? false : loadExternalDTD;
+      return false;
     }
 
+    @Deprecated
     public boolean shouldDisallowDocTypeDTD() {
-      return disallowDocTypeDTD == null ? false : disallowDocTypeDTD;
+      return true;
     }
 
     public Schema getSchema(FailureCollector collector) {

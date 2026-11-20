@@ -34,9 +34,12 @@ import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -45,10 +48,13 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -70,6 +76,15 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   private static final String XPATH_MAPPINGS = "xPathMappings";
   private static final String EXIT_ON_ERROR = "Exit on error";
   private static final String WRITE_ERROR_DATASET = "Write to error dataset";
+  private static final String DISALLOW_DOCTYPE_DECL_FEATURE = "http://apache.org/xml/features/disallow-doctype-decl";
+  private static final String EXTERNAL_GENERAL_ENTITIES_FEATURE =
+    "http://xml.org/sax/features/external-general-entities";
+  private static final String EXTERNAL_PARAMETER_ENTITIES_FEATURE =
+    "http://xml.org/sax/features/external-parameter-entities";
+  private static final String LOAD_EXTERNAL_DTD_FEATURE =
+    "http://apache.org/xml/features/nonvalidating/load-external-dtd";
+  private static final String XINCLUDE_NAMESPACE_URI = "http://www.w3.org/2001/XInclude";
+  private static final String XINCLUDE_2003_NAMESPACE_URI = "http://www.w3.org/2003/XInclude";
   private final Config config;
   private Schema outSchema;
   private Map<String, String> xPathMapping = new HashMap<>();
@@ -176,19 +191,10 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     try {
       InputSource source = new InputSource(new StringReader((String) input.get(config.inputField)));
       source.setEncoding(config.encoding);
-      DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-      builderFactory.setFeature("http://xml.org/sax/features/external-general-entities",
-              config.enableExternalGeneralEntities);
-      builderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities",
-              config.enableExternalParameterEntities);
-      builderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd",
-              config.loadExternalDTD);
-      builderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",
-              config.disallowDocTypeDTD);
-      builderFactory.setXIncludeAware(false);
-      builderFactory.setExpandEntityReferences(false);
+      DocumentBuilderFactory builderFactory = createDocumentBuilderFactory();
       DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
       Document document = documentBuilder.parse(source);
+      rejectXInclude(document.getDocumentElement());
       XPathFactory xpathFactory = XPathFactory.newInstance();
       XPath xpath = xpathFactory.newXPath();
       StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
@@ -264,7 +270,11 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   private String nodeToString(Node node) {
     StringWriter stringWriter = new StringWriter();
     try {
-      Transformer transformer = TransformerFactory.newInstance().newTransformer();
+      TransformerFactory transformerFactory = TransformerFactory.newInstance();
+      transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      setAttributeQuietly(transformerFactory, XMLConstants.ACCESS_EXTERNAL_DTD, "");
+      setAttributeQuietly(transformerFactory, XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+      Transformer transformer = transformerFactory.newTransformer();
       transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
       transformer.setOutputProperty(OutputKeys.INDENT, "no");
       transformer.transform(new DOMSource(node), new StreamResult(stringWriter));
@@ -272,6 +282,84 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       throw new IllegalArgumentException("Cannot convert node to string. Transformer exception ", e);
     }
     return stringWriter.toString();
+  }
+
+  static DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    configureDocumentBuilderFactory(factory);
+    return factory;
+  }
+
+  static void configureDocumentBuilderFactory(DocumentBuilderFactory factory)
+      throws ParserConfigurationException {
+    factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    factory.setFeature(DISALLOW_DOCTYPE_DECL_FEATURE, true);
+    factory.setFeature(EXTERNAL_GENERAL_ENTITIES_FEATURE, false);
+    factory.setFeature(EXTERNAL_PARAMETER_ENTITIES_FEATURE, false);
+    factory.setFeature(LOAD_EXTERNAL_DTD_FEATURE, false);
+    try {
+      factory.setXIncludeAware(false);
+    } catch (UnsupportedOperationException ignored) {
+      // Some older JAXP implementations do not support XInclude and throw UnsupportedOperationException.
+    }
+    factory.setExpandEntityReferences(false);
+    setAttributeQuietly(factory, XMLConstants.ACCESS_EXTERNAL_DTD, "");
+    setAttributeQuietly(factory, XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+  }
+
+  private static void setAttributeQuietly(DocumentBuilderFactory factory, String name, Object value) {
+    try {
+      factory.setAttribute(name, value);
+    } catch (IllegalArgumentException | UnsupportedOperationException ignored) {
+      // Optional JAXP 1.5 defense-in-depth attribute; core SAX/DOM features above are always enforced.
+    }
+  }
+
+  private static void setAttributeQuietly(TransformerFactory factory, String name, Object value) {
+    try {
+      factory.setAttribute(name, value);
+    } catch (IllegalArgumentException | UnsupportedOperationException ignored) {
+      // Optional JAXP 1.5 defense-in-depth attribute; FEATURE_SECURE_PROCESSING is enforced above.
+    }
+  }
+
+  static void rejectXInclude(@Nullable Node node) throws SAXException {
+    if (node == null) {
+      return;
+    }
+    if (node.getNodeType() == Node.ELEMENT_NODE) {
+      Element element = (Element) node;
+      String nodeName = element.getNodeName();
+      String localName = element.getLocalName();
+      String namespaceUri = element.getNamespaceURI();
+      if ("xi:include".equalsIgnoreCase(nodeName)
+          || (nodeName != null && nodeName.toLowerCase(Locale.ROOT).endsWith(":include"))
+          || ("include".equalsIgnoreCase(localName) && isXIncludeNamespace(namespaceUri))
+          || isXIncludeNamespace(namespaceUri)) {
+        throw new SAXException("XInclude is not allowed");
+      }
+      NamedNodeMap attributes = element.getAttributes();
+      if (attributes != null) {
+        for (int i = 0; i < attributes.getLength(); i++) {
+          Node attr = attributes.item(i);
+          if (attr != null && isXIncludeNamespace(attr.getNodeValue())) {
+            throw new SAXException("XInclude is not allowed");
+          }
+        }
+      }
+    }
+    for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling()) {
+      rejectXInclude(child);
+    }
+  }
+
+  private static boolean isXIncludeNamespace(@Nullable String uri) {
+    if (uri == null) {
+      return false;
+    }
+    String trimmed = uri.trim();
+    return XINCLUDE_NAMESPACE_URI.equalsIgnoreCase(trimmed)
+        || XINCLUDE_2003_NAMESPACE_URI.equalsIgnoreCase(trimmed);
   }
 
   /**
@@ -313,32 +401,32 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       "Defaults to false. ")
     private final Boolean failOnArray;
 
+    @Deprecated
     @Nullable
-    @Description("Enable external entities.Sets" +
-            " 'http://xml.org/sax/features/external-general-entities'")
+    @Description("Deprecated and ignored; external general entities are always disabled.")
     private final Boolean enableExternalGeneralEntities;
 
+    @Deprecated
     @Nullable
-    @Description("Enable external parameter entities. Sets" +
-            " 'http://xml.org/sax/features/external-parameter-entitiesl'")
+    @Description("Deprecated and ignored; external parameter entities are always disabled.")
     private final Boolean enableExternalParameterEntities;
 
+    @Deprecated
     @Nullable
-    @Description("Enable loading external dtd. Sets" +
-            " 'http://apache.org/xml/features/nonvalidating/load-external-dtd'")
+    @Description("Deprecated and ignored; loading external DTDs is always disabled.")
     private final Boolean loadExternalDTD;
 
+    @Deprecated
     @Nullable
-    @Description("Disallow doctype type declaration. Sets" +
-            " 'http://apache.org/xml/features/disallow-doctype-decl'")
+    @Description("Deprecated and ignored; DOCTYPE declarations are always disallowed.")
     private final Boolean disallowDocTypeDTD;
 
     public Config() {
-      this("", "", "", "", "", false, false, false, false);
+      this("", "", "", "", "", false, false, false, true);
     }
     public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
                   String processOnError) {
-      this(inputField, encoding, xPathFieldMapping, fieldTypeMapping, processOnError, false, false, false, false);
+      this(inputField, encoding, xPathFieldMapping, fieldTypeMapping, processOnError, false, false, false, true);
     }
 
     public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
