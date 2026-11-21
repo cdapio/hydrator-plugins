@@ -136,7 +136,7 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15to18</artifactId>
-      <version>1.84</version>
+      <version>1.85</version>
     </dependency>
     <!-- EMail action -->
     <dependency>
@@ -196,7 +196,6 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.15.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
