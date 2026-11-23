@@ -119,7 +119,8 @@
     <netty.version>4.1.75.Final</netty.version>
     <netty-http.version>1.3.0</netty-http.version>
     <spark.version>3.3.2</spark.version>
-    <jackson.databind.version>2.13.4.2</jackson.databind.version>
+    <jackson.version>2.23.0</jackson.version>
+    <jackson.databind.version>${jackson.version}</jackson.databind.version>
     <testSourceLocation>${project.basedir}/src/test/java/</testSourceLocation>
   </properties>
 
@@ -138,6 +139,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
