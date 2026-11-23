@@ -90,7 +90,7 @@
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <commons-lang-version>2.6</commons-lang-version>
-    <commons-lang3-version>3.12.0</commons-lang3-version>
+    <commons-lang3-version>3.22.0</commons-lang3-version>
     <commons-collections.version>3.2.2</commons-collections.version>
     <cdap.version>6.11.0</cdap.version>
     <datastax.version>2.0.5</datastax.version>
@@ -108,6 +108,7 @@
     <mockftp.version>2.6</mockftp.version>
     <snappy.version>1.1.2</snappy.version>
     <slf4j.version>1.7.15</slf4j.version>
+    <surefire.version>2.22.2</surefire.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
     <json-path.version>2.2.0</json-path.version>
@@ -854,7 +855,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
+        <version>${surefire.version}</version>
         <configuration>
           <argLine>-Xmx3g -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true</argLine>
           <redirectTestOutputToFile>${surefire.redirectTestOutputToFile}</redirectTestOutputToFile>
@@ -878,7 +879,7 @@
           <dependency>
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>surefire-junit47</artifactId>
-            <version>2.22.2</version>
+            <version>${surefire.version}</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -998,7 +999,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.2</version>
+          <version>${surefire.version}</version>
           <configuration>
             <skipTests>true</skipTests>
           </configuration>
