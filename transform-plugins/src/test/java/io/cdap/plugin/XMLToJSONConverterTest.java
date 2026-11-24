@@ -122,4 +122,52 @@ public class XMLToJSONConverterTest {
     Assert.assertEquals(1, collector.getValidationFailures().size());
     Assert.assertEquals(2, collector.getValidationFailures().get(0).getCauses().size());
   }
+
+  @Test
+  public void testRejectsDoctypeExternalEntitiesAndXinclude() throws Exception {
+    XMLToJSON.Config config = new XMLToJSON.Config("body", "jsonevent", OUTPUT.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLToJSON(config);
+    transform.initialize(null);
+
+    String[] disallowedPayloads = new String[] {
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE catalog SYSTEM \"file:///etc/passwd\">"
+        + "<catalog>test</catalog>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE catalog [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>"
+        + "<catalog>&xxe;</catalog>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE catalog [<!ENTITY % remote SYSTEM \"file:///etc/passwd\"> %remote;]>"
+        + "<catalog>test</catalog>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!ENTITY standalone SYSTEM \"file:///etc/passwd\">"
+        + "<catalog>test</catalog>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<catalog><xi:include href=\"file:///etc/passwd\" parse=\"text\"/></catalog>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<catalog><include xmlns=\"http://www.w3.org/2001/XInclude\" href=\"file:///etc/passwd\"/></catalog>"
+    };
+
+    for (String payload : disallowedPayloads) {
+      MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+      try {
+        transform.transform(StructuredRecord.builder(INPUT).set("body", payload).build(), emitter);
+        Assert.fail("Expected exception for disallowed XML payload: " + payload);
+      } catch (Exception e) {
+        Assert.assertTrue(e.getMessage().contains("Failed to convert XML to JSON"));
+        Assert.assertNotNull(e.getCause());
+        Assert.assertTrue(
+          e.getCause().getMessage().contains("DOCTYPE declarations, external entities, and XInclude are not allowed"));
+      }
+      Assert.assertTrue(emitter.getEmitted().isEmpty());
+    }
+
+    // Verify predefined XML entities still convert cleanly.
+    MockEmitter<StructuredRecord> validEmitter = new MockEmitter<>();
+    transform.transform(
+      StructuredRecord.builder(INPUT).set("body", "<catalog><name>A &amp; B &lt;C&gt;</name></catalog>").build(),
+      validEmitter);
+    Assert.assertEquals(1, validEmitter.getEmitted().size());
+    Assert.assertEquals("{\"catalog\":{\"name\":\"A & B <C>\"}}", validEmitter.getEmitted().get(0).get("jsonevent"));
+  }
 }

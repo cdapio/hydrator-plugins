@@ -29,13 +29,21 @@ import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 public class XMLParserTest {
+  @ClassRule
+  public static final TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
+
   private static final Schema INPUT = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
 
@@ -279,5 +287,82 @@ public class XMLParserTest {
     Cause expectedCause = new Cause();
     expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLParser.Config.INPUT);
     Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
+  }
+
+  @Test
+  public void testRejectsExternalEntitiesDtdAndXincludeEvenWhenConfigEnablesThem() throws Exception {
+    File secretFile = TEMP_FOLDER.newFile("xmlparser-secret.txt");
+    Files.write(secretFile.toPath(), "SECRET_TOKEN_VALUE".getBytes(StandardCharsets.UTF_8));
+    File dtdFile = TEMP_FOLDER.newFile("xmlparser-external.dtd");
+    Files.write(dtdFile.toPath(), "<!ENTITY extParam \"LEAKED\">".getBytes(StandardCharsets.UTF_8));
+
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8",
+      "title:/book/title",
+      "title:string",
+      "Write to error dataset",
+      true, true, true, false);
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+
+    List<String> disallowedPayloads = ImmutableList.of(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE book [<!ENTITY xxe SYSTEM \"" + secretFile.toURI() + "\">]>"
+        + "<book><title>&xxe;</title></book>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE book SYSTEM \"" + dtdFile.toURI() + "\">"
+        + "<book><title>Test</title></book>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE book [<!ENTITY % remote SYSTEM \"" + dtdFile.toURI() + "\"> %remote;]>"
+        + "<book><title>Test</title></book>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<book><title><xi:include xmlns:xi=\"http://www.w3.org/2001/XInclude\" href=\""
+        + secretFile.toURI() + "\" parse=\"text\"/></title></book>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<book><title><include xmlns=\"http://www.w3.org/2001/XInclude\" href=\""
+        + secretFile.toURI() + "\" parse=\"text\"/></title></book>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<book><title><xi:include href=\""
+        + secretFile.toURI() + "\" parse=\"text\"/></title></book>"
+    );
+
+    for (String payload : disallowedPayloads) {
+      MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+      StructuredRecord inputRecord = StructuredRecord.builder(INPUT)
+        .set("offset", 1)
+        .set("body", payload)
+        .build();
+      transform.transform(inputRecord, emitter);
+      Assert.assertTrue("Expected zero emitted records for payload: " + payload, emitter.getEmitted().isEmpty());
+      Assert.assertEquals("Expected error record for payload: " + payload, 1, emitter.getErrors().size());
+      Assert.assertEquals(31, emitter.getErrors().get(0).getErrorCode());
+      Assert.assertFalse(emitter.getErrors().get(0).getErrorMsg().contains("SECRET_TOKEN_VALUE"));
+      Assert.assertFalse(emitter.getErrors().get(0).getErrorMsg().contains("LEAKED"));
+    }
+
+    // Verify Exit on error mode throws IllegalStateException on disallowed XML payload.
+    XMLParser.Config exitConfig = new XMLParser.Config(
+      "body", "UTF-8", "title:/book/title", "title:string", "Exit on error", true, true, true, false);
+    Transform<StructuredRecord, StructuredRecord> exitTransform = new XMLParser(exitConfig);
+    exitTransform.initialize(new MockTransformContext());
+    try {
+      exitTransform.transform(
+        StructuredRecord.builder(INPUT).set("offset", 1).set("body", disallowedPayloads.get(0)).build(),
+        new MockEmitter<StructuredRecord>());
+      Assert.fail("Expected IllegalStateException in Exit on error mode");
+    } catch (IllegalStateException expected) {
+      Assert.assertFalse(expected.getMessage().contains("SECRET_TOKEN_VALUE"));
+    }
+
+    // Verify predefined XML entities still parse cleanly.
+    MockEmitter<StructuredRecord> validEmitter = new MockEmitter<>();
+    StructuredRecord validInput = StructuredRecord.builder(INPUT)
+      .set("offset", 2)
+      .set("body", "<book><title>Tom &amp; Jerry &lt;3&gt;</title></book>")
+      .build();
+    transform.transform(validInput, validEmitter);
+    Assert.assertEquals(0, validEmitter.getErrors().size());
+    Assert.assertEquals(1, validEmitter.getEmitted().size());
+    Assert.assertEquals("Tom & Jerry <3>", validEmitter.getEmitted().get(0).get("title"));
   }
 }

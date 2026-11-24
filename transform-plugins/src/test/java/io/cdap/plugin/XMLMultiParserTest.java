@@ -23,13 +23,20 @@ import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 /**
  */
 public class XMLMultiParserTest {
+  @ClassRule
+  public static final TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
 
   @Test
   public void testMultipleRecordsFromOne() throws Exception {
@@ -95,5 +102,67 @@ public class XMLMultiParserTest {
     InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
     Assert.assertEquals(31, invalidEntry.getErrorCode());
     Assert.assertEquals(input, invalidEntry.getInvalidRecord());
+  }
+
+  @Test
+  public void testRejectsExternalEntitiesDtdAndXincludeEvenWhenConfigEnablesThem() throws Exception {
+    File secretFile = TEMP_FOLDER.newFile("xmlmultiparser-secret.txt");
+    Files.write(secretFile.toPath(), "SECRET_TOKEN_VALUE".getBytes(StandardCharsets.UTF_8));
+    File dtdFile = TEMP_FOLDER.newFile("xmlmultiparser-external.dtd");
+    Files.write(dtdFile.toPath(), "<!ENTITY extParam \"LEAKED\">".getBytes(StandardCharsets.UTF_8));
+
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+                                    Schema.Field.of("name", Schema.of(Schema.Type.STRING)));
+    XMLMultiParser.Config config = new XMLMultiParser.Config(
+      "body", "UTF-8", "/items/item", schema.toString(), true, true, true, false);
+    Assert.assertFalse(config.shouldEnableExternalGeneralEntities());
+    Assert.assertFalse(config.shouldEnableExternalParameterEntities());
+    Assert.assertFalse(config.shouldLoadExternalDTD());
+    Assert.assertTrue(config.shouldDisallowDocTypeDTD());
+
+    XMLMultiParser parser = new XMLMultiParser(config);
+    parser.initialize(new MockTransformContext("stage"));
+
+    Schema inputSchema = Schema.recordOf("input", Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
+    List<String> disallowedPayloads = ImmutableList.of(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE items [<!ENTITY xxe SYSTEM \"" + secretFile.toURI() + "\">]>"
+        + "<items><item><id>1</id><name>&xxe;</name></item></items>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE items SYSTEM \"" + dtdFile.toURI() + "\">"
+        + "<items><item><id>1</id><name>Item</name></item></items>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<!DOCTYPE items [<!ENTITY % remote SYSTEM \"" + dtdFile.toURI() + "\"> %remote;]>"
+        + "<items><item><id>1</id><name>Item</name></item></items>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<items><item><id>1</id><name><xi:include xmlns:xi=\"http://www.w3.org/2001/XInclude\" href=\""
+        + secretFile.toURI() + "\" parse=\"text\"/></name></item></items>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<items><item><id>1</id><name><include xmlns=\"http://www.w3.org/2001/XInclude\" href=\""
+        + secretFile.toURI() + "\" parse=\"text\"/></name></item></items>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        + "<items><item><id>1</id><name><xi:include href=\""
+        + secretFile.toURI() + "\" parse=\"text\"/></name></item></items>"
+    );
+
+    for (String payload : disallowedPayloads) {
+      MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+      StructuredRecord input = StructuredRecord.builder(inputSchema).set("body", payload).build();
+      parser.transform(input, emitter);
+      Assert.assertTrue("Expected zero emitted records for payload: " + payload, emitter.getEmitted().isEmpty());
+      Assert.assertEquals("Expected error record for payload: " + payload, 1, emitter.getErrors().size());
+      Assert.assertEquals(31, emitter.getErrors().get(0).getErrorCode());
+    }
+
+    // Verify predefined XML entities still parse cleanly.
+    MockEmitter<StructuredRecord> validEmitter = new MockEmitter<>();
+    StructuredRecord validInput = StructuredRecord.builder(inputSchema)
+      .set("body", "<items><item><id>1</id><name>Chips &amp; Salsa &lt;hot&gt;</name></item></items>")
+      .build();
+    parser.transform(validInput, validEmitter);
+    Assert.assertEquals(0, validEmitter.getErrors().size());
+    Assert.assertEquals(1, validEmitter.getEmitted().size());
+    Assert.assertEquals("Chips & Salsa <hot>", validEmitter.getEmitted().get(0).get("name"));
   }
 }
