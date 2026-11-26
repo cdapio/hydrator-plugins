@@ -35,6 +35,8 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-client</artifactId>
+      <!-- Provided by CDAP at runtime; compile scope packaged yarn-client, jline and jetty into the plugin jar. -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.cdap.cdap</groupId>

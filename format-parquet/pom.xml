@@ -79,7 +79,23 @@
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
-      <version>1.12.0</version>
+    </dependency>
+    <!--
+      parquet-hadoop declares parquet-jackson (its shaded jackson) at runtime scope, which the bundle plugin
+      does not embed (scope=compile), so declare it here to keep it in the plugin jar.
+    -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-jackson</artifactId>
+    </dependency>
+    <!--
+      hadoop-common (provided) pulls snappy-java at depth 2 before parquet-avro -> parquet-hadoop (depth 3),
+      causing Maven to resolve snappy-java at provided scope and omit it from the plugin jar. Declare it at
+      compile scope so parquet-hadoop's SnappyCompressor can load org.xerial.snappy.Snappy at runtime.
+    -->
+    <dependency>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

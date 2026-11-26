@@ -83,12 +83,14 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- version properties -->
     <apache-commons.version>1.2</apache-commons.version>
+    <aircompressor.version>2.0.3</aircompressor.version>
     <asm.version>7.1</asm.version>
     <avro.version>1.11.4</avro.version>
     <cassandra.version>3.11.12</cassandra.version>
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
+    <commons-io.version>2.22.0</commons-io.version>
     <commons-lang-version>2.6</commons-lang-version>
     <commons-lang3-version>3.22.0</commons-lang3-version>
     <commons-collections.version>3.2.2</commons-collections.version>
@@ -102,21 +104,28 @@
     <guava.version>13.0.1</guava.version>
     <hadoop.version>3.3.6</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
+    <iq80-snappy.version>0.5</iq80-snappy.version>
     <javamail.version>1.4.1</javamail.version>
     <junit.version>4.13.1</junit.version>
     <mockito.version>2.24.0</mockito.version>
     <mockftp.version>2.6</mockftp.version>
-    <snappy.version>1.1.2</snappy.version>
+    <snappy.version>1.1.10.12</snappy.version>
     <slf4j.version>1.7.15</slf4j.version>
     <surefire.version>2.22.2</surefire.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
     <json-path.version>2.2.0</json-path.version>
-    <json.version>20160212</json.version>
+    <json.version>20260814</json.version>
+    <json-smart.version>2.6.1</json-smart.version>
+    <log4j2.version>2.26.1</log4j2.version>
     <netty.version>4.1.75.Final</netty.version>
     <netty-http.version>1.3.0</netty-http.version>
+    <parquet.version>1.15.2</parquet.version>
+    <!-- parquet-jackson only shades jackson; 1.18.2 has the fixed jackson copy. -->
+    <parquet-jackson.version>1.18.2</parquet-jackson.version>
     <spark.version>3.3.2</spark.version>
-    <jackson.databind.version>2.13.4.2</jackson.databind.version>
+    <jackson.version>2.23.0</jackson.version>
+    <jackson.databind.version>${jackson.version}</jackson.databind.version>
     <testSourceLocation>${project.basedir}/src/test/java/</testSourceLocation>
   </properties>
 
@@ -135,6 +144,37 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>${log4j2.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <!-- json-smart comes in through json-path. -->
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>${json-smart.version}</version>
+      </dependency>
+      <!-- iq80 snappy comes in through orc-core. -->
+      <dependency>
+        <groupId>org.iq80.snappy</groupId>
+        <artifactId>snappy</artifactId>
+        <version>${iq80-snappy.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
@@ -498,6 +538,46 @@
         <version>${snappy.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-avro</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-hadoop</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-column</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-common</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-encoding</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-format-structures</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-jackson</artifactId>
+        <version>${parquet-jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.airlift</groupId>
+        <artifactId>aircompressor</artifactId>
+        <version>${aircompressor.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.cassandraunit</groupId>
         <artifactId>cassandra-unit</artifactId>
         <version>${cassandraunit.version}</version>
@@ -626,6 +706,15 @@
         <artifactId>avro-mapred</artifactId>
         <version>${avro.version}</version>
         <exclusions>
+          <!-- avro-ipc (and its velocity / jetty dependencies) is not used by the plugins. -->
+          <exclusion>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-ipc</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-ipc-jetty</artifactId>
+          </exclusion>
           <exclusion>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
