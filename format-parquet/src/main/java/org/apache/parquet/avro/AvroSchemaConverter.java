@@ -65,7 +65,6 @@ import org.apache.parquet.conf.ParquetConfiguration;
 import org.apache.parquet.schema.ConversionPatterns;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
-import org.apache.parquet.schema.LogicalTypeAnnotation.UUIDLogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
@@ -78,8 +77,10 @@ import org.apache.parquet.schema.Types;
  * documentation for details of the mapping.
  * </p>
  *
- * A copy of parquet-avro 1.15.2's AvroSchemaConverter, except with handling for INT96: INT96 columns
- * are converted to Avro bytes instead of failing when READ_INT96_AS_FIXED is not set.
+ * A copy of parquet-avro 1.15.2's AvroSchemaConverter, with CDAP compatibility adjustments:
+ * INT96 columns are converted to Avro bytes instead of failing when READ_INT96_AS_FIXED is not set,
+ * and Parquet logical types not supported by CDAP Schema.LogicalType (local-timestamp-* and uuid)
+ * map to timestamp-millis/timestamp-micros and plain string respectively.
  */
 public class AvroSchemaConverter {
 
@@ -544,31 +545,16 @@ public class AvroSchemaConverter {
           @Override
           public Optional<LogicalType> visit(
               LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+            // CDAP Schema.LogicalType does not support local-timestamp-millis/micros;
+            // map both UTC-adjusted and local Parquet timestamps to timestamp-millis/micros.
             LogicalTypeAnnotation.TimeUnit unit = timestampLogicalType.getUnit();
-            boolean isAdjustedToUTC = timestampLogicalType.isAdjustedToUTC();
-
-            if (isAdjustedToUTC || !avroVersionSupportsLocalTimestampTypes()) {
-              switch (unit) {
-                case MILLIS:
-                  return of(LogicalTypes.timestampMillis());
-                case MICROS:
-                  return of(LogicalTypes.timestampMicros());
-              }
-              return empty();
-            } else {
-              switch (unit) {
-                case MILLIS:
-                  return of(LogicalTypes.localTimestampMillis());
-                case MICROS:
-                  return of(LogicalTypes.localTimestampMicros());
-              }
-              return empty();
+            switch (unit) {
+              case MILLIS:
+                return of(LogicalTypes.timestampMillis());
+              case MICROS:
+                return of(LogicalTypes.timestampMicros());
             }
-          }
-
-          @Override
-          public Optional<LogicalType> visit(UUIDLogicalTypeAnnotation uuidLogicalType) {
-            return of(LogicalTypes.uuid());
+            return empty();
           }
         })
         .orElse(null);
