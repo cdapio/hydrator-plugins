@@ -52,7 +52,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
@@ -92,6 +91,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         .withConfigProperty(Config.INPUT);
     }
     validateXpathAndSchema(collector);
+    XmlSecurityUtils.validateLegacyXmlSecurityProperties(config, collector);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outSchema);
   }
 
@@ -99,6 +99,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     FailureCollector collector = context.getFailureCollector();
+    XmlSecurityUtils.validateLegacyXmlSecurityProperties(config, collector);
     collector.getOrThrowException();
 
     context.record(
@@ -114,6 +115,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     FailureCollector collector = getContext().getFailureCollector();
     outSchema = config.getOutputSchema(collector);
     xPathMapping = getXPathMapping(collector);
+    XmlSecurityUtils.validateLegacyXmlSecurityProperties(config, collector);
     collector.getOrThrowException();
   }
 
@@ -176,20 +178,10 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     try {
       InputSource source = new InputSource(new StringReader((String) input.get(config.inputField)));
       source.setEncoding(config.encoding);
-      DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-      builderFactory.setFeature("http://xml.org/sax/features/external-general-entities",
-              config.enableExternalGeneralEntities);
-      builderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities",
-              config.enableExternalParameterEntities);
-      builderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd",
-              config.loadExternalDTD);
-      builderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",
-              config.disallowDocTypeDTD);
-      builderFactory.setXIncludeAware(false);
-      builderFactory.setExpandEntityReferences(false);
+      DocumentBuilderFactory builderFactory = XmlSecurityUtils.createSecureDocumentBuilderFactory();
       DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
       Document document = documentBuilder.parse(source);
-      XPathFactory xpathFactory = XPathFactory.newInstance();
+      XPathFactory xpathFactory = XmlSecurityUtils.createSecureXPathFactory();
       XPath xpath = xpathFactory.newXPath();
       StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
       for (Schema.Field field : outSchema.getFields()) {
@@ -198,7 +190,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         //Since, the type is not specified from user inputs, taking everything as NodeList and then evaluating.
         NodeList nodeList = (NodeList) xpath.compile(xPathMapping.get(fieldName)).evaluate(document,
                                                                                            XPathConstants.NODESET);
-        if (config.failOnArray && nodeList.getLength() > 1) {
+        if (Boolean.TRUE.equals(config.failOnArray) && nodeList.getLength() > 1) {
           throw new IllegalArgumentException("Field " + fieldName + " is an array. " +
                                                "Cannot specify an XPath that is an array unless failOnArray is false.");
         }
@@ -264,7 +256,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   private String nodeToString(Node node) {
     StringWriter stringWriter = new StringWriter();
     try {
-      Transformer transformer = TransformerFactory.newInstance().newTransformer();
+      Transformer transformer = XmlSecurityUtils.createSecureTransformerFactory().newTransformer();
       transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
       transformer.setOutputProperty(OutputKeys.INDENT, "no");
       transformer.transform(new DOMSource(node), new StreamResult(stringWriter));
@@ -313,48 +305,18 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       "Defaults to false. ")
     private final Boolean failOnArray;
 
-    @Nullable
-    @Description("Enable external entities.Sets" +
-            " 'http://xml.org/sax/features/external-general-entities'")
-    private final Boolean enableExternalGeneralEntities;
-
-    @Nullable
-    @Description("Enable external parameter entities. Sets" +
-            " 'http://xml.org/sax/features/external-parameter-entitiesl'")
-    private final Boolean enableExternalParameterEntities;
-
-    @Nullable
-    @Description("Enable loading external dtd. Sets" +
-            " 'http://apache.org/xml/features/nonvalidating/load-external-dtd'")
-    private final Boolean loadExternalDTD;
-
-    @Nullable
-    @Description("Disallow doctype type declaration. Sets" +
-            " 'http://apache.org/xml/features/disallow-doctype-decl'")
-    private final Boolean disallowDocTypeDTD;
-
     public Config() {
-      this("", "", "", "", "", false, false, false, false);
+      this("", "", "", "", "");
     }
+
     public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
                   String processOnError) {
-      this(inputField, encoding, xPathFieldMapping, fieldTypeMapping, processOnError, false, false, false, false);
-    }
-
-    public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
-                  String processOnError,
-                  Boolean enableExternalGeneralEntities,
-                  Boolean enableExternalParameterEntities, Boolean loadExternalDTD, Boolean disallowDocTypeDTD) {
       this.inputField = inputField;
       this.encoding = encoding;
       this.xPathFieldMapping = xPathFieldMapping;
       this.fieldTypeMapping = fieldTypeMapping;
       this.processOnError = processOnError;
       this.failOnArray = false;
-      this.enableExternalGeneralEntities = enableExternalGeneralEntities;
-      this.enableExternalParameterEntities = enableExternalParameterEntities;
-      this.loadExternalDTD = loadExternalDTD;
-      this.disallowDocTypeDTD = disallowDocTypeDTD;
     }
 
     /**

@@ -17,29 +17,48 @@
 package io.cdap.plugin;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.validation.CauseAttributes;
 import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class XMLParserTest {
   private static final Schema INPUT = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
 
   private static final Logger LOG = LoggerFactory.getLogger(XMLParserTest.class);
+
+  @Rule
+  public final TemporaryFolder tmpFolder = new TemporaryFolder();
 
   @Test
   public void testInvalidConfig() throws Exception {
@@ -279,5 +298,161 @@ public class XMLParserTest {
     Cause expectedCause = new Cause();
     expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLParser.Config.INPUT);
     Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
+  }
+
+  @Test
+  public void testXxeDoctypeBlocked() throws Exception {
+    File secretFile = tmpFolder.newFile("xmlparser-secret.txt");
+    Files.write(secretFile.toPath(), "SENSITIVE_SECRET_TOKEN".getBytes(StandardCharsets.UTF_8));
+
+    String xxeXml = "<?xml version=\"1.0\"?>"
+      + "<!DOCTYPE record [<!ENTITY xxe SYSTEM \"" + secretFile.toURI() + "\">]>"
+      + "<record><secret>&xxe;</secret></record>";
+
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8", "secret:/record/secret", "secret:string", "Write to error dataset");
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    StructuredRecord inputRecord = StructuredRecord.builder(INPUT)
+      .set("offset", 1)
+      .set("body", xxeXml)
+      .build();
+    transform.transform(inputRecord, emitter);
+
+    Assert.assertTrue("XXE payload must not emit records", emitter.getEmitted().isEmpty());
+    Assert.assertEquals(1, emitter.getErrors().size());
+    String errorMsg = emitter.getErrors().get(0).getErrorMsg();
+    Assert.assertTrue("Expected DOCTYPE rejection error, got: " + errorMsg, errorMsg.contains("DOCTYPE"));
+    Assert.assertFalse(errorMsg.contains("SENSITIVE_SECRET_TOKEN"));
+  }
+
+  @Test
+  public void testXIncludeDoesNotResolveExternalFile() throws Exception {
+    File secretFile = tmpFolder.newFile("xmlparser-xinclude.txt");
+    Files.write(secretFile.toPath(), "XINCLUDE_LEAKED_TOKEN".getBytes(StandardCharsets.UTF_8));
+
+    String xml = "<?xml version=\"1.0\"?>"
+      + "<record xmlns:xi=\"http://www.w3.org/2001/XInclude\">"
+      + "<secret><xi:include href=\"" + secretFile.toURI() + "\" parse=\"text\"/></secret>"
+      + "</record>";
+
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8", "secret:/record/secret", "secret:string", "Exit on error");
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    StructuredRecord inputRecord = StructuredRecord.builder(INPUT)
+      .set("offset", 1)
+      .set("body", xml)
+      .build();
+    transform.transform(inputRecord, emitter);
+
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    String value = emitter.getEmitted().get(0).get("secret");
+    Assert.assertFalse("XInclude must not resolve external files",
+                       value != null && value.contains("XINCLUDE_LEAKED_TOKEN"));
+  }
+
+  @Test
+  public void testRejectsUnsafeLegacySecurityProperties() throws Exception {
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8", "title:/book/title", "title:string", "Exit on error");
+    setPluginProperties(config, ImmutableMap.of(
+      XmlSecurityUtils.ENABLE_EXTERNAL_GENERAL_ENTITIES, "true",
+      XmlSecurityUtils.ENABLE_EXTERNAL_PARAMETER_ENTITIES, "true",
+      XmlSecurityUtils.LOAD_EXTERNAL_DTD, "${loadDtd}",
+      XmlSecurityUtils.DISALLOW_DOCTYPE_DTD, "false"
+    ));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT);
+    new XMLParser(config).configurePipeline(configurer);
+    FailureCollector collector = configurer.getStageConfigurer().getFailureCollector();
+    List<ValidationFailure> failures = collector.getValidationFailures();
+    Assert.assertEquals(4, failures.size());
+    Set<String> failingProps = failures.stream()
+      .map(f -> f.getCauses().get(0).getAttribute(CauseAttributes.STAGE_CONFIG))
+      .collect(Collectors.toSet());
+    Assert.assertTrue(failingProps.contains(XmlSecurityUtils.ENABLE_EXTERNAL_GENERAL_ENTITIES));
+    Assert.assertTrue(failingProps.contains(XmlSecurityUtils.ENABLE_EXTERNAL_PARAMETER_ENTITIES));
+    Assert.assertTrue(failingProps.contains(XmlSecurityUtils.LOAD_EXTERNAL_DTD));
+    Assert.assertTrue(failingProps.contains(XmlSecurityUtils.DISALLOW_DOCTYPE_DTD));
+
+    try {
+      new XMLParser(config).initialize(new MockTransformContext());
+      Assert.fail("Expected ValidationException in initialize for unsafe legacy XML properties");
+    } catch (ValidationException e) {
+      Assert.assertEquals(4, e.getFailures().size());
+    }
+
+    try {
+      new XMLParser(config).prepareRun(createMockStageSubmitterContext());
+      Assert.fail("Expected ValidationException in prepareRun for unsafe legacy XML properties");
+    } catch (ValidationException e) {
+      Assert.assertEquals(4, e.getFailures().size());
+    }
+  }
+
+  @Test
+  public void testNullFailOnArrayDefaultsToFalse() throws Exception {
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8", "item:/items/item", "item:string", "Exit on error");
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    StructuredRecord inputRecord = StructuredRecord.builder(INPUT)
+      .set("offset", 1)
+      .set("body", "<items><item>first</item><item>second</item></items>")
+      .build();
+    transform.transform(inputRecord, emitter);
+
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    Assert.assertEquals("first", emitter.getEmitted().get(0).get("item"));
+  }
+
+  private static StageSubmitterContext createMockStageSubmitterContext() {
+    FailureCollector collector = new MockFailureCollector();
+    return (StageSubmitterContext) Proxy.newProxyInstance(
+      StageSubmitterContext.class.getClassLoader(),
+      new Class<?>[]{StageSubmitterContext.class},
+      (proxy, method, args) -> "getFailureCollector".equals(method.getName()) ? collector : null);
+  }
+
+  @Test
+  public void testAcceptsSafeLegacySecurityProperties() throws Exception {
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8", "title:/book/title", "title:string", "Exit on error");
+    setPluginProperties(config, ImmutableMap.of(
+      XmlSecurityUtils.ENABLE_EXTERNAL_GENERAL_ENTITIES, "false",
+      XmlSecurityUtils.ENABLE_EXTERNAL_PARAMETER_ENTITIES, "false",
+      XmlSecurityUtils.LOAD_EXTERNAL_DTD, "false",
+      XmlSecurityUtils.DISALLOW_DOCTYPE_DTD, "true"
+    ));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT);
+    XMLParser parser = new XMLParser(config);
+    parser.configurePipeline(configurer);
+    Assert.assertTrue(configurer.getStageConfigurer().getFailureCollector().getValidationFailures().isEmpty());
+
+    parser.initialize(new MockTransformContext());
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    parser.transform(
+      StructuredRecord.builder(INPUT).set("offset", 1).set("body", "<book><title>A &amp; B</title></book>").build(),
+      emitter);
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    Assert.assertEquals("A & B", emitter.getEmitted().get(0).get("title"));
+  }
+
+  private static void setPluginProperties(PluginConfig config, Map<String, String> props) throws Exception {
+    PluginProperties pluginProperties = PluginProperties.builder().addAll(props).build();
+    Field propertiesField = PluginConfig.class.getDeclaredField("properties");
+    propertiesField.setAccessible(true);
+    propertiesField.set(config, pluginProperties);
+    Field rawPropertiesField = PluginConfig.class.getDeclaredField("rawProperties");
+    rawPropertiesField.setAccessible(true);
+    rawPropertiesField.set(config, pluginProperties);
   }
 }

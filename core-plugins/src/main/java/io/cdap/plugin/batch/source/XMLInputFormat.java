@@ -38,7 +38,15 @@ public class XMLInputFormat extends FileInputFormat<LongWritable, Map<String, St
   public static final String XML_INPUTFORMAT_PROCESSED_FILES = "xml.inputformat.processed.files";
   public static final String XML_INPUTFORMAT_FILE_ACTION = "xml.inputformat.file.action";
   public static final String XML_INPUTFORMAT_TARGET_FOLDER = "xml.inputformat.target.folder";
+  /**
+   * @deprecated External entities are always disabled in {@link XMLRecordReader} and this property is ignored.
+   */
+  @Deprecated
   public static final String XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES = "xml.inputformat.enable.externalentities";
+  /**
+   * @deprecated DTD processing is always disabled in {@link XMLRecordReader} and this property is ignored.
+   */
+  @Deprecated
   public static final String XML_INPUTFORMAT_SUPPORT_DTD = "xml.inputformat.support.dtd";
 
   @Override

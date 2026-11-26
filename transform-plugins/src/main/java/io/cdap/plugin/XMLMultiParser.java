@@ -50,9 +50,9 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathException;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 /**
  * Parses XML Event using XPath.
@@ -67,7 +67,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
   private static final String XPATH = "xPath";
 
   private final Config config;
-  private final DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+  private DocumentBuilderFactory builderFactory;
   private Schema schema;
   private XPathExpression xPathExpression;
   private Set<String> fieldNames;
@@ -87,6 +87,9 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    FailureCollector collector = context.getFailureCollector();
+    XmlSecurityUtils.validateLegacyXmlSecurityProperties(config, collector);
+    collector.getOrThrowException();
     // Map the single config XML field to all output fields.
     context.record(TransformLineageRecorderUtils
       .generateOneToMany(config.field, TransformLineageRecorderUtils.getFields(context.getOutputSchema()), "multiParse",
@@ -99,17 +102,10 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     FailureCollector collector = getContext().getFailureCollector();
     schema = config.getSchema(collector);
     xPathExpression = config.getXPathExpression(collector);
+    XmlSecurityUtils.validateLegacyXmlSecurityProperties(config, collector);
+    collector.getOrThrowException();
     fieldNames = new HashSet<>();
-    builderFactory.setFeature("http://xml.org/sax/features/external-general-entities",
-                              config.shouldEnableExternalGeneralEntities());
-    builderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities",
-                              config.shouldEnableExternalParameterEntities());
-    builderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd",
-                              config.shouldLoadExternalDTD());
-    builderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",
-                              config.shouldDisallowDocTypeDTD());
-    builderFactory.setXIncludeAware(false);
-    builderFactory.setExpandEntityReferences(false);
+    builderFactory = XmlSecurityUtils.createSecureDocumentBuilderFactory();
     for (Schema.Field field : schema.getFields()) {
       fieldNames.add(field.getName());
     }
@@ -128,7 +124,9 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
       source.setEncoding(config.encoding);
       Document document;
       try {
-        DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
+        DocumentBuilderFactory factory = builderFactory != null
+          ? builderFactory : XmlSecurityUtils.createSecureDocumentBuilderFactory();
+        DocumentBuilder documentBuilder = factory.newDocumentBuilder();
         document = documentBuilder.parse(source);
       } catch (ParserConfigurationException e) {
         // shouldn't happen
@@ -179,8 +177,6 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
    * Configuration for the XMLParser transform..
    */
   public static class Config extends PluginConfig {
-    private static final XPathFactory X_PATH_FACTORY = XPathFactory.newInstance();
-
     @Description("The field containing the XML document to parse.")
     @Macro
     private final String field;
@@ -199,40 +195,11 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
       "The field names must match the node names in the given xpath.")
     private final String schema;
 
-    @Nullable
-    @Description("Enable external entities.Sets" +
-            " 'http://xml.org/sax/features/external-general-entities'")
-    private final Boolean enableExternalGeneralEntities;
-
-    @Nullable
-    @Description("Enable external parameter entities. Sets" +
-            " 'http://xml.org/sax/features/external-parameter-entitiesl'")
-    private final Boolean enableExternalParameterEntities;
-
-    @Nullable
-    @Description("Enable loading external dtd. Sets" +
-            " 'http://apache.org/xml/features/nonvalidating/load-external-dtd'")
-    private final Boolean loadExternalDTD;
-
-    @Nullable
-    @Description("Disallow doctype type declaration. Sets" +
-            " 'http://apache.org/xml/features/disallow-doctype-decl'")
-    private final Boolean disallowDocTypeDTD;
-
     public Config(String field, String encoding, String xPath, String schema) {
-      this(field, encoding, xPath, schema, false, false, false, false);
-    }
-
-    public Config(String field, String encoding, String xPath, String schema, Boolean enableExternalGeneralEntities,
-                  Boolean enableExternalParameterEntities, Boolean loadExternalDTD, Boolean disallowDocTypeDTD) {
       this.field = field;
       this.encoding = encoding;
       this.xPath = xPath;
       this.schema = schema;
-      this.enableExternalGeneralEntities = enableExternalGeneralEntities;
-      this.enableExternalParameterEntities = enableExternalParameterEntities;
-      this.loadExternalDTD = loadExternalDTD;
-      this.disallowDocTypeDTD = disallowDocTypeDTD;
     }
 
     public void validate(@Nullable Schema inputSchema, FailureCollector collector) {
@@ -258,32 +225,18 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
             .withOutputSchemaField(field.getName());
         }
       }
+
+      XmlSecurityUtils.validateLegacyXmlSecurityProperties(this, collector);
     }
 
     public XPathExpression getXPathExpression(FailureCollector collector) {
       try {
-        return X_PATH_FACTORY.newXPath().compile(xPath);
-      } catch (XPathExpressionException e) {
+        return XmlSecurityUtils.createSecureXPathFactory().newXPath().compile(xPath);
+      } catch (XPathException e) {
         collector.addFailure(String.format("Failed to compile xpath: %s", xPath), null)
           .withConfigProperty(XPATH);
         throw collector.getOrThrowException();
       }
-    }
-
-    public boolean shouldEnableExternalGeneralEntities() {
-      return enableExternalGeneralEntities == null ? false : enableExternalGeneralEntities;
-    }
-
-    public boolean shouldEnableExternalParameterEntities() {
-      return enableExternalParameterEntities == null ? false : enableExternalParameterEntities;
-    }
-
-    public boolean shouldLoadExternalDTD() {
-      return loadExternalDTD == null ? false : loadExternalDTD;
-    }
-
-    public boolean shouldDisallowDocTypeDTD() {
-      return disallowDocTypeDTD == null ? false : disallowDocTypeDTD;
     }
 
     public Schema getSchema(FailureCollector collector) {

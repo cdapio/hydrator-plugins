@@ -33,6 +33,7 @@ import io.cdap.cdap.api.dataset.DatasetProperties;
 import io.cdap.cdap.api.dataset.lib.CloseableIterator;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.lib.KeyValueTable;
+import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
@@ -136,9 +137,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     if (!Strings.isNullOrEmpty(config.targetFolder)) {
       conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
     }
-
-    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES, config.shouldEnableExternalEntities());
-    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_SUPPORT_DTD, config.shouldSupportDTD());
 
     if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
       setFileTrackingInfo(context, conf);
@@ -250,6 +248,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     public static final String TEMPORARY_FOLDER = "temporaryFolder";
     public static final String ACTION_AFTER_PROCESS = "actionAfterProcess";
     public static final String REPROCESSING_REQUIRED = "reprocessingRequired";
+    static final String ENABLE_EXTERNAL_ENTITIES = "enableExternalEntities";
+    static final String SUPPORT_DTD = "supportDTD";
 
 
     @Description("Path to file(s) to be read. If a directory is specified, terminate the path name with a \'/\'.")
@@ -300,15 +300,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Macro
     private final String temporaryFolder;
 
-    @Description("Enable external entities while processing XML files")
-    @Nullable
-    @Macro
-    private final Boolean enableExternalEntities;
-
-    @Description("Enable support DTDs while processing XML files")
-    @Nullable
-    private final Boolean supportDTD;
-
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern, String nodePath,
                     String actionAfterProcess, @Nullable String targetFolder, String reprocessingRequired,
@@ -323,27 +314,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       this.tableName = tableName;
       this.tableExpiryPeriod = tableExpiryPeriod;
       this.temporaryFolder = temporaryFolder;
-      this.enableExternalEntities = false;
-      this.supportDTD = false;
-    }
-
-    @VisibleForTesting
-    XMLReaderConfig(String referenceName, String path, @Nullable String pattern, String nodePath,
-                    String actionAfterProcess, @Nullable String targetFolder, String reprocessingRequired,
-                    @Nullable String tableName, @Nullable Integer tableExpiryPeriod, String temporaryFolder,
-                    @Nullable Boolean enableExternalEntities, @Nullable Boolean supportDTD) {
-      super(referenceName);
-      this.path = path;
-      this.pattern = pattern;
-      this.nodePath = nodePath;
-      this.actionAfterProcess = actionAfterProcess;
-      this.targetFolder = targetFolder;
-      this.reprocessingRequired = reprocessingRequired;
-      this.tableName = tableName;
-      this.tableExpiryPeriod = tableExpiryPeriod;
-      this.temporaryFolder = temporaryFolder;
-      this.enableExternalEntities = enableExternalEntities;
-      this.supportDTD = supportDTD;
     }
 
     @VisibleForTesting
@@ -365,14 +335,38 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       return nodePath;
     }
 
-    @VisibleForTesting
-    boolean shouldEnableExternalEntities() {
-      return enableExternalEntities == null ? false : enableExternalEntities;
+    private void validateLegacyXmlSecurityProperties(FailureCollector collector) {
+      rejectIfUnsafeXmlProperty(ENABLE_EXTERNAL_ENTITIES, collector);
+      rejectIfUnsafeXmlProperty(SUPPORT_DTD, collector);
     }
 
-    @VisibleForTesting
-    boolean shouldSupportDTD() {
-      return supportDTD == null ? false : supportDTD;
+    private void rejectIfUnsafeXmlProperty(String propertyName, FailureCollector collector) {
+      String rawValue = getPropertyFrom(getRawProperties(), propertyName);
+      String resolvedValue = getPropertyFrom(getProperties(), propertyName);
+      if (isUnsafeBooleanValue(rawValue) || isUnsafeBooleanValue(resolvedValue)) {
+        collector.addFailure(
+          String.format("Property '%s' cannot be enabled because external entities and DTD processing are disabled.",
+                        propertyName),
+          String.format("Remove '%s' or set it to 'false'.", propertyName))
+          .withConfigProperty(propertyName);
+      }
+    }
+
+    private static boolean isUnsafeBooleanValue(@Nullable String value) {
+      if (value == null) {
+        return false;
+      }
+      String trimmed = value.trim();
+      return !trimmed.isEmpty() && !"false".equalsIgnoreCase(trimmed);
+    }
+
+    @Nullable
+    private static String getPropertyFrom(@Nullable PluginProperties pluginProperties, String propertyName) {
+      if (pluginProperties == null) {
+        return null;
+      }
+      Map<String, String> properties = pluginProperties.getProperties();
+      return properties == null ? null : properties.get(propertyName);
     }
 
     void validate(FailureCollector collector) {
@@ -431,6 +425,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
             .withConfigProperty(PATH).withConfigProperty(PATTERN);
         }
       }
+
+      validateLegacyXmlSecurityProperties(collector);
     }
   }
 }
