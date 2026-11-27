@@ -19,7 +19,6 @@ package io.cdap.plugin.spark.test;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import io.cdap.cdap.api.artifact.ArtifactRange;
 import io.cdap.cdap.api.artifact.ArtifactSummary;
@@ -194,10 +193,10 @@ public class SparkPluginTest extends HydratorTestBase {
     File ignore1 = new File(folder, "input1.txt.done");
     File ignore2 = new File(folder, "input1");
 
-    CharStreams.write("1,samuel,jackson\n2,dwayne,johnson", Files.newWriterSupplier(input1, Charsets.UTF_8));
-    CharStreams.write("3,christopher,walken", Files.newWriterSupplier(input2, Charsets.UTF_8));
-    CharStreams.write("0,nicolas,cage", Files.newWriterSupplier(ignore1, Charsets.UTF_8));
-    CharStreams.write("0,orlando,bloom", Files.newWriterSupplier(ignore2, Charsets.UTF_8));
+    Files.asCharSink(input1, Charsets.UTF_8).write("1,samuel,jackson\n2,dwayne,johnson");
+    Files.asCharSink(input2, Charsets.UTF_8).write("3,christopher,walken");
+    Files.asCharSink(ignore1, Charsets.UTF_8).write("0,nicolas,cage");
+    Files.asCharSink(ignore2, Charsets.UTF_8).write("0,orlando,bloom");
 
     Map<String, String> properties = ImmutableMap.<String, String>builder()
       .put("path", folder.getAbsolutePath())
@@ -246,7 +245,7 @@ public class SparkPluginTest extends HydratorTestBase {
     // now write a new file to make sure new files are picked up.
     File input3 = new File(folder, "input3.txt");
 
-    CharStreams.write("4,terry,crews\n5,rocky,balboa", Files.newWriterSupplier(input3, Charsets.UTF_8));
+    Files.asCharSink(input3, Charsets.UTF_8).write("4,terry,crews\n5,rocky,balboa");
 
     Map<Long, String> expected2 = ImmutableMap.of(4L, "terry crews", 5L, "rocky balboa");
 
