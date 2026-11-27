@@ -22,13 +22,20 @@ import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import io.cdap.plugin.format.SchemaDetector;
+import io.cdap.plugin.format.avro.AvroToStructuredTransformer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.avro.AvroSchemaConverter;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.hadoop.util.HadoopOutputFile;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Types;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -153,5 +160,67 @@ public class ParquetInputFormatProviderTest {
     List<ValidationFailure.Cause> expectedCauses = new ArrayList<>();
     expectedCauses.add(expectedCause);
     Assert.assertEquals(expectedCauses, actualCauses);
+  }
+
+  @Test
+  public void testSnappySchemaDetection() throws IOException {
+    Configuration hConf = new Configuration();
+    File parquetFile = new File(TMP_FOLDER.newFolder(), "snappy.parquet");
+    Path parquetPath = new Path(parquetFile.toURI());
+    Schema expectedSchema = Schema.recordOf("x",
+                                            Schema.Field.of("id", Schema.of(Schema.Type.INT)),
+                                            Schema.Field.of("name", Schema.of(Schema.Type.STRING)));
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(expectedSchema.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("id", 1)
+      .set("name", "snappy-val")
+      .build();
+
+    try (ParquetWriter<GenericRecord> parquetWriter =
+           AvroParquetWriter.<GenericRecord>builder(HadoopOutputFile.fromPath(parquetPath, hConf))
+             .withSchema(avroSchema)
+             .withCompressionCodec(CompressionCodecName.SNAPPY)
+             .build()) {
+      parquetWriter.write(record);
+    }
+
+    ParquetInputFormatProvider formatProvider =
+      new ParquetInputFormatProvider(new ParquetInputFormatProvider.Conf());
+    FormatContext formatContext = new FormatContext(new MockFailureCollector(), null);
+    SchemaDetector schemaDetector = new SchemaDetector(formatProvider);
+    Schema schema = schemaDetector.detectSchema(parquetFile.getAbsolutePath(), formatContext, Collections.emptyMap());
+    Assert.assertEquals(expectedSchema, schema);
+    Assert.assertTrue(formatContext.getFailureCollector().getValidationFailures().isEmpty());
+  }
+
+  @Test
+  public void testParquetLogicalTypesAndInt96SchemaConversion() throws IOException {
+    MessageType parquetSchema = Types.buildMessage()
+      .required(PrimitiveType.PrimitiveTypeName.INT96).named("int96_ts")
+      .required(PrimitiveType.PrimitiveTypeName.INT64)
+        .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.MILLIS))
+        .named("local_ts_millis")
+      .required(PrimitiveType.PrimitiveTypeName.INT64)
+        .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.MICROS))
+        .named("local_ts_micros")
+      .required(PrimitiveType.PrimitiveTypeName.INT64)
+        .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS))
+        .named("utc_ts_millis")
+      .required(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY).length(16)
+        .as(LogicalTypeAnnotation.uuidType())
+        .named("uuid_col")
+      .named("test_record");
+
+    org.apache.avro.Schema avroSchema = new AvroSchemaConverter().convert(parquetSchema);
+    Schema cdapSchema = new AvroToStructuredTransformer().convertSchema(avroSchema);
+
+    Schema expected = Schema.recordOf(
+      "test_record",
+      Schema.Field.of("int96_ts", Schema.of(Schema.Type.BYTES)),
+      Schema.Field.of("local_ts_millis", Schema.of(Schema.LogicalType.TIMESTAMP_MILLIS)),
+      Schema.Field.of("local_ts_micros", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
+      Schema.Field.of("utc_ts_millis", Schema.of(Schema.LogicalType.TIMESTAMP_MILLIS)),
+      Schema.Field.of("uuid_col", Schema.of(Schema.Type.STRING)));
+    Assert.assertEquals(expected, cdapSchema);
   }
 }
