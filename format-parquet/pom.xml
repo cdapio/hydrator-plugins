@@ -119,7 +119,12 @@
             <_exportcontents>
               io.cdap.plugin.format.parquet.*
             </_exportcontents>
-            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
+            <!--
+              Inline only the non-@Plugin Avro transformer classes so
+              format-avro's dead nested lib/*.jar entries are not embedded
+              inside format-parquet.jar!/lib/.
+            -->
+            <Embed-Dependency>format-avro;inline=io/cdap/plugin/format/avro/AvroToStructuredTransformer*.class|io/cdap/plugin/format/avro/StructuredToAvroTransformer*.class;scope=compile,!format-avro,*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
           </instructions>
